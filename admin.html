@@ -46,10 +46,6 @@
   .topbar.light .brand::before{background:var(--gold)}
   .topbar.light .view-switch button{color:var(--ink-faint)}
   .topbar.light .view-switch button.active{color:var(--ink);border-bottom-color:var(--gold)}
-  .topbar.light .hero-switch{border-color:var(--line-strong)}
-  .topbar.light .hero-switch .lbl{color:var(--ink-faint)}
-  .topbar.light .hero-switch button{color:var(--ink-soft)}
-  .topbar.light .hero-switch button.on{background:var(--ink);color:var(--cream)}
 
   h1.page-title{font-weight:400;color:var(--ink);font-size:21px;margin:30px 0 6px;letter-spacing:.06em}
   .page-sub{color:var(--ink-soft);font-size:12.5px;margin-bottom:22px;max-width:64ch;letter-spacing:.02em;line-height:1.9}
@@ -466,6 +462,32 @@
   .lgback{border:none;background:none;font:inherit;font-size:10px;letter-spacing:.14em;color:var(--ink-soft);cursor:pointer;
     padding:0 0 3px;margin-top:20px;border-bottom:1px solid var(--line-2)}
 
+  /* 后台 · 前台设置 */
+  .set-head h2{font-size:13px;font-weight:500;letter-spacing:.1em;color:var(--ink);margin:0 0 8px}
+  .set-head p{font-size:11.5px;color:var(--ink-soft);line-height:1.95;margin:0;max-width:64ch}
+  .set-list{margin-top:24px;border-top:1px solid var(--line-strong);max-width:1040px}
+  .set-row{display:grid;grid-template-columns:132px minmax(0,1fr) 22px;gap:24px;align-items:center;
+    padding:16px 12px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+  .set-row:hover{background:var(--card-2)}
+  .set-row.on{background:var(--paper-2)}
+  .set-shot{position:relative;width:132px;height:80px;overflow:hidden;border:1px solid var(--line-strong);background:var(--paper-2)}
+  .set-shot img{width:100%;height:100%;object-fit:cover;display:block}
+  .set-shot .no{position:absolute;left:0;bottom:0;background:var(--paper);border-top:1px solid var(--line-strong);
+    border-right:1px solid var(--line-strong);font-family:"Archivo",sans-serif;font-size:9px;letter-spacing:.12em;
+    color:var(--ink-soft);padding:3px 7px}
+  .set-main .nm{font-size:13px;color:var(--ink);letter-spacing:.05em}
+  .set-main .pair{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .set-main .pair span{font-size:9.5px;letter-spacing:.1em;color:var(--ink-soft);border:1px solid var(--line-strong);
+    padding:3px 8px;background:var(--paper)}
+  .set-main .ds{font-size:11px;color:var(--ink-faint);margin-top:10px;line-height:1.85;max-width:60ch}
+  .set-pick{width:20px;height:20px;border:1px solid var(--ink-faint);border-radius:50%;display:flex;
+    align-items:center;justify-content:center}
+  .set-row.on .set-pick{border-color:var(--ink)}
+  .set-row.on .set-pick::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--ink)}
+  .set-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;max-width:1040px}
+  .set-note{font-size:10.5px;color:var(--ink-faint);line-height:1.95;margin-top:20px;padding-top:16px;
+    border-top:1px dashed var(--line-strong);max-width:1040px}
+
   /* 登录 · 对开（图 + 表单） */
   .lg2{min-height:calc(100vh - 57px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--paper)}
   .lg2-art{position:relative;overflow:hidden}
@@ -504,6 +526,11 @@
     .lg3-side h1{font-size:26px}
     .lg3-ghost{display:none}
     .lgdemo .fill{margin-left:0}
+    .set-row{grid-template-columns:88px minmax(0,1fr);gap:14px;padding:14px 0;position:relative}
+    .set-shot{width:88px;height:60px}
+    .set-main{padding-right:26px}
+    .set-main .pair span{font-size:9px;padding:2px 6px}
+    .set-pick{position:absolute;right:0;top:18px}
     .lg{min-height:0;padding:56px 22px 72px;align-items:flex-start}
     .lgbox{width:100%}
   }
@@ -572,12 +599,6 @@
 <div class="topbar">
   <div class="wrap topbar-in">
     <div class="brand">饮品热量管理</div>
-    <div class="hero-switch" id="heroSwitch">
-      <span class="lbl">首页模板</span>
-      <button data-hero="A">A</button>
-      <button data-hero="B">B</button>
-      <button data-hero="C">C</button>
-    </div>
     <div class="view-switch" id="viewSwitch">
       <button data-view="landing">首页</button>
       <button data-view="shop">顾客端</button>
@@ -962,11 +983,29 @@
     });
     return { total:total, rows:rows };
   }
+  /* ================= 前台模板预设 ================= */
+  function presets(){
+    return [
+      {k:"A",nm:"暗场 · 对开",hi:"A",li:"V2",hero:HERO_SRC,
+        ds:"首页满屏暗场实拍，右侧刻度尺读当日热量。登录页左图右表，同一张底图，讲「配方与成本不对外公开」。"},
+      {k:"B",nm:"纸白 · 极简",hi:"B",li:"V1",hero:HERO_B,
+        ds:"首页纸白铜版线描，三点式版面偏克制。登录页单栏凭证，纸白底、无图，最安静的一组。"},
+      {k:"C",nm:"账页 · 大字",hi:"C",li:"V3",hero:HERO_C,
+        ds:"首页浅米平铺俯拍，账页式编号与刻度。登录页大字 ADM IN 打底，右侧边框卡片，饮品/配料计数当元信息。"}
+    ];
+  }
+
   /* ================= 商家登录 ================= */
   var AUTH_KEY="cafe_admin_auth_v1", AUTH_HOURS=12, AUTH_USER="merchant", AUTH_HASH="68522a13";
-  var loginVar=(function(){
-    try{ var q=new URLSearchParams(location.search).get("lv"); return (q==="2"||q==="3")?q:"1"; }catch(e){ return "1"; }
-  })();
+  var LOGIN_OF={A:"2",B:"1",C:"3"};
+  function heroPick(){ return (state&&state.heroStyle)||"A"; }
+  function loginVarOf(){
+    try{
+      var q=new URLSearchParams(location.search).get("lv");
+      if(q==="1"||q==="2"||q==="3") return q;
+    }catch(e){}
+    return LOGIN_OF[heroPick()]||"1";
+  }
 
   function fnv1a(str){
     var h=0x811c9dc5;
@@ -1023,7 +1062,7 @@
   }
 
   function renderLogin(){
-    var v=loginVar;
+    var v=loginVarOf();
     var html="";
     if(v==="2"){
       html='<div class="lg2">'+
@@ -1138,6 +1177,7 @@
       '<button data-tab="ings" class="'+(state.tab==="ings"?"active":"")+'">配料库</button>' +
       '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
       '<button data-tab="orders" class="'+(state.tab==="orders"?"active":"")+'">订单看板</button>' +
+      '<button data-tab="settings" class="'+(state.tab==="settings"?"active":"")+'">前台设置</button>' +
       '<span style="margin-left:auto;display:flex;gap:6px">' +
       '<button class="ghost-btn" id="exportBtn">导出 JSON</button>' +
       '<button class="ghost-btn" id="exportMdBtn">导出 Markdown</button>' +
@@ -1165,6 +1205,7 @@
 
     if(state.tab==="ings") renderIngs();
     else if(state.tab==="products") renderProducts();
+    else if(state.tab==="settings") renderSettings();
     else renderOrders();
   }
 
@@ -1227,6 +1268,43 @@
     return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   }
   function milkName(id){ var i=ing(id); return i?i.name:""; }
+
+  function renderSettings(){
+    var cur=heroPick();
+    var now=presets().filter(function(t){return t.k===cur;})[0];
+    var html='<div class="set-head"><h2>前台呈现 · 首页与登录页</h2>'+
+      '<p>首页 hero 与商家登录页成组搭配：换一组，前台首页和登录页一起换。改动立即生效，只影响本机浏览器的展示，不动云端数据。</p></div>'+
+      '<div class="set-list">';
+    presets().forEach(function(t,i){
+      html+='<div class="set-row'+(cur===t.k?" on":"")+'" data-set="'+t.k+'">'+
+        '<div class="set-shot"><img src="'+t.hero+'" alt=""><span class="no">0'+(i+1)+'</span></div>'+
+        '<div class="set-main"><div class="nm">'+t.nm+'</div>'+
+          '<div class="pair"><span>首页 · '+t.hi+'</span><span>登录页 · '+t.li+'</span></div>'+
+          '<div class="ds">'+t.ds+'</div></div>'+
+        '<div class="set-pick"></div>'+
+      '</div>';
+    });
+    html+='</div>'+
+      '<div class="set-actions">'+
+        '<button class="ghost-btn" id="previewLanding">预览首页</button>'+
+        '<button class="ghost-btn" id="previewLogin">预览登录页</button>'+
+        '<button class="ghost-btn" id="copyLoginLink">复制登录链接</button>'+
+      '</div>'+
+      '<div class="set-note">当前：首页 '+cur+' · '+now.nm+
+        ' → 登录页 '+now.li+'。<br>'+
+        '这是演示环境的前端配置，保存在本机 localStorage；换一台电脑或清缓存会回到默认 A 组。</div>';
+    document.getElementById("adminBody").innerHTML=html;
+
+    document.querySelectorAll(".set-row[data-set]").forEach(function(r){
+      r.addEventListener("click",function(){ setHeroStyle(r.dataset.set); toast("已切换为 "+r.dataset.set+" 组"); });
+    });
+    document.getElementById("previewLanding").addEventListener("click",function(){ goView("landing"); });
+    document.getElementById("previewLogin").addEventListener("click",function(){ openLogin(); });
+    document.getElementById("copyLoginLink").addEventListener("click",function(){
+      var url=location.origin+location.pathname;
+      try{ navigator.clipboard.writeText(url); toast("已复制登录链接"); }catch(e){ toast("复制失败，请手动复制地址"); }
+    });
+  }
 
   function renderOrders(){
     var body=document.getElementById("adminBody");
@@ -1933,24 +2011,15 @@
 
   /* ---------- 首页 hero 模板切换 ---------- */
   function applyHeroSwitch(){
-    var box=document.getElementById("heroSwitch");
     var bar=document.querySelector(".topbar");
     var darkNav = state.view==="landing" && (state.heroStyle||"A")==="A";
     if(bar) bar.classList.toggle("light", !darkNav);
-    if(!box) return;
-    box.classList.toggle("show", state.view==="landing");
-    box.querySelectorAll("button").forEach(function(b){
-      b.classList.toggle("on", b.dataset.hero===(state.heroStyle||"A"));
-    });
   }
   function setHeroStyle(v){
     state.heroStyle=v;
     try{ localStorage.setItem("heat_hero_style", v); }catch(e){}
     render();
   }
-  document.getElementById("heroSwitch").querySelectorAll("button").forEach(function(b){
-    b.addEventListener("click", function(){ setHeroStyle(b.dataset.hero); });
-  });
 
   /* ---------- 视图切换 ---------- */
   document.getElementById("viewSwitch").querySelectorAll("button").forEach(function(b){
