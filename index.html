@@ -234,8 +234,20 @@
   .qmask.on{display:block}
   .qsheet{position:fixed;left:50%;bottom:0;width:100%;max-width:420px;z-index:19;background:var(--paper);
     border-top:1px solid var(--ink);padding:16px 22px 20px;transform:translate(-50%,102%);
-    transition:transform .28s cubic-bezier(.2,.75,.2,1);max-height:68vh;overflow:auto;display:none}
+    transition:transform .28s cubic-bezier(.2,.75,.2,1);max-height:80vh;overflow:auto;-webkit-overflow-scrolling:touch;display:none}
   .qsheet.on{display:block;transform:translate(-50%,0)}
+  .qtop{display:flex;gap:13px;align-items:flex-start}
+  .qtop .qt{width:84px;height:84px;flex:none;background:#F1EFE7;overflow:hidden;
+    display:flex;align-items:center;justify-content:center}
+  .qtop .qt span{font-size:26px;font-weight:300;color:#C9C4B4;letter-spacing:0}
+  .qtop .qt img{width:100%;height:100%;object-fit:cover;display:block}
+  .qtop .qmeta{flex:1;min-width:0}
+  .qtop .qmeta b{display:block;font-size:14.5px;font-weight:500;letter-spacing:.06em;color:var(--ink)}
+  .qtop .qmeta .kk{font-size:10px;color:var(--brown);letter-spacing:.05em;margin-top:7px;font-family:Archivo,sans-serif}
+  .qtop .qmeta .qs{font-size:9px;color:var(--gray);letter-spacing:.06em;margin-top:5px}
+  .cked{border:none;background:none;font:inherit;font-size:9.5px;color:var(--gray);letter-spacing:.06em;
+    cursor:pointer;padding:0 0 0 12px;text-decoration:underline;text-underline-offset:3px}
+  .ckerow{display:flex;gap:8px;align-items:flex-start}
   .qh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
   .qh b{font-size:13.5px;font-weight:500;letter-spacing:.06em}
   .qh .kk{font-size:9.5px;color:var(--brown);letter-spacing:.06em;margin-top:4px}
@@ -243,7 +255,8 @@
   .qmilk{margin-top:18px}
   .qmilk .lb{font-size:9.5px;color:var(--gray);letter-spacing:.16em}
   .qmilk .lb b{color:var(--ink);font-weight:500;margin-right:8px}
-  .qbar2{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+  .qbar2{display:flex;align-items:center;gap:10px;margin-top:20px;padding:16px 0 calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line-2);
+    position:sticky;bottom:0;background:#FCFCFA}
   .qbar2 .qq{display:flex;align-items:center;gap:12px;flex:none}
   .qbar2 .qq button{width:30px;height:30px;border:1px solid var(--line);background:none;font:inherit;
     font-size:14px;color:var(--ink-2);cursor:pointer;line-height:1}
@@ -679,23 +692,53 @@
   }
 
   /* ---------- 快速选规格 ---------- */
-  var qPid=null;
+  var qPid=null, qEditKey=null;
   function inCartQty(pid){
     return state.cart.reduce(function(s,x){ return s + (x.pid===pid?x.qty:0); },0);
   }
-  function openQuick(pid){
-    qPid=pid; renderQuick();
+  function openQuick(pid, editKey){
+    qPid=pid; qEditKey=editKey||null;
+    if(qEditKey){
+      var it=state.cart.filter(function(x){ return x.key===qEditKey; })[0];
+      if(it){
+        if(it.milk) state.milkSel[pid]=it.milk;
+        if(it.sugar) state.sugar[pid]=it.sugar;
+        if(it.ice) state.ice[pid]=it.ice;
+        state.qty[pid]=it.qty;
+      }
+    }
+    renderQuick();
     document.getElementById("qmask").classList.add("on");
     var qs=document.getElementById("qsheet"); qs.classList.add("on");
     renderCartBar();
   }
+  function saveQuickEdit(pid){
+    var p=byId(db.products,pid); if(!p) return;
+    var cf=detailCfg(p), nk=itemKey(p.id,cf.milkId,cf.sugar,cf.ice);
+    var idx=-1;
+    state.cart.forEach(function(x,i){ if(x.key===qEditKey) idx=i; });
+    var item={key:nk,pid:p.id,name:p.name,price:Number(p.price)||0,kcal:r1(productKcal(p,cf.milkId).total),
+      milk:cf.milkId,sugar:cf.sugar,ice:cf.ice,qty:cf.qty};
+    var dup=null;
+    state.cart.forEach(function(x,i){ if(x.key===nk && i!==idx) dup=x; });
+    if(dup){ dup.qty+=cf.qty; if(idx>=0) state.cart.splice(idx,1); }
+    else if(idx>=0){ state.cart[idx]=item; }
+    saveCart(); state.qty[p.id]=1;
+    toast("已更新规格");
+    qEditKey=null;
+    closeQuick();
+    openSheet();
+  }
+
   function closeQuick(){
     qPid=null;
+    var wasEdit=!!qEditKey; qEditKey=null;
     document.getElementById("qmask").classList.remove("on");
     var qs=document.getElementById("qsheet");
     qs.classList.remove("on");
     setTimeout(function(){ if(!qPid) qs.innerHTML=""; },280);
     renderCartBar();
+    if(wasEdit) setTimeout(function(){ openSheet(); },300);
   }
   function renderQuick(){
     var p=byId(db.products,qPid); if(!p) return;
@@ -713,15 +756,21 @@
     }
     var sheet=document.getElementById("qsheet");
     sheet.innerHTML=
-      '<div class="qh"><div><b>'+esc(p.name)+'</b><div class="kk">'+nz(c.total)+' 大卡 · '+esc(tier(c.total,p.big))+'</div></div>'+
-        '<button id="qclose" aria-label="关闭">✕</button></div>'+
+      '<div class="qtop">'+
+        '<div class="qt">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'<span>'+esc((p.name||'·').charAt(0))+'</span>')+'</div>'+
+        '<div class="qmeta"><b>'+esc(p.name)+'</b>'+
+          '<div class="kk">'+nz(c.total)+' 大卡 · '+esc(tier(c.total,p.big))+'</div>'+
+          '<div class="qs">'+esc([p.big,p.size||"",(p.items||[]).length+' 项配料'].filter(Boolean).join(' · '))+'</div>'+
+        '</div>'+
+        '<button id="qclose" aria-label="关闭">✕</button>'+
+      '</div>'+
       milk+
       '<div class="specrow"><div class="sl"><b>糖度</b><span>只记录做法</span></div><div class="specopts">'+
         ["标准糖","少糖","无糖"].map(function(v){ return '<button data-qsugar="'+v+'" class="'+(cf.sugar===v?"on":"")+'">'+v+'</button>'; }).join("")+'</div></div>'+
       '<div class="specrow"><div class="sl"><b>冰量</b><span>只记录做法</span></div><div class="specopts">'+
         ["热","正常冰","少冰","去冰"].map(function(v){ return '<button data-qice="'+v+'" class="'+(cf.ice===v?"on":"")+'">'+v+'</button>'; }).join("")+'</div></div>'+
       '<div class="qbar2"><div class="qq"><button id="qminus">−</button><b>'+cf.qty+'</b><button id="qplus">+</button></div>'+
-        '<button class="go" id="qaddcart">'+(price?("加入购物车 · ¥"+money(price*cf.qty)):"加入购物车")+'</button></div>';
+        '<button class="go" id="qaddcart">'+((qEditKey?"保存修改 · ¥":(price?"加入购物车 · ¥":"")))+(price?money(price*cf.qty):"")+'</button></div>';
     document.getElementById("qclose").addEventListener("click",closeQuick);
     Array.prototype.forEach.call(sheet.querySelectorAll("[data-qmilk]"),function(b){
       b.addEventListener("click",function(){ state.milkSel[p.id]=b.dataset.qmilk; renderQuick(); });
@@ -739,7 +788,9 @@
       state.qty[p.id]=Math.min(20,(state.qty[p.id]||1)+1); renderQuick();
     });
     document.getElementById("qaddcart").addEventListener("click",function(){
-      var pid2=p.id; closeQuick(); addToCart(byId(db.products,pid2));
+      var pid2=p.id;
+      if(qEditKey){ saveQuickEdit(pid2); return; }
+      closeQuick(); addToCart(byId(db.products,pid2));
     });
   }
 
@@ -959,8 +1010,9 @@
     if(!m||!s) return;
     m.classList.add("on"); s.classList.add("on");
     var rows=state.cart.map(function(x,i){
-      return '<div class="ckerow"><div><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
+      return '<div class="ckerow"><div style="flex:1"><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
         '<div class="s">'+esc(specLine(x))+'</div></div>'+
+        '<button class="cked" data-edit="'+esc(x.key)+'">改规格</button>'+
         '<div class="p">'+(x.price?("¥"+money(x.price*x.qty)):"—")+'</div></div>';
     }).join("");
     s.innerHTML =
@@ -971,6 +1023,15 @@
         '<div class="r"><b>'+(cartTotal()?money(cartTotal()):"—")+'</b><em>元</em></div></div>'+
       '<button class="cksub" id="cksub">提交订单</button>'+
       '<div class="specnote" style="margin-top:12px">提交后生成取餐号，制作状态在「我的」里随时可查。本 Demo 不含在线支付，到店付款。</div>';
+    Array.prototype.forEach.call(s.querySelectorAll("[data-edit]"),function(b){
+      b.addEventListener("click",function(){
+        var key=b.dataset.edit;
+        var it=state.cart.filter(function(x){ return x.key===key; })[0];
+        if(!it) return;
+        closeSheet();
+        setTimeout(function(){ openQuick(it.pid, key); },60);
+      });
+    });
     document.getElementById("shclose").addEventListener("click",closeSheet);
     m.addEventListener("click",closeSheet);
     document.getElementById("cksub").addEventListener("click",submitOrder);
