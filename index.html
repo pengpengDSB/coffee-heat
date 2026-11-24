@@ -278,6 +278,8 @@
     background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;gap:10px}
   .cartbar .l{font-size:10.5px;letter-spacing:.06em;display:flex;align-items:baseline;gap:9px}
   .cartbar .l b{font-family:Archivo,sans-serif;font-size:15px;font-weight:400}
+  .cartbar{cursor:pointer}
+  .cartbar .l::after{content:"›";font-size:12px;color:rgba(255,255,255,.42);margin-left:3px}
   .cartbar .go{border:1px solid rgba(255,255,255,.45);background:none;color:#fff;font:inherit;font-size:11px;
     letter-spacing:.12em;padding:9px 15px;cursor:pointer;white-space:nowrap}
 
@@ -992,9 +994,9 @@
     var el=document.getElementById("cartbar");
     if(!el) return;
     if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.sheet || qPid){ el.innerHTML=""; return; }
-    el.innerHTML='<div class="cartbar"><div class="l"><b>'+cartCount()+'</b>件 · ¥'+money(cartTotal())+' · '+r1(cartKcal())+' 大卡</div>'+
+    el.innerHTML='<div class="cartbar" id="cbar"><div class="l"><b>'+cartCount()+'</b>件 · ¥'+money(cartTotal())+' · '+r1(cartKcal())+' 大卡</div>'+
       '<button class="go" id="checkout">去结算</button></div>';
-    document.getElementById("checkout").addEventListener("click",function(){ openSheet(); });
+    document.getElementById("cbar").addEventListener("click",function(){ openSheet(); });
   }
 
   function openSheet(){ state.sheet=true; renderSheet(); }
