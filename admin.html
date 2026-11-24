@@ -481,6 +481,12 @@
     align-items:center;justify-content:center}
   .set-row.on .set-pick{border-color:var(--ink)}
   .set-row.on .set-pick::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--ink)}
+  .set-pass{display:flex;align-items:center;gap:10px;margin-top:24px;max-width:1040px;flex-wrap:wrap}
+  .set-pass label{font-size:9.5px;letter-spacing:.16em;color:var(--ink-faint)}
+  .set-pass input{width:260px;border:none;border-bottom:1.5px solid var(--line-strong);background:none;font:inherit;
+    font-size:12px;padding:6px 0 8px;color:var(--ink);outline:none}
+  .set-pass input:focus{border-bottom-color:var(--ink)}
+  .set-pass .hint{font-size:10px;color:var(--ink-faint);letter-spacing:.04em}
   .set-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;max-width:1040px}
   .set-note{font-size:10.5px;color:var(--ink-faint);line-height:1.95;margin-top:20px;padding-top:16px;
     border-top:1px dashed var(--line-strong);max-width:1040px}
@@ -644,21 +650,66 @@
       return (j && /^[ABC]$/.test(j.heroStyle)) ? j : null;
     }catch(e){ return null; }
   }
-  async function loadSiteSetting(){
-    try{
-      var r = await fetch(settingPublicUrl() + "?t=" + Date.now(), {cache:"no-store"});
-      if(!r.ok) return null;
-      var j = await r.json();
-      if(!j || !/^[ABC]$/.test(j.heroStyle)) return null;
-      try{ localStorage.setItem(SITE_KEY, JSON.stringify(j)); }catch(e){}
-      return j;
-    }catch(e){ return null; }
+  function supaHeaders(){
+    return {apikey:SUPA_CONFIG.anonKey, Authorization:"Bearer "+SUPA_CONFIG.anonKey};
   }
-  async function publishSiteSetting(k){
-    var body = JSON.stringify({heroStyle:k, updated:new Date().toISOString(), by:"admin"});
-    try{ localStorage.setItem(SITE_KEY, body); }catch(e){}
+  async function loadSiteSetting(){
+    /* 1) settings 表（正式做法） */
     try{
-      var r = await fetch(settingUploadUrl(), {
+      var r = await fetch(SUPA_CONFIG.url + "/rest/v1/settings?select=value,updated_at&key=eq.site",
+        {headers:supaHeaders(), cache:"no-store"});
+      if(r.ok){
+        var rows = await r.json();
+        var row = rows && rows[0];
+        var hv = row && row.value && row.value.heroStyle;
+        if(hv && /^[ABC]$/.test(hv)){
+          var jt = {heroStyle:hv, updated:row.updated_at, source:"table"};
+          try{ localStorage.setItem(SITE_KEY, JSON.stringify(jt)); }catch(e){}
+          return jt;
+        }
+      }
+    }catch(e){}
+    /* 2) 旧存储桶 JSON 兜底（settings 表还没建时仍可用） */
+    try{
+      var r2 = await fetch(settingPublicUrl() + "?t=" + Date.now(), {cache:"no-store"});
+      if(r2.ok){
+        var j = await r2.json();
+        if(j && /^[ABC]$/.test(j.heroStyle)){
+          j.source = "bucket";
+          try{ localStorage.setItem(SITE_KEY, JSON.stringify(j)); }catch(e){}
+          return j;
+        }
+      }
+    }catch(e){}
+    return null;
+  }
+  function adminPass(){
+    try{ return sessionStorage.getItem("cafe_admin_pass") || ""; }catch(e){ return ""; }
+  }
+  function setAdminPass(v){ try{ if(v) sessionStorage.setItem("cafe_admin_pass", v); }catch(e){} }
+  function clearAdminPass(){ try{ sessionStorage.removeItem("cafe_admin_pass"); }catch(e){} }
+
+  async function publishSiteSetting(k){
+    var body = JSON.stringify({heroStyle:k, updated:new Date().toISOString()});
+    try{ localStorage.setItem(SITE_KEY, body); }catch(e){}
+    /* 1) settings 表：口令校验写入 */
+    var pw = adminPass();
+    if(pw){
+      try{
+        var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/set_site_setting", {
+          method:"POST",
+          headers: Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+          body: JSON.stringify({pass:pw, val:{heroStyle:k}})
+        });
+        if(r.ok) return {ok:true, via:"table"};
+        if(r.status === 401 || r.status === 403 || r.status === 400){
+          return {ok:false, via:"table", reason:"pass"};
+        }
+      }catch(e){ console.error("rpc set_site_setting failed", e); }
+    }
+    /* 2) 回退：存储桶 JSON（settings 表未建时） */
+    try{
+      var r2 = await fetch(settingUploadUrl(), {
         method:"POST",
         headers:{
           "apikey":SUPA_CONFIG.anonKey,
@@ -668,8 +719,8 @@
         },
         body:body
       });
-      return r.ok;
-    }catch(e){ console.error("publish setting failed", e); return false; }
+      return {ok:r2.ok, via:"bucket"};
+    }catch(e){ console.error("publish setting failed", e); return {ok:false, via:"none"}; }
   }
 
   /* 环境开关：null=自动（本地 file:///localhost 走本机，线上域名走云端）；
@@ -877,6 +928,7 @@
       state.heroStyle = siteSet.heroStyle;
       try{ localStorage.setItem("heat_hero_style", siteSet.heroStyle); }catch(e){}
       state.siteUpdated = siteSet.updated || "";
+      state.siteSource = siteSet.source || "";
     }else{
       var cache = cachedSiteSetting();
       if(cache){ state.siteUpdated = cache.updated || ""; }
@@ -1188,7 +1240,7 @@
           return;
         }
         btn.disabled=true; btn.textContent="正在进入…";
-        setAuth(u);
+        setAuth(u); setAdminPass(pw);
         setTimeout(function(){
           state.view="admin"; state.selProduct=null;
           render(); toast("已登录，欢迎回来");
@@ -1321,7 +1373,9 @@
     var now=presets().filter(function(t){return t.k===cur;})[0];
     var html='<div class="set-head"><h2>前台呈现 · 首页与登录页</h2>'+
       '<p>首页 hero 与商家登录页成组搭配：换一组，前台首页和登录页一起换。设置写进 Supabase 存储，所有访客刷新后看到同一版。</p>'+
-      (state.siteUpdated? '<div class="set-sync">线上版本 · 更新于 '+esc(fmtTime(state.siteUpdated))+'</div>'
+      (state.siteUpdated? '<div class="set-sync">'+
+          (state.siteSource==="table" ? "settings 表" : "存储桶 JSON（旧）")+
+          ' · 更新于 '+esc(fmtTime(state.siteUpdated))+'</div>'
                        : '<div class="set-sync">尚未读到线上版本，当前显示本机缓存</div>')+
       '</div>'+
       '<div class="set-list">';
@@ -1335,18 +1389,31 @@
       '</div>';
     });
     html+='</div>'+
+      (adminPass()? '' :
+        '<div class="set-pass"><label>写入口令</label>'+
+        '<input id="setPass" type="password" placeholder="输入店主口令后，切换才会写进线上">'+
+        '<button class="ghost-btn" id="setPassOk">记住口令</button>'+
+        '<span class="hint">会话过期或换标签页后需要重输一次</span></div>')+
       '<div class="set-actions">'+
         '<button class="ghost-btn" id="previewLanding">预览首页</button>'+
         '<button class="ghost-btn" id="previewLogin">预览登录页</button>'+
         '<button class="ghost-btn" id="copyLoginLink">复制登录链接</button>'+
       '</div>'+
       '<div class="set-note">当前：首页 '+cur+' · '+now.nm+' → 登录页 '+now.li+'。<br>'+
-        '切换后会把 heroStyle 写进 Supabase Storage 的 _settings/site.json，访客打开页面时读取该文件，因此「设置一次、所有访客一致」。<br>'+
-        '边界：这个 JSON 用的是公开 anon key 可写，懂技术的人可以直接覆盖；它管的是前台的呈现，不含任何私密数据。</div>';
+        '切换会调用 public.set_site_setting(pass, val) 把 heroStyle 写进 public.settings 表：口令对才写得进去，读取对所有人开放，所以「设置一次、所有访客一致」。<br>'+
+        '若 settings 表还没建（SQL 没跑过），会自动退回旧的存储桶 JSON，那种模式下谁都能改。</div>';
     document.getElementById("adminBody").innerHTML=html;
 
     document.querySelectorAll(".set-row[data-set]").forEach(function(r){
       r.addEventListener("click",function(){ setHeroStyle(r.dataset.set); });
+    });
+    var passOk=document.getElementById("setPassOk");
+    if(passOk) passOk.addEventListener("click",function(){
+      var el=document.getElementById("setPass");
+      var pw=(el && el.value || "").trim();
+      if(!pw){ toast("先输入口令"); return; }
+      if(authToken(AUTH_USER,pw)!==AUTH_HASH){ toast("口令不对"); return; }
+      setAdminPass(pw); toast("口令已记住，可以切换了"); render();
     });
     document.getElementById("previewLanding").addEventListener("click",function(){ goView("landing"); });
     document.getElementById("previewLogin").addEventListener("click",function(){ openLogin(); });
@@ -2071,11 +2138,16 @@
     render();
     if(isLocalEnv()){ toast("已切到 "+v+" 组（本机预览，未写线上）"); return; }
     toast("正在同步到线上…");
-    var ok=await publishSiteSetting(v);
-    if(ok){
+    var res=await publishSiteSetting(v);
+    if(res.ok){
       state.siteUpdated=new Date().toISOString();
+      state.siteSource=(res.via==="table")?"table":"bucket";
       render();
       toast("已上线："+v+" 组，访客刷新即见");
+    }else if(res.reason==="pass"){
+      toast("口令不对，线上没改");
+    }else if(!adminPass()){
+      toast("会话里没有口令，请重新登录后再改");
     }else{
       toast("同步失败：只在本机生效");
     }
@@ -2092,7 +2164,7 @@
       ok:"退出", danger:true
     }).then(function(ok){
       if(!ok) return;
-      clearAuth();
+      clearAuth(); clearAdminPass();
       if(state.view==="admin"||state.view==="login") state.view="landing";
       render(); toast("已退出登录");
     });
