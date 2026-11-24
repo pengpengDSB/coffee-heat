@@ -31,10 +31,10 @@
 
   /* ===== 顶栏 ===== */
   .topbar{position:sticky;top:0;z-index:20;background:var(--espresso);border-bottom:1px solid var(--espresso-2)}
-  .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+  .topbar-in{display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:13px 0}
   .brand{font-weight:500;color:var(--cream);font-size:13px;letter-spacing:.22em;display:flex;align-items:center;gap:10px}
   .brand::before{content:"";width:3px;height:15px;background:#8C6A4E;display:inline-block;flex:none}
-  .view-switch{display:flex;gap:20px;background:none;padding:0}
+  .view-switch{display:flex;gap:20px;background:none;padding:0;margin-left:auto}
   .view-switch button{
     border:none;background:none;color:rgba(244,241,233,.55);font:inherit;font-size:11.5px;letter-spacing:.14em;
     padding:6px 0 5px;cursor:pointer;white-space:nowrap;border-bottom:1px solid transparent;
@@ -389,7 +389,8 @@
   @media(max-width:520px){
     .wrap{padding:0 16px}
     .topbar-in{flex-direction:column;align-items:flex-start;gap:6px;padding:12px 0 0}
-    .view-switch{width:100%;gap:20px;padding-bottom:11px}
+    .view-switch{width:100%;gap:20px;padding-bottom:11px;margin-left:0}
+    .acct{display:none}
     .brand{font-size:11px;white-space:nowrap;letter-spacing:.08em}
     .view-switch button{padding:5px 0 4px;font-size:10.5px;letter-spacing:.06em}
     .admin-tabs{flex-wrap:wrap;gap:6px}
@@ -422,8 +423,8 @@
 
 
   /* ===== 登录 / 鉴权 ===== */
-  .acct{display:none;align-items:center;gap:12px;margin-left:6px}
-  .acct.on{display:flex}
+  .acct{display:flex;align-items:center;gap:12px;margin-left:20px;min-width:104px;justify-content:flex-end;visibility:hidden}
+  .acct.on{visibility:visible}
   .acct .who{font-size:9.5px;letter-spacing:.14em;color:var(--ink-soft);font-family:"Archivo",sans-serif}
   .acct .out{border:none;background:none;font:inherit;font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);
     cursor:pointer;padding:0 0 2px;border-bottom:1px solid var(--line-2)}
@@ -452,12 +453,7 @@
     letter-spacing:.16em;padding:14px 0;cursor:pointer;margin-top:10px;transition:opacity .18s}
   .lgbtn:disabled{opacity:.45;cursor:default}
   .lgerr{font-size:10.5px;color:#9C4A38;letter-spacing:.04em;margin-top:12px;min-height:15px}
-  .lgdemo{margin-top:18px;padding:11px 12px;border:1px dashed var(--line-strong);background:var(--paper-2);
-    font-size:10px;letter-spacing:.03em;color:var(--ink-soft);line-height:1.8;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .lgdemo .dot{font-family:"Archivo",sans-serif;color:var(--gold);letter-spacing:.14em;font-size:9px}
-  .lgdemo b{font-family:"Archivo",sans-serif;font-weight:400;color:var(--ink);letter-spacing:.06em}
-  .lgdemo .fill{margin-left:auto;border:none;background:none;font:inherit;font-size:10px;letter-spacing:.1em;
-    color:var(--gold);cursor:pointer;border-bottom:1px solid var(--gold);padding:0 0 2px}
+
   .lgnote{font-size:10px;color:var(--ink-faint);line-height:1.95;margin-top:24px;letter-spacing:.02em}
   .lgback{border:none;background:none;font:inherit;font-size:10px;letter-spacing:.14em;color:var(--ink-soft);cursor:pointer;
     padding:0 0 3px;margin-top:20px;border-bottom:1px solid var(--line-2)}
@@ -525,7 +521,6 @@
     .lg3-grid{grid-template-columns:1fr;gap:32px}
     .lg3-side h1{font-size:26px}
     .lg3-ghost{display:none}
-    .lgdemo .fill{margin-left:0}
     .set-row{grid-template-columns:88px minmax(0,1fr);gap:14px;padding:14px 0;position:relative}
     .set-shot{width:88px;height:60px}
     .set-main{padding-right:26px}
@@ -996,7 +991,7 @@
   }
 
   /* ================= 商家登录 ================= */
-  var AUTH_KEY="cafe_admin_auth_v1", AUTH_HOURS=12, AUTH_USER="merchant", AUTH_HASH="68522a13";
+  var AUTH_KEY="cafe_admin_auth_v1", AUTH_HOURS=12, AUTH_USER="merchant", AUTH_HASH="ccf8f25e";
   var LOGIN_OF={A:"2",B:"1",C:"3"};
   function heroPick(){ return (state&&state.heroStyle)||"A"; }
   function loginVarOf(){
@@ -1054,8 +1049,6 @@
         '<input id="lgPass" type="password" placeholder="登录密码"></div>'+
       '<div class="lgerr" id="lgErr"></div>'+
       '<button class="lgbtn" id="lgBtn" type="submit">登录商家后台</button>'+
-      '<div class="lgdemo"><span class="dot">DEMO</span>账号 <b>merchant</b> 密码 <b>cafe-heat-2026</b>'+
-        '<button type="button" class="fill" id="lgFill">一键填入</button></div>'+
     '</form>'+
     '<div class="lgnote">这是演示环境：门禁只挡界面，配方数据仍托管在云端，请勿放入真实商业信息。<br>登录状态保留 12 小时，也可随时在右上角登出。</div>'+
     '<button class="lgback" id="lgBack">← 返回首页</button>';
@@ -1117,13 +1110,6 @@
     var f=document.getElementById("lgform");
     var back=document.getElementById("lgBack");
     if(back) back.addEventListener("click",function(){ state.view="landing"; render(); });
-    var fill=document.getElementById("lgFill");
-    if(fill) fill.addEventListener("click",function(){
-      document.getElementById("lgUser").value="merchant";
-      document.getElementById("lgPass").value="cafe-heat-2026";
-      document.getElementById("lgErr").textContent="";
-      document.getElementById("lgPass").focus();
-    });
     if(f){
       f.querySelectorAll(".lgfield input").forEach(function(i){
         i.addEventListener("focus",function(){ i.parentNode.classList.add("on"); });
@@ -1137,7 +1123,7 @@
         if(!u||!pw){ err.textContent="请输入账号与密码"; return; }
         if(authToken(u,pw)!==AUTH_HASH){
           err.textContent="账号或密码不正确";
-          document.getElementById("lgPass").select();
+          var pi=document.getElementById("lgPass"); if(pi) pi.focus();
           return;
         }
         btn.disabled=true; btn.textContent="正在进入…";
