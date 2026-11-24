@@ -246,8 +246,15 @@
   .qtop .qmeta .kk{font-size:10px;color:var(--brown);letter-spacing:.05em;margin-top:7px;font-family:Archivo,sans-serif}
   .qtop .qmeta .qs{font-size:9px;color:var(--gray);letter-spacing:.06em;margin-top:5px}
   .cked{border:none;background:none;font:inherit;font-size:9.5px;color:var(--gray);letter-spacing:.06em;
-    cursor:pointer;padding:0 0 0 12px;text-decoration:underline;text-underline-offset:3px}
-  .ckerow{display:flex;gap:8px;align-items:flex-start}
+    cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+  .cksrow{display:block;padding:12px 0;border-bottom:1px solid var(--line-2)}
+  .cksrow .n{font-size:11.5px;letter-spacing:.04em}
+  .cksrow .s{font-size:9.5px;color:var(--gray-2);letter-spacing:.02em}
+  .cksrow .p{font-family:Archivo,sans-serif;font-size:12.5px;white-space:nowrap}
+  .ctop,.cbottom{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .cbottom{margin-top:5px}
+  .cacts{display:flex;align-items:baseline;gap:14px;flex:none}
+  .cked.del{color:#A9A498}
   .qh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
   .qh b{font-size:13.5px;font-weight:500;letter-spacing:.06em}
   .qh .kk{font-size:9.5px;color:var(--brown);letter-spacing:.06em;margin-top:4px}
@@ -1012,10 +1019,12 @@
     if(!m||!s) return;
     m.classList.add("on"); s.classList.add("on");
     var rows=state.cart.map(function(x,i){
-      return '<div class="ckerow"><div style="flex:1"><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
-        '<div class="s">'+esc(specLine(x))+'</div></div>'+
-        '<button class="cked" data-edit="'+esc(x.key)+'">改规格</button>'+
-        '<div class="p">'+(x.price?("¥"+money(x.price*x.qty)):"—")+'</div></div>';
+      return '<div class="cksrow">'+
+        '<div class="ctop"><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
+        '<div class="p">'+(x.price?("¥"+money(x.price*x.qty)):"—")+'</div></div>'+
+        '<div class="cbottom"><div class="s">'+esc(specLine(x))+'</div>'+
+        '<div class="cacts"><button class="cked" data-edit="'+esc(x.key)+'">改规格</button>'+
+        '<button class="cked del" data-del="'+esc(x.key)+'">删除</button></div></div></div>';
     }).join("");
     s.innerHTML =
       '<div class="sh"><b>确认订单</b><button id="shclose">关闭</button></div>'+
@@ -1034,8 +1043,20 @@
         setTimeout(function(){ openQuick(it.pid, key); },60);
       });
     });
+    Array.prototype.forEach.call(s.querySelectorAll("[data-del]"),function(b){
+      b.addEventListener("click",function(e){
+        e.stopPropagation();
+        var key=b.dataset.del;
+        var i=-1, name="";
+        state.cart.forEach(function(x,k){ if(x.key===key){ i=k; name=x.name; } });
+        if(i<0) return;
+        state.cart.splice(i,1); saveCart();
+        if(!state.cart.length){ closeSheet(); toast("购物车已清空"); return; }
+        renderSheet(); renderCartBar(); toast("已移除 "+name);
+      });
+    });
     document.getElementById("shclose").addEventListener("click",closeSheet);
-    m.addEventListener("click",closeSheet);
+    m.onclick=closeSheet;
     document.getElementById("cksub").addEventListener("click",submitOrder);
   }
 
