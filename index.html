@@ -81,7 +81,7 @@
   .band .bhd{display:flex;justify-content:space-between;align-items:baseline}
   .band .bhd h1{font-size:12.5px;font-weight:500;letter-spacing:.22em}
   .band .bhd span{font-size:9.5px;color:rgba(244,241,233,.55);letter-spacing:.14em}
-  .tabs{display:flex;gap:22px;margin-top:18px}
+  .tabs{display:flex;gap:16px;margin-top:18px}
   .tabs button{border:none;background:none;font:inherit;font-size:11.5px;color:rgba(244,241,233,.6);
     cursor:pointer;padding:0 0 6px;letter-spacing:.08em}
   .tabs button.on{color:#F4F1E9;font-weight:500;border-bottom:1.5px solid #F4F1E9}
@@ -690,14 +690,14 @@
   function renderMenu(){
     var list=db.products.filter(function(p){
       var q=state.q.trim().toLowerCase();
-      return p.big===state.cat && (!q||p.name.toLowerCase().indexOf(q)>=0)
+      return (state.cat==="全部" || p.big===state.cat) && (!q||p.name.toLowerCase().indexOf(q)>=0)
         && inHeat(productKcal(p,defaultMilk(p)).total,state.heat);
     }).sort(function(a,b){ return productKcal(a,defaultMilk(a)).total-productKcal(b,defaultMilk(b)).total; });
 
     app.innerHTML =
       '<div class="band">' +
         '<div class="bhd"><h1>点单</h1><span>'+list.length+' / '+db.products.length+' 款</span></div>' +
-        '<div class="tabs">'+BIG_CATS.map(function(c){
+        '<div class="tabs">'+["全部"].concat(BIG_CATS).map(function(c){
           return '<button data-cat="'+c+'" class="'+(state.cat===c?"on":"")+'">'+c+'</button>'; }).join("")+'</div>' +
         '<div class="heatrow">'+[["全部","热量不限"],["低","＜150"],["中","150–225"],["高","＞225"]].map(function(f,i){
           return (i?'<span class="sep">/</span>':"")+'<button data-heat="'+f[0]+'" class="'+(state.heat===f[0]?"on":"")+'">'+f[1]+'</button>';
@@ -1037,8 +1037,8 @@
         '</div>' +
         '<div class="melist">' +
           '<button class="merow" data-me="about"><div class="t"><b>热量怎么算</b><span>单位热量 × 用量，逐项相加</span></div><div class="go">'+IC.go+'</div></button>' +
-          '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>低卡 / 中卡 / 高卡，三档参考</span></div><div class="go">'+IC.go+'</div></button>' +
-          '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>咖啡类可切换牛奶，热量随之更新</span></div><div class="go">'+IC.go+'</div></button>' +
+          '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>按大分类各有一套阈值</span></div><div class="go">'+IC.go+'</div></button>' +
+          '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>风味拿铁 / 轻因拿铁可换，美式家族 / 气泡特调固定</span></div><div class="go">'+IC.go+'</div></button>' +
           ordBlock +
         '</div>' +
         '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>下单到店自取，本 Demo 不含在线支付。</div>' +
