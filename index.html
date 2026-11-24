@@ -154,6 +154,30 @@
   .totrow .r b{font-size:34px;font-weight:300;letter-spacing:-.01em;font-family:Archivo,sans-serif}
   .totrow .r em{font-style:normal;font-size:9.5px;color:var(--gray);letter-spacing:.1em;margin-left:4px}
 
+  /* ---------- 订单 ---------- */
+  .ogo{border:1px solid var(--ink);background:var(--ink);color:#fff;font:inherit;font-size:11px;letter-spacing:.12em;padding:11px 18px;cursor:pointer}
+  .ohead{display:flex;justify-content:space-between;align-items:baseline;padding:26px 0 0}
+  .ohead h1{font-size:16px;font-weight:500;letter-spacing:.1em;margin:0}
+  .ohead .cnt{font-size:9.5px;color:var(--gray);letter-spacing:.1em}
+  .ogroup{margin-top:26px}
+  .ogroup .gl{display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:1px solid var(--ink);padding-bottom:8px}
+  .ogroup .gl b{font-size:11px;font-weight:500;letter-spacing:.12em}
+  .ogroup .gl span{font-size:9px;color:var(--gray);letter-spacing:.1em}
+  .oitem{display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--line-2);
+    padding:16px 0 15px;text-align:left;font:inherit;cursor:pointer}
+  .oitem:active{background:var(--paper-2,#F4F3EF)}
+  .orow1{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .orow1 .no{font-family:Archivo,sans-serif;font-size:16px;letter-spacing:.05em;color:var(--ink)}
+  .orow1 .st{font-size:9.5px;letter-spacing:.1em;color:var(--gray)}
+  .orow1 .st.hot{color:var(--brown)}
+  .orow2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px}
+  .orow2 .m{font-size:9.5px;color:var(--gray);letter-spacing:.03em}
+  .oprog{display:flex;gap:4px;margin-top:11px}
+  .oprog i{display:block;height:2px;flex:1;background:var(--line);transition:background .3s}
+  .oprog i.on{background:var(--ink)}
+  .oprog i.now{background:var(--brown)}
+
   /* ---------- 我的 ---------- */
   .mehead{padding:44px 0 0}
   .mehead h1{font-size:27px;font-weight:300;letter-spacing:.05em;line-height:1.5}
@@ -474,14 +498,16 @@
 
   /* ---------- 视图 ---------- */
   function renderTab(){
-    var t=[["home","首页"],["menu","点单"],["me","我的"]];
+    var t=[["home","首页"],["menu","点单"],["orders","订单"],["me","我的"]];
     document.getElementById("tabbar").innerHTML=t.map(function(x){
       return '<button class="tb '+(state.tab===x[0]&&!state.selProduct?"on":"")+'" data-tab="'+x[0]+'">'+x[1]+'</button>';
     }).join("");
     Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
       b.addEventListener("click",function(){
         state.selProduct=null; state.mePage=null; state.viewOrder=null; state.tab=b.dataset.tab; render();
-        if(b.dataset.tab==="me"){ loadOrders().then(function(){ if(state.tab==="me"&&!state.mePage) render(); }); }
+        if(b.dataset.tab==="me"||b.dataset.tab==="orders"){
+          loadOrders().then(function(){ if((state.tab==="me"&&!state.mePage)||state.tab==="orders") render(); });
+        }
       });
     });
   }
@@ -929,22 +955,69 @@
     toastTimer=setTimeout(function(){ el.style.opacity="0"; },1600);
   }
 
+  function renderOrders(){
+    var list=(state.orders||[]);
+    var live=list.filter(function(o){ return o.status!=="已取餐"; });
+    var done=list.filter(function(o){ return o.status==="已取餐"; });
+    function row(o){
+      var n=(o.items||[]).reduce(function(a,x){return a+(x.qty||1);},0);
+      var steps=["待制作","制作中","已取餐"], idx=steps.indexOf(o.status||"待制作"); if(idx<0) idx=0;
+      var prog=[0,1,2].map(function(i){
+        var c = idx>=2 ? "on" : (i<idx?"on":(i===idx?"now":""));
+        return '<i class="'+c+'"></i>';
+      }).join("");
+      return '<button class="oitem" data-ord="'+esc(o.order_no)+'">'+
+        '<div class="orow1"><span class="no">'+esc(o.order_no||"—")+'</span>'+
+          '<span class="st'+(o.status==="已取餐"?"":" hot")+'">'+esc(o.status||"待制作")+'</span></div>'+
+        '<div class="orow2"><span class="m">'+n+' 件 · '+(o.total!=null&&o.total!==""?("¥"+money(o.total)):"—")+
+          ' · '+r1(Number(o.total_kcal)||0)+' 大卡</span>'+
+          '<span class="m">'+esc(o.created_at?String(o.created_at).replace("T"," ").slice(5,16):"")+'</span></div>'+
+        '<div class="oprog">'+prog+'</div>'+
+      '</button>';
+    }
+    var body='';
+    if(!list.length){
+      body='<div class="specrow" style="margin-top:26px"><div class="sl"><b>还没有订单</b><span>—</span></div>'+
+        '<div class="specnote">在点单页选一杯、加进购物车就能下单，取餐号会记在这台设备上。</div>'+
+        '<div style="margin-top:16px"><button class="ogo" id="ogoMenu">去点单</button></div></div>';
+    }else{
+      if(live.length) body+='<div class="ogroup"><div class="gl"><b>进行中</b><span>'+live.length+' 单</span></div>'+live.map(row).join("")+'</div>';
+      if(done.length) body+='<div class="ogroup"><div class="gl"><b>已完成</b><span>'+done.length+' 单</span></div>'+done.map(row).join("")+'</div>';
+    }
+    app.innerHTML='<div class="page" style="padding-bottom:40px">'+
+      '<div class="ohead"><h1>订单</h1><span class="cnt">共 '+list.length+' 单</span></div>'+
+      body+
+      '<div class="foot" style="margin:26px 0 0">到店自取，柜台叫号。进行中的订单每 6 秒自动刷新状态。</div>'+
+    '</div>';
+    var gb=document.getElementById("ogoMenu");
+    if(gb) gb.addEventListener("click",function(){ state.tab="menu"; render(); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-ord]"),function(b){
+      b.addEventListener("click",function(){
+        var o=(state.orders||[]).filter(function(x){ return x.order_no===b.dataset.ord; })[0];
+        if(o){ state.viewOrder=o; render(); }
+      });
+    });
+    scheduleOrderPoll();
+  }
+
+  var ordPollTimer=null;
+  function scheduleOrderPoll(){
+    clearTimeout(ordPollTimer);
+    if(state.tab!=="orders"||state.viewOrder) return;
+    ordPollTimer=setTimeout(async function(){
+      if(state.tab!=="orders"||state.viewOrder) return;
+      await loadOrders();
+      if(state.tab==="orders"&&!state.viewOrder){ render(); }
+      scheduleOrderPoll();
+    },6000);
+  }
+
   function renderMe(){
     var milkCount=db.ings.filter(function(i){return /奶/.test(i.category);}).length;
-    var ordBlock = '';
-    if(state.orders && state.orders.length){
-      ordBlock = '<div class="specrow" style="margin-top:28px"><div class="sl"><b>我的订单</b><span>近 '+state.orders.length+' 单</span></div><div>'+
-        state.orders.slice(0,6).map(function(o){
-          var n=(o.items||[]).reduce(function(a,x){return a+(x.qty||1);},0);
-          return '<button class="morder" data-ord="'+esc(o.order_no)+'">'+
-            '<div class="r1"><span class="no">'+esc(o.order_no)+'</span><span class="st">'+esc(o.status||"待制作")+'</span></div>'+
-            '<div class="r2">'+n+' 件 · '+(o.total!=null&&o.total!==""?("¥"+money(o.total)):"—")+' · '+esc(o.created_at?String(o.created_at).replace("T"," ").slice(5,16):"")+'</div>'+
-            '</button>';
-        }).join("")+'</div></div>';
-    }else{
-      ordBlock = '<div class="specrow" style="margin-top:28px"><div class="sl"><b>我的订单</b><span>还没有下过单</span></div>'+
-        '<div class="specnote">在点单页选一杯，加进购物车就能下单，取餐号会自动记在这台设备上。</div></div>';
-    }
+    var liveCount=(state.orders||[]).filter(function(o){ return o.status!=="已取餐"; }).length;
+    var ordBlock = '<button class="merow" data-go="orders"><div class="t"><b>我的订单</b><span>'+
+        ((state.orders&&state.orders.length) ? ('共 '+state.orders.length+' 单' + (liveCount?(' · '+liveCount+' 单进行中'):'')) : '还没有下过单' )+
+        '</span></div><div class="go">'+IC.go+'</div></button>';
     app.innerHTML =
       '<div class="page">' +
         '<div class="top" style="padding:24px 0 0"><div>精品咖啡</div><div class="r">NANJING · 2026</div></div>' +
@@ -959,18 +1032,18 @@
           '<button class="merow" data-me="about"><div class="t"><b>热量怎么算</b><span>单位热量 × 用量，逐项相加</span></div><div class="go">'+IC.go+'</div></button>' +
           '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>低卡 / 中卡 / 高卡，三档参考</span></div><div class="go">'+IC.go+'</div></button>' +
           '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>咖啡类可切换牛奶，热量随之更新</span></div><div class="go">'+IC.go+'</div></button>' +
+          ordBlock +
         '</div>' +
-        ordBlock +
         '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>下单到店自取，本 Demo 不含在线支付。</div>' +
       '</div>';
     Array.prototype.forEach.call(app.querySelectorAll(".merow"),function(b){
       b.addEventListener("click",function(){ state.mePage=b.dataset.me; renderMeSub(); });
     });
-    Array.prototype.forEach.call(app.querySelectorAll("[data-ord]"),function(b){
+    Array.prototype.forEach.call(app.querySelectorAll("[data-go]"),function(b){
       b.addEventListener("click",function(){
-        var no=b.dataset.ord;
-        var o=(state.orders||[]).filter(function(x){ return x.order_no===no; })[0];
-        if(o){ state.viewOrder=o; render(); }
+        state.tab=b.dataset.go; state.mePage=null;
+        loadOrders().then(function(){ if(state.tab==="orders") render(); });
+        render();
       });
     });
   }
@@ -1000,7 +1073,7 @@
   function renderCartBar(){
     var el=document.getElementById("cartbar");
     if(!el) return;
-    if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.sheet || qPid){ el.innerHTML=""; return; }
+    if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.tab==="orders" || state.sheet || qPid){ el.innerHTML=""; return; }
     el.innerHTML='<div class="cartbar" id="cbar"><div class="l"><b>'+cartCount()+'</b>件 · ¥'+money(cartTotal())+' · '+r1(cartKcal())+' 大卡</div>'+
       '<button class="go" id="checkout">去结算</button></div>';
     document.getElementById("cbar").addEventListener("click",function(){ openSheet(); });
@@ -1033,7 +1106,7 @@
       '<div class="cktot"><div class="l">共 '+cartCount()+' 件 · 到店自取<br>整单热量 '+r1(cartKcal())+' 大卡</div>'+
         '<div class="r"><b>'+(cartTotal()?money(cartTotal()):"—")+'</b><em>元</em></div></div>'+
       '<button class="cksub" id="cksub">提交订单</button>'+
-      '<div class="specnote" style="margin-top:12px">提交后生成取餐号，制作状态在「我的」里随时可查。本 Demo 不含在线支付，到店付款。</div>';
+      '<div class="specnote" style="margin-top:12px">提交后生成取餐号，制作状态在「订单」页随时可查。本 Demo 不含在线支付，到店付款。</div>';
     Array.prototype.forEach.call(s.querySelectorAll("[data-edit]"),function(b){
       b.addEventListener("click",function(){
         var key=b.dataset.edit;
@@ -1154,15 +1227,15 @@
         '<div class="steps">'+stepHtml+'</div>'+
         '<div class="blk"><div class="lb"><b>本单清单</b><span>整单 '+(o.total_kcal||0)+' 大卡</span></div>'+items+
           (o.note?'<div class="specnote">备注：'+esc(o.note)+'</div>':"")+'</div>'+
-        '<div class="foot" style="margin:22px 0 0">到店自取，柜台叫号。状态每 6 秒自动刷新，也可以回「我的」里再查。</div>'+
+        '<div class="foot" style="margin:22px 0 0">到店自取，柜台叫号。状态每 6 秒自动刷新，也可以去「订单」页查看全部。</div>'+
         '<div style="display:flex;gap:10px;margin-top:22px">'+
           '<button style="flex:1;background:none;border:1px solid var(--line);padding:12px 0;font:inherit;font-size:11px;letter-spacing:.12em;cursor:pointer" id="ordback">再点一单</button>'+
-          '<button style="flex:1;background:var(--ink);color:#fff;border:1px solid var(--ink);padding:12px 0;font:inherit;font-size:11px;letter-spacing:.12em;cursor:pointer" id="ordme">我的订单</button>'+
+          '<button style="flex:1;background:var(--ink);color:#fff;border:1px solid var(--ink);padding:12px 0;font:inherit;font-size:11px;letter-spacing:.12em;cursor:pointer" id="ordme">查看订单</button>'+
         '</div>'+
       '</div>';
 
     document.getElementById("ordback").addEventListener("click",function(){ state.viewOrder=null; state.tab="menu"; render(); });
-    document.getElementById("ordme").addEventListener("click",function(){ state.viewOrder=null; state.tab="me"; state.mePage=null; render(); });
+    document.getElementById("ordme").addEventListener("click",function(){ state.viewOrder=null; state.tab="orders"; render(); loadOrders().then(function(){ if(state.tab==="orders"&&!state.viewOrder) render(); }); });
 
     if(supaReady() && o.status!=="已取餐") pollOrder(o.order_no);
   }
@@ -1184,6 +1257,7 @@
     if(state.viewOrder){ renderOrder(); return; }
     if(state.selProduct){ renderDetail(); return; }
     if(state.tab==="menu") renderMenu();
+    else if(state.tab==="orders") renderOrders();
     else if(state.tab==="me"){ state.mePage?renderMeSub():renderMe(); }
     else renderHome();
     renderCartBar();
@@ -1204,7 +1278,7 @@
     }
     if(db.products.length && !byId(db.products,state.selId)) state.selId=db.products[0].id;
     render();
-    loadOrders().then(function(){ if(state.tab==="me" && !state.mePage && !state.viewOrder) render(); });
+    loadOrders().then(function(){ if(((state.tab==="me"&&!state.mePage)||state.tab==="orders") && !state.viewOrder) render(); });
   }
   boot();
 })();
