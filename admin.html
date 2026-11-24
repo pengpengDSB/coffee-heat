@@ -461,6 +461,7 @@
   /* 后台 · 前台设置 */
   .set-head h2{font-size:13px;font-weight:500;letter-spacing:.1em;color:var(--ink);margin:0 0 8px}
   .set-head p{font-size:11.5px;color:var(--ink-soft);line-height:1.95;margin:0;max-width:64ch}
+  .set-sync{margin-top:12px;font-size:10.5px;letter-spacing:.06em;color:var(--gold);font-family:"Archivo",sans-serif}
   .set-list{margin-top:24px;border-top:1px solid var(--line-strong);max-width:1040px}
   .set-row{display:grid;grid-template-columns:132px minmax(0,1fr) 22px;gap:24px;align-items:center;
     padding:16px 12px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
@@ -628,6 +629,49 @@
     url: "https://pnucsuxkduvwpgklizmw.supabase.co",
     anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudWNzdXhrZHV2d3Bna2xpem13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0ODI0MjEsImV4cCI6MjExMTA1ODQyMX0.8H2mNE3KEXZmHdXpV92pJ80OeN_gKAGvVZ69l0zwBGw"
   };
+  /* ---------- 站点设置（首页模板）· 存 Supabase Storage ---------- */
+  var SITE_KEY = "heat_site_setting_v1";
+  var SITE_OBJ = "_settings/site.json";
+  function settingPublicUrl(){
+    return SUPA_CONFIG.url + "/storage/v1/object/public/" + IMG_BUCKET + "/" + SITE_OBJ;
+  }
+  function settingUploadUrl(){
+    return SUPA_CONFIG.url + "/storage/v1/object/" + IMG_BUCKET + "/" + SITE_OBJ;
+  }
+  function cachedSiteSetting(){
+    try{
+      var j = JSON.parse(localStorage.getItem(SITE_KEY) || "null");
+      return (j && /^[ABC]$/.test(j.heroStyle)) ? j : null;
+    }catch(e){ return null; }
+  }
+  async function loadSiteSetting(){
+    try{
+      var r = await fetch(settingPublicUrl() + "?t=" + Date.now(), {cache:"no-store"});
+      if(!r.ok) return null;
+      var j = await r.json();
+      if(!j || !/^[ABC]$/.test(j.heroStyle)) return null;
+      try{ localStorage.setItem(SITE_KEY, JSON.stringify(j)); }catch(e){}
+      return j;
+    }catch(e){ return null; }
+  }
+  async function publishSiteSetting(k){
+    var body = JSON.stringify({heroStyle:k, updated:new Date().toISOString(), by:"admin"});
+    try{ localStorage.setItem(SITE_KEY, body); }catch(e){}
+    try{
+      var r = await fetch(settingUploadUrl(), {
+        method:"POST",
+        headers:{
+          "apikey":SUPA_CONFIG.anonKey,
+          "Authorization":"Bearer "+SUPA_CONFIG.anonKey,
+          "Content-Type":"application/json",
+          "x-upsert":"true"
+        },
+        body:body
+      });
+      return r.ok;
+    }catch(e){ console.error("publish setting failed", e); return false; }
+  }
+
   /* 环境开关：null=自动（本地 file:///localhost 走本机，线上域名走云端）；
      true=强制云端；false=强制本机。 */
   var FORCE_CLOUD = null;
@@ -828,6 +872,15 @@
 
   /* 启动：云端优先拉取；云端为空则写入示例数据；失败回退本机 */
   async function boot(){
+    var siteSet = await loadSiteSetting();
+    if(siteSet && siteSet.heroStyle){
+      state.heroStyle = siteSet.heroStyle;
+      try{ localStorage.setItem("heat_hero_style", siteSet.heroStyle); }catch(e){}
+      state.siteUpdated = siteSet.updated || "";
+    }else{
+      var cache = cachedSiteSetting();
+      if(cache){ state.siteUpdated = cache.updated || ""; }
+    }
     if(!supaReady()){ db = load(); return; }
     try{
       sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
@@ -929,6 +982,14 @@
   };
 
   /* ---------- 工具 ---------- */
+  function fmtTime(iso){
+    if(!iso) return "";
+    try{
+      var d=new Date(iso);
+      function p2(n){ return n<10?"0"+n:""+n; }
+      return p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes());
+    }catch(e){ return ""; }
+  }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];}); }
   function r1(n){ return Math.round((+n||0)*10)/10; }
   function byId(arr,id){ return arr.find(function(x){return x.id===id;}); }
@@ -1259,7 +1320,10 @@
     var cur=heroPick();
     var now=presets().filter(function(t){return t.k===cur;})[0];
     var html='<div class="set-head"><h2>前台呈现 · 首页与登录页</h2>'+
-      '<p>首页 hero 与商家登录页成组搭配：换一组，前台首页和登录页一起换。改动立即生效，只影响本机浏览器的展示，不动云端数据。</p></div>'+
+      '<p>首页 hero 与商家登录页成组搭配：换一组，前台首页和登录页一起换。设置写进 Supabase 存储，所有访客刷新后看到同一版。</p>'+
+      (state.siteUpdated? '<div class="set-sync">线上版本 · 更新于 '+esc(fmtTime(state.siteUpdated))+'</div>'
+                       : '<div class="set-sync">尚未读到线上版本，当前显示本机缓存</div>')+
+      '</div>'+
       '<div class="set-list">';
     presets().forEach(function(t,i){
       html+='<div class="set-row'+(cur===t.k?" on":"")+'" data-set="'+t.k+'">'+
@@ -1276,13 +1340,13 @@
         '<button class="ghost-btn" id="previewLogin">预览登录页</button>'+
         '<button class="ghost-btn" id="copyLoginLink">复制登录链接</button>'+
       '</div>'+
-      '<div class="set-note">当前：首页 '+cur+' · '+now.nm+
-        ' → 登录页 '+now.li+'。<br>'+
-        '这是演示环境的前端配置，保存在本机 localStorage；换一台电脑或清缓存会回到默认 A 组。</div>';
+      '<div class="set-note">当前：首页 '+cur+' · '+now.nm+' → 登录页 '+now.li+'。<br>'+
+        '切换后会把 heroStyle 写进 Supabase Storage 的 _settings/site.json，访客打开页面时读取该文件，因此「设置一次、所有访客一致」。<br>'+
+        '边界：这个 JSON 用的是公开 anon key 可写，懂技术的人可以直接覆盖；它管的是前台的呈现，不含任何私密数据。</div>';
     document.getElementById("adminBody").innerHTML=html;
 
     document.querySelectorAll(".set-row[data-set]").forEach(function(r){
-      r.addEventListener("click",function(){ setHeroStyle(r.dataset.set); toast("已切换为 "+r.dataset.set+" 组"); });
+      r.addEventListener("click",function(){ setHeroStyle(r.dataset.set); });
     });
     document.getElementById("previewLanding").addEventListener("click",function(){ goView("landing"); });
     document.getElementById("previewLogin").addEventListener("click",function(){ openLogin(); });
@@ -2001,10 +2065,20 @@
     var darkNav = state.view==="landing" && (state.heroStyle||"A")==="A";
     if(bar) bar.classList.toggle("light", !darkNav);
   }
-  function setHeroStyle(v){
+  async function setHeroStyle(v){
     state.heroStyle=v;
     try{ localStorage.setItem("heat_hero_style", v); }catch(e){}
     render();
+    if(isLocalEnv()){ toast("已切到 "+v+" 组（本机预览，未写线上）"); return; }
+    toast("正在同步到线上…");
+    var ok=await publishSiteSetting(v);
+    if(ok){
+      state.siteUpdated=new Date().toISOString();
+      render();
+      toast("已上线："+v+" 组，访客刷新即见");
+    }else{
+      toast("同步失败：只在本机生效");
+    }
   }
 
   /* ---------- 视图切换 ---------- */
