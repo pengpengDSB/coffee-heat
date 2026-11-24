@@ -230,12 +230,13 @@
   .hero-actions .btn{padding:13px 22px;letter-spacing:.14em;font-size:12px}
 
   /* ---- A：暗场实拍 ---- */
-  .hero-A{background:#14110E;color:var(--cream);min-height:580px}
+  .hero-A{background:#14110E;color:var(--cream);height:max(600px,calc(100vh - 57px))}
   .hero-A .hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:58% 50%;z-index:0}
   .hero-A .hero-shade{position:absolute;inset:0;z-index:1;background:
     linear-gradient(90deg,rgba(11,9,7,.94) 0%,rgba(11,9,7,.82) 26%,rgba(11,9,7,.50) 54%,rgba(11,9,7,.24) 78%,rgba(11,9,7,.34) 100%),
     linear-gradient(180deg,rgba(11,9,7,.28) 0%,rgba(11,9,7,0) 34%,rgba(11,9,7,.48) 100%)}
-  .hero-A .hero-in{position:relative;z-index:2;padding:68px 24px 36px;min-height:580px;display:flex;flex-direction:column;justify-content:space-between}
+  .hero-A .hero-in{position:relative;z-index:2;padding:0 24px;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+  .hero-A .hero-text{margin:auto 0;padding:clamp(24px,5vh,72px) 0 clamp(12px,1.6vh,28px);max-width:640px}
   .hero-A .hero-kicker{color:rgba(244,241,233,.62)}
   .hero-A h2{font-size:clamp(32px,3.5vw,54px);line-height:1.15;color:#FCFCFA}
   .hero-A h2 em{color:#D8BD9E}
@@ -246,7 +247,7 @@
   .hero-A .hero-stats .hs{display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-bottom:14px}
   .hero-A .hero-stats .hs b{font-size:28px;font-weight:300;color:#FCFCFA;font-family:"Archivo",sans-serif;line-height:1}
   .hero-A .hero-stats .hs span{font-size:10px;color:rgba(244,241,233,.5);letter-spacing:.16em}
-  .hero-A .hero-scale{position:relative;width:min(780px,100%);height:52px;margin:34px 0 0}
+  .hero-A .hero-scale{position:relative;width:min(780px,100%);height:52px;margin:0 0 clamp(30px,6.2vh,72px)}
   .hero-A .hero-scale .rail{position:absolute;left:0;right:0;bottom:24px;height:1px;background:rgba(244,241,233,.34)}
   .hero-A .hero-scap{position:absolute;left:0;bottom:48px;font-size:9px;letter-spacing:.22em;color:rgba(244,241,233,.45);font-family:"Archivo",sans-serif}
   .hero-A .tick{position:absolute;bottom:24px;transform:translateX(-50%)}
@@ -326,8 +327,10 @@
 
   /* 窄屏：三套模板统一单列 */
   @media(max-width:820px){
-    .hero-A{min-height:0}
-    .hero-A .hero-in{min-height:0;padding:48px 16px 32px}
+    .hero-A{height:auto;min-height:0}
+    .hero-A .hero-in{height:auto;justify-content:flex-start;padding:48px 16px 32px}
+    .hero-A .hero-text{padding:0;max-width:none}
+    .hero-A .hero-scale{margin:24px 0 0}
     .hero-A h2{font-size:27px}
     .hero-A p{font-size:12.5px;line-height:1.95;max-width:none}
     .hero-A .hero-actions{margin-top:24px}
