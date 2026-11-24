@@ -315,6 +315,15 @@
   function writeLS(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function visitorId(){ var v=readLS(VIS_KEY,null); if(!v){ v="v"+Math.random().toString(36).slice(2,10); writeLS(VIS_KEY,v); } return v; }
   function pad2(n){ return String(n).padStart(2,"0"); }
+  function nextSeq(rows,prefix){
+    var max=0;
+    (rows||[]).forEach(function(o){
+      var tail=String((o&&o.order_no)||"").slice(prefix.length);
+      var n=parseInt(tail,10);
+      if(!isNaN(n) && n>max) max=n;
+    });
+    return max+1;
+  }
   function pad3(n){ return String(n).padStart(3,"0"); }
   state.cart = readLS(CART_KEY, []) || [];
   visitorId();
@@ -890,19 +899,25 @@
     if(supaReady()){
       try{
         var r=await sb.from('orders').select('order_no').like('order_no',prefix+'%');
-        if(!r.error) seq=(r.data||[]).length+1;
+        if(!r.error) seq=nextSeq(r.data,prefix);
       }catch(e){}
     }else{
-      seq=readLS(ORD_KEY,[]).filter(function(o){ return String(o.order_no||"").indexOf(prefix)===0; }).length+1;
+      seq=nextSeq(readLS(ORD_KEY,[]),prefix);
     }
-    payload.order_no=prefix+pad3(seq);
 
     var saved=false;
     if(supaReady()){
-      try{
-        var ins=await sb.from('orders').insert(payload);
-        if(!ins.error) saved=true; else console.error("insert order failed",ins.error);
-      }catch(e){ console.error("insert order failed",e); }
+      for(var attempt=0; attempt<3; attempt++){
+        payload.order_no=prefix+pad3(seq);
+        try{
+          var ins=await sb.from('orders').insert(payload);
+          if(!ins.error){ saved=true; break; }
+          if(ins.error && ins.error.code==="23505"){ seq++; continue; }
+          console.error("insert order failed",ins.error); break;
+        }catch(e){ console.error("insert order failed",e); break; }
+      }
+    }else{
+      payload.order_no=prefix+pad3(seq);
     }
     if(!saved){
       var lo=readLS(ORD_KEY,[]); lo.unshift(payload); writeLS(ORD_KEY,lo);
