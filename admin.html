@@ -1028,7 +1028,7 @@
 
   var state = {
     view:"landing", tab:"ings",
-    catFilter:"全部", shopCat:"咖啡",
+    catFilter:"全部", shopCat:"全部",
     selProduct:null, milkSel:{},
     ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"",
     modal:null, // {type:'ing'|'product', id:null}
@@ -2077,8 +2077,8 @@
 
   function renderShop(){
     var html='<div class="wrap">';
-    html += '<h1 class="page-title">菜单</h1><p class="page-sub">选择大类，查看每款饮品的热量与配料构成；咖啡可切换牛奶版本。</p>';
-    html += '<div class="chips">'+BIG_CATS.map(function(c){return '<button class="chip '+(state.shopCat===c?"active":"")+'" data-sc="'+c+'">'+c+'</button>';}).join("")+'</div>';
+    html += '<h1 class="page-title">菜单</h1><p class="page-sub">选择大类，查看每款饮品的热量与配料构成；风味拿铁 / 轻因拿铁可换奶，美式家族与气泡特调固定不换。</p>';
+    html += '<div class="chips">'+["全部"].concat(BIG_CATS).map(function(c){return '<button class="chip '+(state.shopCat===c?"active":"")+'" data-sc="'+c+'">'+c+'</button>';}).join("")+'</div>';
     html += '<div class="chips">'+HEAT_FILTERS.map(function(f){return '<button class="chip '+(state.heatFilter===f[0]?"active":"")+'" data-heat="'+f[0]+'">'+f[1]+'</button>';}).join("")+'</div>';
     html += '<div class="toolbar"><input type="search" id="shopSearch" class="search" placeholder="搜索饮品名称…" value="'+esc(state.shopQuery)+'"></div>';
 
@@ -2086,7 +2086,8 @@
       var sq = state.shopQuery.trim().toLowerCase();
       var list = db.products.filter(function(p){
           var qOk = !sq || p.name.toLowerCase().indexOf(sq)>=0;
-          return p.big===state.shopCat && qOk && inHeat(productKcal(p,defaultMilk(p)).total, state.heatFilter);
+          var catOk = state.shopCat==="全部" || p.big===state.shopCat;
+          return catOk && qOk && inHeat(productKcal(p,defaultMilk(p)).total, state.heatFilter);
         })
         .sort(function(a,b){ return productKcal(a,defaultMilk(a)).total - productKcal(b,defaultMilk(b)).total; });
       var cards = list.map(function(p,idx){
