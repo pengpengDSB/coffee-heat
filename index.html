@@ -96,6 +96,11 @@
   .searchline input::placeholder{color:var(--gray-2);letter-spacing:.12em;font-size:11px}
 
   .mrows{margin:14px 22px 0}
+  .qadd{border:1px solid var(--line);background:none;font:inherit;font-size:9px;letter-spacing:.1em;
+    color:var(--ink-2);padding:4px 8px;cursor:pointer;white-space:nowrap;position:relative}
+  .qadd:active{border-color:var(--ink)}
+  .qadd .dot{position:absolute;top:-7px;right:-7px;min-width:15px;height:15px;line-height:15px;border-radius:8px;
+    background:var(--brown);color:#fff;font-size:9px;font-family:Archivo,sans-serif;text-align:center;padding:0 3px}
   .mrow{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line-2);cursor:pointer;align-items:flex-start}
   .mrow .th{width:76px;height:95px;flex:none;overflow:hidden;background:#EFEDE6}
   .mrow .th img{width:100%;height:100%;object-fit:cover;display:block}
@@ -104,7 +109,8 @@
   .mrow .s{font-size:10px;color:var(--gray);margin-top:4px;letter-spacing:.04em}
   .mrow .k{font-size:10.5px;color:var(--brown);margin-top:7px;letter-spacing:.06em}
   .mrow .k b{font-family:Archivo,sans-serif;font-weight:500;font-size:12px}
-  .mrow .pr{font-size:13px;color:var(--ink-2);flex:none;padding-top:1px;font-family:Archivo,sans-serif}
+  .mrow .pr{font-size:13px;color:var(--ink-2);flex:none;padding-top:1px;font-family:Archivo,sans-serif;
+    display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 
   /* ---------- 详情：记录卡 ---------- */
   .page{padding:0 22px 104px}
@@ -223,6 +229,28 @@
   .specopts button.on{background:var(--ink);border-color:var(--ink);color:#fff}
   .specnote{font-size:9px;color:var(--gray-2);margin-top:10px;letter-spacing:.02em;line-height:1.9}
 
+  /* ---------- 快速选规格（浅半屏） ---------- */
+  .qmask{position:fixed;inset:0;background:rgba(20,20,16,.36);z-index:18;display:none}
+  .qmask.on{display:block}
+  .qsheet{position:fixed;left:50%;bottom:0;width:100%;max-width:420px;z-index:19;background:var(--paper);
+    border-top:1px solid var(--ink);padding:16px 22px 20px;transform:translate(-50%,102%);
+    transition:transform .28s cubic-bezier(.2,.75,.2,1);max-height:68vh;overflow:auto;display:none}
+  .qsheet.on{display:block;transform:translate(-50%,0)}
+  .qh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .qh b{font-size:13.5px;font-weight:500;letter-spacing:.06em}
+  .qh .kk{font-size:9.5px;color:var(--brown);letter-spacing:.06em;margin-top:4px}
+  .qh button{border:none;background:none;font:inherit;font-size:13px;color:var(--gray);padding:0 2px 6px;cursor:pointer;align-self:flex-start}
+  .qmilk{margin-top:18px}
+  .qmilk .lb{font-size:9.5px;color:var(--gray);letter-spacing:.16em}
+  .qmilk .lb b{color:var(--ink);font-weight:500;margin-right:8px}
+  .qbar2{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+  .qbar2 .qq{display:flex;align-items:center;gap:12px;flex:none}
+  .qbar2 .qq button{width:30px;height:30px;border:1px solid var(--line);background:none;font:inherit;
+    font-size:14px;color:var(--ink-2);cursor:pointer;line-height:1}
+  .qbar2 .qq b{font-family:Archivo,sans-serif;font-size:13px;min-width:12px;text-align:center}
+  .qbar2 .go{flex:1;border:1px solid var(--ink);background:var(--ink);color:#fff;font:inherit;font-size:11px;
+    letter-spacing:.12em;padding:12px 0;cursor:pointer}
+
   .addbar{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:100%;max-width:420px;z-index:12;
     background:var(--dark);color:#F4F1E9;display:flex;align-items:center;justify-content:space-between;
     padding:13px 22px;gap:12px}
@@ -290,6 +318,8 @@
   <div id="cartbar"></div>
   <div id="mask" class="mask"></div>
   <div id="sheet" class="sheet"></div>
+  <div id="qmask" class="qmask"></div>
+  <div id="qsheet" class="qsheet"></div>
   <nav class="tabbar" id="tabbar"></nav>
 </div>
 
@@ -625,7 +655,9 @@
           (p.image?'<div class="th"><img src="'+esc(p.image)+'" alt=""></div>':'<div class="th"></div>') +
           '<div class="in"><div class="n">'+esc(p.name)+'</div><div class="s">'+esc(subline(p))+'</div>' +
             '<div class="k"><b>'+nz(c.total)+'</b> 大卡 · '+esc(tier(c.total,p.big))+'</div></div>' +
-          '<div class="pr">'+(p.price!=null&&p.price!==""?"¥"+p.price:'<span style="color:#B5B3AA">—</span>')+'</div></div>';
+          '<div class="pr">'+(p.price!=null&&p.price!==""?"¥"+p.price:'<span style="color:#B5B3AA">—</span>')+
+            '<button class="qadd" data-q="'+p.id+'">选规格'+(inCartQty(p.id)?'<span class="dot">'+inCartQty(p.id)+'</span>':'')+'</button>'+
+          '</div></div>';
       }).join(""):'<div class="foot" style="margin:26px 0 0">没有符合条件的饮品，试试放宽热量范围。</div>') + '</div>' +
       '<div class="foot">共 '+list.length+' 款 · 按热量由低到高</div>';
 
@@ -640,6 +672,74 @@
       var el=document.getElementById("q"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } });
     Array.prototype.forEach.call(app.querySelectorAll("[data-p]"),function(el){
       el.addEventListener("click",function(){ state.selProduct=el.dataset.p; render(); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-q]"),function(el){
+      el.addEventListener("click",function(e){ e.stopPropagation(); openQuick(el.dataset.q); });
+    });
+  }
+
+  /* ---------- 快速选规格 ---------- */
+  var qPid=null;
+  function inCartQty(pid){
+    return state.cart.reduce(function(s,x){ return s + (x.pid===pid?x.qty:0); },0);
+  }
+  function openQuick(pid){
+    qPid=pid; renderQuick();
+    document.getElementById("qmask").classList.add("on");
+    var qs=document.getElementById("qsheet"); qs.classList.add("on");
+    renderCartBar();
+  }
+  function closeQuick(){
+    qPid=null;
+    document.getElementById("qmask").classList.remove("on");
+    var qs=document.getElementById("qsheet");
+    qs.classList.remove("on");
+    setTimeout(function(){ if(!qPid) qs.innerHTML=""; },280);
+    renderCartBar();
+  }
+  function renderQuick(){
+    var p=byId(db.products,qPid); if(!p) return;
+    var cf=detailCfg(p), c=productKcal(p,cf.milkId), price=Number(p.price);
+    var milk="";
+    var validMilk=(p.milkOptions||[]).filter(function(mid){ return !!ing(mid); });
+    if(p.milkSwitch && validMilk.length){
+      var hasGap=validMilk.some(function(mid){ var m=ing(mid); return m && (+m.kJ||0)<=0; });
+      milk='<div class="qmilk"><div class="lb"><b>牛奶</b>换奶后热量重算</div><div class="milks">'+
+        p.milkOptions.map(function(mid){
+          var m=ing(mid); if(!m) return "";
+          var ok=(+m.kJ||0)>0;
+          return '<button data-qmilk="'+mid+'"'+(ok?'':' disabled')+' class="'+(cf.milkId===mid?"on":"")+'">'+esc(m.name)+(ok?'':'<i>待补</i>')+'</button>';
+        }).join("")+'</div>'+(hasGap?'<div class="gapnote">灰掉的牛奶还没填千焦值。</div>':"")+'</div>';
+    }
+    var sheet=document.getElementById("qsheet");
+    sheet.innerHTML=
+      '<div class="qh"><div><b>'+esc(p.name)+'</b><div class="kk">'+nz(c.total)+' 大卡 · '+esc(tier(c.total,p.big))+'</div></div>'+
+        '<button id="qclose" aria-label="关闭">✕</button></div>'+
+      milk+
+      '<div class="specrow"><div class="sl"><b>糖度</b><span>只记录做法</span></div><div class="specopts">'+
+        ["标准糖","少糖","无糖"].map(function(v){ return '<button data-qsugar="'+v+'" class="'+(cf.sugar===v?"on":"")+'">'+v+'</button>'; }).join("")+'</div></div>'+
+      '<div class="specrow"><div class="sl"><b>冰量</b><span>只记录做法</span></div><div class="specopts">'+
+        ["热","正常冰","少冰","去冰"].map(function(v){ return '<button data-qice="'+v+'" class="'+(cf.ice===v?"on":"")+'">'+v+'</button>'; }).join("")+'</div></div>'+
+      '<div class="qbar2"><div class="qq"><button id="qminus">−</button><b>'+cf.qty+'</b><button id="qplus">+</button></div>'+
+        '<button class="go" id="qaddcart">'+(price?("加入购物车 · ¥"+money(price*cf.qty)):"加入购物车")+'</button></div>';
+    document.getElementById("qclose").addEventListener("click",closeQuick);
+    Array.prototype.forEach.call(sheet.querySelectorAll("[data-qmilk]"),function(b){
+      b.addEventListener("click",function(){ state.milkSel[p.id]=b.dataset.qmilk; renderQuick(); });
+    });
+    Array.prototype.forEach.call(sheet.querySelectorAll("[data-qsugar]"),function(b){
+      b.addEventListener("click",function(){ state.sugar[p.id]=b.dataset.qsugar; renderQuick(); });
+    });
+    Array.prototype.forEach.call(sheet.querySelectorAll("[data-qice]"),function(b){
+      b.addEventListener("click",function(){ state.ice[p.id]=b.dataset.qice; renderQuick(); });
+    });
+    document.getElementById("qminus").addEventListener("click",function(){
+      state.qty[p.id]=Math.max(1,(state.qty[p.id]||1)-1); renderQuick();
+    });
+    document.getElementById("qplus").addEventListener("click",function(){
+      state.qty[p.id]=Math.min(20,(state.qty[p.id]||1)+1); renderQuick();
+    });
+    document.getElementById("qaddcart").addEventListener("click",function(){
+      var pid2=p.id; closeQuick(); addToCart(byId(db.products,pid2));
     });
   }
 
@@ -753,11 +853,15 @@
     render();
   }
 
+  document.addEventListener("click",function(e){
+    if(e.target && e.target.id==="qmask"){ closeQuick(); }
+  });
+
   var toastTimer=null;
   function toast(msg){
     var el=document.getElementById("toast");
     if(!el){ el=document.createElement("div"); el.id="toast";
-      el.style.cssText="position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:30;background:#181510;color:#F4F1E9;font-size:11px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s";
+      el.style.cssText="position:fixed;left:50%;top:164px;transform:translateX(-50%);z-index:30;background:#181510;color:#F4F1E9;font-size:11px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s";
       document.body.appendChild(el);
     }
     el.textContent=msg; el.style.opacity="1";
@@ -836,7 +940,7 @@
   function renderCartBar(){
     var el=document.getElementById("cartbar");
     if(!el) return;
-    if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.sheet){ el.innerHTML=""; return; }
+    if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.sheet || qPid){ el.innerHTML=""; return; }
     el.innerHTML='<div class="cartbar"><div class="l"><b>'+cartCount()+'</b>件 · ¥'+money(cartTotal())+' · '+r1(cartKcal())+' 大卡</div>'+
       '<button class="go" id="checkout">去结算</button></div>';
     document.getElementById("checkout").addEventListener("click",function(){ openSheet(); });
