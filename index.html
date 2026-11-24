@@ -466,7 +466,7 @@
   function byId(a,id){ return a.find(function(x){return x.id===id;}); }
   function ing(id){ return byId(db.ings,id); }
   function kcalPerUnit(i){ if(!i) return 0; return (+i.kJ||0)/KJ/(+i.base||100); }
-  function tier(k,big){ if(NO_MILK_CATS.indexOf(big)>=0) return k<60?"低卡":k<=100?"中卡":"高卡"; return k<225?"低卡":k<=238?"中卡":"高卡"; }
+  function tier(k,big){ if(NO_MILK_CATS.indexOf(big)>=0) return k<60?"低卡":k<=100?"中卡":"高卡"; return k<230?"低卡":k<=238?"中卡":"高卡"; }
   function inHeat(k,f){ if(f==="全部") return true; if(f==="低") return k<150; if(f==="中") return k>=150&&k<=225; return k>225; }
   function productKcal(p, milkId){
     var total=0, rows=[];
@@ -1059,7 +1059,7 @@
     var t={
       about:{t:"热量怎么算",b:["每一项配料都有单位热量，按每 1g 或 1ml 的大卡值记录。","饮品热量 = Σ（单位热量 × 该配料用量）。","换牛奶只替换牛奶位，其余配料保持不变。"],
         rows:[["拿铁 · 全脂奶 280ml","222.0"],["拿铁 · 燕麦奶 280ml","186.4"],["拿铁 · 去糖浆","190.0"]]},
-      legend:{t:"热量档位",b:["风味拿铁 / 轻因拿铁：低于 225 为低卡，225–238 为中卡，高于 238 为高卡。","美式家族 / 气泡特调：低于 60 为低卡，60–100 为中卡，高于 100 为高卡。"],
+      legend:{t:"热量档位",b:["风味拿铁 / 轻因拿铁：低于 230 为低卡，230–238 为中卡，高于 238 为高卡。","美式家族 / 气泡特调：低于 60 为低卡，60–100 为中卡，高于 100 为高卡。"],
         rows:[["澳白 · 中杯","122.2"],["榛果拿铁 · 中杯","222.0"],["桂花气泡 · 中杯","53.4"]]},
       milk:{t:"牛奶可换",b:["风味拿铁 / 轻因拿铁支持换奶，热量随牛奶类型自动重算；美式家族与气泡特调不提供换奶。","牛奶位按每 1ml 的单位热量换算，具体数值以配料库为准。"],
         rows:[["威士特全脂牛奶","62 / 100ml"],["优诺牛奶","待填"],["悦鲜活牛奶","待填"]]}
