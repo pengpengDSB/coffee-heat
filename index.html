@@ -211,11 +211,85 @@
   .pn{font-size:11px;letter-spacing:.03em;margin-top:3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pk{font-size:8.5px;color:var(--gray);margin-top:3px;letter-spacing:.02em}
   .pk b{font-family:Archivo,sans-serif;font-size:11px;color:var(--ink)}
+
+  /* === 点单：规格 / 购物车 / 结算 / 订单 === */
+  .specrow{margin-top:18px}
+  .specrow .sl{display:flex;justify-content:space-between;align-items:baseline;font-size:9.5px;color:var(--gray);
+    letter-spacing:.12em;margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .specrow .sl b{color:var(--ink);font-weight:500;letter-spacing:.16em}
+  .specopts{display:flex;gap:7px;flex-wrap:wrap}
+  .specopts button{border:1px solid var(--line);background:none;font:inherit;font-size:11px;color:var(--ink-2);
+    padding:9px 14px;cursor:pointer;letter-spacing:.05em}
+  .specopts button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .specnote{font-size:9px;color:var(--gray-2);margin-top:10px;letter-spacing:.02em;line-height:1.9}
+
+  .addbar{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:100%;max-width:420px;z-index:12;
+    background:var(--dark);color:#F4F1E9;display:flex;align-items:center;justify-content:space-between;
+    padding:13px 22px;gap:12px}
+  .addbar .qty{display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.1em}
+  .addbar .qty button{width:26px;height:26px;border:1px solid rgba(244,241,233,.35);background:none;color:#F4F1E9;
+    font:inherit;font-size:14px;line-height:1;cursor:pointer}
+  .addbar .qty b{font-family:Archivo,sans-serif;font-size:14px;font-weight:400;min-width:14px;text-align:center}
+  .addbar .go{border:none;background:#F4F1E9;color:var(--dark);font:inherit;font-size:11.5px;font-weight:500;
+    letter-spacing:.12em;padding:11px 18px;cursor:pointer;white-space:nowrap}
+
+  .cartbar{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:100%;max-width:420px;z-index:11;
+    background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;gap:10px}
+  .cartbar .l{font-size:10.5px;letter-spacing:.06em;display:flex;align-items:baseline;gap:9px}
+  .cartbar .l b{font-family:Archivo,sans-serif;font-size:15px;font-weight:400}
+  .cartbar .go{border:1px solid rgba(255,255,255,.45);background:none;color:#fff;font:inherit;font-size:11px;
+    letter-spacing:.12em;padding:9px 15px;cursor:pointer;white-space:nowrap}
+
+  .mask{position:fixed;inset:0;background:rgba(20,20,16,.42);z-index:20;display:none}
+  .mask.on{display:block}
+  .sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:420px;max-height:88vh;
+    overflow-y:auto;background:var(--paper);z-index:21;padding:20px 22px calc(24px + env(safe-area-inset-bottom));display:none}
+  .sheet.on{display:block}
+  .sheet .sh{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:11px;border-bottom:1px solid var(--ink)}
+  .sheet .sh b{font-size:10.5px;font-weight:500;letter-spacing:.2em}
+  .sheet .sh button{border:none;background:none;font:inherit;font-size:10px;color:var(--gray);letter-spacing:.12em;cursor:pointer;padding:0}
+  .ckerow{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line-2)}
+  .ckerow .n{font-size:11.5px;letter-spacing:.04em}
+  .ckerow .s{font-size:9.5px;color:var(--gray-2);margin-top:4px;letter-spacing:.02em}
+  .ckerow .p{font-family:Archivo,sans-serif;font-size:12.5px;white-space:nowrap}
+  .cknote{margin-top:16px}
+  .cknote input{width:100%;border:1px solid var(--line);background:none;padding:11px 12px;font:inherit;
+    font-size:12px;color:var(--ink);outline:none;letter-spacing:.03em}
+  .cknote input::placeholder{color:var(--gray-2);font-size:10.5px;letter-spacing:.08em}
+  .cktot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;padding-top:13px;border-top:1px solid var(--ink)}
+  .cktot .l{font-size:9px;color:var(--gray);letter-spacing:.16em;line-height:1.9}
+  .cktot .r b{font-family:Archivo,sans-serif;font-size:32px;font-weight:300;letter-spacing:-.01em}
+  .cktot .r em{font-style:normal;font-size:9px;color:var(--gray);letter-spacing:.1em;margin-left:4px}
+  .cksub{margin-top:16px;width:100%;border:none;background:var(--dark);color:#F4F1E9;font:inherit;font-size:12px;
+    letter-spacing:.18em;padding:15px;cursor:pointer}
+
+  .ordhead{margin-top:24px}
+  .ordhead .l{font-size:9px;color:var(--gray);letter-spacing:.22em}
+  .ordno{font-family:Archivo,sans-serif;font-size:42px;font-weight:400;letter-spacing:.05em;margin-top:7px;line-height:1}
+  .ordno small{font-family:"Noto Sans SC";font-size:10px;color:var(--gray);letter-spacing:.16em;margin-left:9px}
+  .steps{display:flex;margin-top:24px;border-top:1px solid var(--ink);padding-top:16px}
+  .step{flex:1;padding-right:10px}
+  .step i{display:block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-bottom:9px}
+  .step b{display:block;font-size:10.5px;font-weight:400;letter-spacing:.05em;color:var(--gray-2)}
+  .step em{display:block;font-style:normal;font-size:8.5px;color:var(--gray-2);margin-top:3px;letter-spacing:.02em}
+  .step.on i{background:var(--ink)}
+  .step.on b{color:var(--ink)}
+  .step.now i{background:var(--brown);width:9px;height:9px;margin-bottom:7px}
+
+  .morder{display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--line-2);
+    font:inherit;text-align:left;padding:14px 0;cursor:pointer}
+  .morder .r1{display:flex;justify-content:space-between;align-items:baseline}
+  .morder .no{font-family:Archivo,sans-serif;font-size:14.5px;letter-spacing:.04em}
+  .morder .st{font-size:9.5px;color:var(--brown);letter-spacing:.1em}
+  .morder .r2{font-size:9.5px;color:var(--gray);margin-top:5px;letter-spacing:.03em}
 </style>
 </head>
 <body>
 <div class="phone">
   <div id="app"></div>
+  <div id="cartbar"></div>
+  <div id="mask" class="mask"></div>
+  <div id="sheet" class="sheet"></div>
   <nav class="tabbar" id="tabbar"></nav>
 </div>
 
@@ -232,7 +306,25 @@
   var IMG_BASE = "https://pnucsuxkduvwpgklizmw.supabase.co/storage/v1/object/public/product-images/";
   var SCALE_FLOOR = 200;
   var sb = null, db = {ings:[], products:[]}, ready=false;
-  var state = { tab:"home", selProduct:null, milkSel:{}, cat:"咖啡", heat:"全部", q:"", mePage:null, selId:null };
+  var state = { tab:"home", selProduct:null, milkSel:{}, cat:"咖啡", heat:"全部", q:"", mePage:null, selId:null,
+    sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[] };
+
+  /* ---------- 本机存储：购物车 / 匿名访客 / 订单 ---------- */
+  var CART_KEY="cafe_cart_v1", VIS_KEY="cafe_visitor_v1", ORD_KEY="cafe_orders_v1";
+  function readLS(k,d){ try{ var r=JSON.parse(localStorage.getItem(k)); return r==null?d:r; }catch(e){ return d; } }
+  function writeLS(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  function visitorId(){ var v=readLS(VIS_KEY,null); if(!v){ v="v"+Math.random().toString(36).slice(2,10); writeLS(VIS_KEY,v); } return v; }
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function pad3(n){ return String(n).padStart(3,"0"); }
+  state.cart = readLS(CART_KEY, []) || [];
+  visitorId();
+
+  function money(n){ return (Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,""); }
+  function cartCount(){ return state.cart.reduce(function(s,x){ return s + x.qty; },0); }
+  function cartTotal(){ return state.cart.reduce(function(s,x){ return s + x.price*x.qty; },0); }
+  function cartKcal(){ return state.cart.reduce(function(s,x){ return s + x.kcal*x.qty; },0); }
+  function saveCart(){ writeLS(CART_KEY, state.cart); }
+  function itemKey(pid, milk, sugar, ice){ return [pid,milk||"-",sugar||"-",ice||"-"].join("|"); }
 
   function defaultData(){
     return {
@@ -326,7 +418,10 @@
       return '<button class="tb '+(state.tab===x[0]&&!state.selProduct?"on":"")+'" data-tab="'+x[0]+'">'+x[1]+'</button>';
     }).join("");
     Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
-      b.addEventListener("click",function(){ state.selProduct=null; state.mePage=null; state.tab=b.dataset.tab; render(); });
+      b.addEventListener("click",function(){
+        state.selProduct=null; state.mePage=null; state.viewOrder=null; state.tab=b.dataset.tab; render();
+        if(b.dataset.tab==="me"){ loadOrders().then(function(){ if(state.tab==="me"&&!state.mePage) render(); }); }
+      });
     });
   }
 
@@ -539,10 +634,20 @@
     });
   }
 
+  function detailCfg(p){
+    return {
+      milkId: defaultMilk(p),
+      sugar: state.sugar[p.id] || "标准糖",
+      ice: state.ice[p.id] || "正常冰",
+      qty: state.qty[p.id] || 1
+    };
+  }
+
   function renderDetail(){
     var p=byId(db.products,state.selProduct);
     if(!p){ state.selProduct=null; render(); return; }
-    var milkId=defaultMilk(p), c=productKcal(p,milkId), tg=tier(c.total,p.big);
+    var cf=detailCfg(p), milkId=cf.milkId, c=productKcal(p,milkId), tg=tier(c.total,p.big);
+    var price=Number(p.price);
 
     var milk = '';
     if(p.milkSwitch){
@@ -556,6 +661,16 @@
         (hasGap?'<div class="gapnote">灰掉的牛奶还没填千焦值，补完后台就能切换重算。</div>':"")+'</div>';
     }
 
+    var sugar = '<div class="specrow"><div class="sl"><b>糖度</b><span>只记录做法，不改已标热量</span></div><div class="specopts">'+
+      ["标准糖","少糖","无糖"].map(function(s){
+        return '<button data-sugar="'+s+'" class="'+(cf.sugar===s?"on":"")+'">'+s+'</button>';
+      }).join("")+'</div></div>';
+
+    var ice = '<div class="specrow"><div class="sl"><b>冰量</b><span>只记录做法，不改已标热量</span></div><div class="specopts">'+
+      ["热","正常冰","少冰","去冰"].map(function(s){
+        return '<button data-ice="'+s+'" class="'+(cf.ice===s?"on":"")+'">'+s+'</button>';
+      }).join("")+'</div></div>';
+
     var rows=c.rows.map(function(r){
       if(r.missing) return '<tr><td>配料缺失</td><td class="u">已删除</td><td class="c miss">—</td></tr>';
       var pct = c.total>0 ? Math.round(r.kcal/c.total*100) : 0;
@@ -563,8 +678,15 @@
         '<td class="c">'+nz(r.kcal)+(pct>0?'<span style="font-size:8.5px;color:#8C8A80;margin-left:3px">'+pct+'%</span>':"")+'</td></tr>';
     }).join("");
 
+    var addbar = '<div class="addbar">'+
+      '<div class="qty">'+
+        '<button id="qminus">−</button><b>'+cf.qty+'</b><button id="qplus">+</button>'+
+      '</div>'+
+      '<button class="go" id="addcart">'+(price?('加入购物车 · ¥'+money(price*cf.qty)):'加入购物车')+'</button>'+
+      '</div>';
+
     app.innerHTML =
-      '<div class="page">' +
+      '<div class="page" style="padding-bottom:170px">' +
         '<button class="dback" id="bk">'+IC.back+'返回</button>' +
         (p.image?'<div class="dshot"><img src="'+esc(p.image)+'" alt=""></div>':'<div class="dshot"></div>') +
         '<div class="rec">' +
@@ -575,26 +697,81 @@
           '<div class="meta">' +
             '<div><span>分类</span><b>'+esc(p.big)+'</b></div>' +
             '<div><span>杯型</span><b>'+esc(p.size||"—")+'</b></div>' +
-            '<div><span>售价</span><b>'+(p.price!=null&&p.price!==""?"¥"+p.price:"—")+'</b></div>' +
+            '<div><span>售价</span><b>'+(price?("¥"+money(price)):"—")+'</b></div>' +
             '<div><span>档位</span><b>'+esc(tg)+'</b></div>' +
           '</div>' +
         '</div>' +
-        milk +
+        milk + sugar + ice +
         '<div class="blk"><div class="lb"><b>配料记录</b><span>单位热量 × 用量</span></div>' +
           '<table class="tbl">'+rows+'</table>' +
           '<div class="totrow"><div class="l">整杯合计</div><div class="r"><b>'+nz(c.total)+'</b><em>大卡</em></div></div>' +
         '</div>' +
-        '<div class="foot" style="margin:24px 0 0">按每 1g / 1ml 单位热量 × 配方用量逐项累加，1 大卡 = 4.184 千焦。<br>数据由商家后台配料库统一维护。</div>' +
-      '</div>';
+        '<div class="foot" style="margin:24px 0 0">按每 1g / 1ml 单位热量 × 配方用量逐项累加，1 大卡 = 4.184 千焦。<br>糖度与冰量只记录做法，热量按标准配方标注。</div>' +
+      '</div>' + addbar;
 
     document.getElementById("bk").addEventListener("click",function(){ state.selProduct=null; render(); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-milk]"),function(b){
       b.addEventListener("click",function(){ state.milkSel[p.id]=b.dataset.milk; render(); });
     });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-sugar]"),function(b){
+      b.addEventListener("click",function(){ state.sugar[p.id]=b.dataset.sugar; render(); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-ice]"),function(b){
+      b.addEventListener("click",function(){ state.ice[p.id]=b.dataset.ice; render(); });
+    });
+    document.getElementById("qminus").addEventListener("click",function(){
+      state.qty[p.id]=Math.max(1,(state.qty[p.id]||1)-1); render();
+    });
+    document.getElementById("qplus").addEventListener("click",function(){
+      state.qty[p.id]=Math.min(20,(state.qty[p.id]||1)+1); render();
+    });
+    document.getElementById("addcart").addEventListener("click",function(){ addToCart(p); });
+  }
+
+  function addToCart(p){
+    var cf=detailCfg(p), c=productKcal(p,cf.milkId);
+    var key=itemKey(p.id,cf.milkId,cf.sugar,cf.ice);
+    var price=Number(p.price)||0;
+    var exist=state.cart.filter(function(x){ return x.key===key; })[0];
+    if(exist){ exist.qty+=cf.qty; }
+    else{
+      state.cart.push({key:key,pid:p.id,name:p.name,price:price,kcal:r1(c.total),
+        milk:cf.milkId,sugar:cf.sugar,ice:cf.ice,qty:cf.qty});
+    }
+    saveCart(); state.qty[p.id]=1;
+    toast("已加入购物车 · "+cartCount()+" 件");
+    state.selProduct=null; state.tab="menu";
+    render();
+  }
+
+  var toastTimer=null;
+  function toast(msg){
+    var el=document.getElementById("toast");
+    if(!el){ el=document.createElement("div"); el.id="toast";
+      el.style.cssText="position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:30;background:#181510;color:#F4F1E9;font-size:11px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s";
+      document.body.appendChild(el);
+    }
+    el.textContent=msg; el.style.opacity="1";
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ el.style.opacity="0"; },1600);
   }
 
   function renderMe(){
     var milkCount=db.ings.filter(function(i){return /奶/.test(i.category);}).length;
+    var ordBlock = '';
+    if(state.orders && state.orders.length){
+      ordBlock = '<div class="specrow" style="margin-top:28px"><div class="sl"><b>我的订单</b><span>近 '+state.orders.length+' 单</span></div><div>'+
+        state.orders.slice(0,6).map(function(o){
+          var n=(o.items||[]).reduce(function(a,x){return a+(x.qty||1);},0);
+          return '<button class="morder" data-ord="'+esc(o.order_no)+'">'+
+            '<div class="r1"><span class="no">'+esc(o.order_no)+'</span><span class="st">'+esc(o.status||"待制作")+'</span></div>'+
+            '<div class="r2">'+n+' 件 · '+(o.total!=null&&o.total!==""?("¥"+money(o.total)):"—")+' · '+esc(o.created_at?String(o.created_at).replace("T"," ").slice(5,16):"")+'</div>'+
+            '</button>';
+        }).join("")+'</div></div>';
+    }else{
+      ordBlock = '<div class="specrow" style="margin-top:28px"><div class="sl"><b>我的订单</b><span>还没有下过单</span></div>'+
+        '<div class="specnote">在点单页选一杯，加进购物车就能下单，取餐号会自动记在这台设备上。</div></div>';
+    }
     app.innerHTML =
       '<div class="page">' +
         '<div class="top" style="padding:24px 0 0"><div>精品咖啡</div><div class="r">NANJING · 2026</div></div>' +
@@ -610,10 +787,18 @@
           '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>低卡 / 中卡 / 高卡，三档参考</span></div><div class="go">'+IC.go+'</div></button>' +
           '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>咖啡类可切换牛奶，热量随之更新</span></div><div class="go">'+IC.go+'</div></button>' +
         '</div>' +
-        '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>本页仅作展示，不含下单支付。</div>' +
+        ordBlock +
+        '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>下单到店自取，本 Demo 不含在线支付。</div>' +
       '</div>';
     Array.prototype.forEach.call(app.querySelectorAll(".merow"),function(b){
       b.addEventListener("click",function(){ state.mePage=b.dataset.me; renderMeSub(); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-ord]"),function(b){
+      b.addEventListener("click",function(){
+        var no=b.dataset.ord;
+        var o=(state.orders||[]).filter(function(x){ return x.order_no===no; })[0];
+        if(o){ state.viewOrder=o; render(); }
+      });
     });
   }
 
@@ -638,13 +823,167 @@
     document.getElementById("bk").addEventListener("click",function(){ state.mePage=null; render(); });
   }
 
+  /* ---------- 购物车条 / 结算 / 订单 ---------- */
+  function renderCartBar(){
+    var el=document.getElementById("cartbar");
+    if(!el) return;
+    if(!state.cart.length || state.selProduct || state.viewOrder || state.mePage || state.sheet){ el.innerHTML=""; return; }
+    el.innerHTML='<div class="cartbar"><div class="l"><b>'+cartCount()+'</b>件 · ¥'+money(cartTotal())+' · '+r1(cartKcal())+' 大卡</div>'+
+      '<button class="go" id="checkout">去结算</button></div>';
+    document.getElementById("checkout").addEventListener("click",function(){ openSheet(); });
+  }
+
+  function openSheet(){ state.sheet=true; renderSheet(); }
+  function closeSheet(){
+    state.sheet=false;
+    document.getElementById("mask").classList.remove("on");
+    var s=document.getElementById("sheet"); s.classList.remove("on"); s.innerHTML="";
+    render();
+  }
+
+  function renderSheet(){
+    var m=document.getElementById("mask"), s=document.getElementById("sheet");
+    if(!m||!s) return;
+    m.classList.add("on"); s.classList.add("on");
+    var rows=state.cart.map(function(x,i){
+      return '<div class="ckerow"><div><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
+        '<div class="s">'+esc(specLine(x))+'</div></div>'+
+        '<div class="p">'+(x.price?("¥"+money(x.price*x.qty)):"—")+'</div></div>';
+    }).join("");
+    s.innerHTML =
+      '<div class="sh"><b>确认订单</b><button id="shclose">关闭</button></div>'+
+      '<div style="margin-top:4px">'+rows+'</div>'+
+      '<div class="cknote"><input id="cknote" type="text" placeholder="备注：少甜、不要吸管…（可不填）" maxlength="60"></div>'+
+      '<div class="cktot"><div class="l">共 '+cartCount()+' 件 · 到店自取<br>整单热量 '+r1(cartKcal())+' 大卡</div>'+
+        '<div class="r"><b>'+(cartTotal()?money(cartTotal()):"—")+'</b><em>元</em></div></div>'+
+      '<button class="cksub" id="cksub">提交订单</button>'+
+      '<div class="specnote" style="margin-top:12px">提交后生成取餐号，制作状态在「我的」里随时可查。本 Demo 不含在线支付，到店付款。</div>';
+    document.getElementById("shclose").addEventListener("click",closeSheet);
+    m.addEventListener("click",closeSheet);
+    document.getElementById("cksub").addEventListener("click",submitOrder);
+  }
+
+  function specLine(x){
+    var a=[];
+    if(x.milk){ var mi=ing(x.milk); if(mi) a.push(mi.name); }
+    if(x.sugar) a.push(x.sugar);
+    if(x.ice) a.push(x.ice);
+    a.push("中杯");
+    return a.join(" · ");
+  }
+
+  async function submitOrder(){
+    if(!state.cart.length) return;
+    var btn=document.getElementById("cksub");
+    if(btn){ btn.disabled=true; btn.textContent="提交中…"; }
+    var noteEl=document.getElementById("cknote");
+    var note=noteEl?noteEl.value.trim():"";
+    var now=new Date(), prefix="A"+pad2(now.getMonth()+1)+pad2(now.getDate())+"-";
+    var items=state.cart.map(function(x){
+      return {pid:x.pid,name:x.name,qty:x.qty,price:x.price,kcal:x.kcal,milk:x.milk,sugar:x.sugar,ice:x.ice};
+    });
+    var payload={order_no:"", visitor_id:visitorId(), items:items,
+      total:Math.round(cartTotal()*100)/100, total_kcal:Math.round(cartKcal()*10)/10,
+      pickup:"到店自取", note:note, status:"待制作", created_at:new Date().toISOString()};
+
+    var seq=1;
+    if(supaReady()){
+      try{
+        var r=await sb.from('orders').select('order_no').like('order_no',prefix+'%');
+        if(!r.error) seq=(r.data||[]).length+1;
+      }catch(e){}
+    }else{
+      seq=readLS(ORD_KEY,[]).filter(function(o){ return String(o.order_no||"").indexOf(prefix)===0; }).length+1;
+    }
+    payload.order_no=prefix+pad3(seq);
+
+    var saved=false;
+    if(supaReady()){
+      try{
+        var ins=await sb.from('orders').insert(payload);
+        if(!ins.error) saved=true; else console.error("insert order failed",ins.error);
+      }catch(e){ console.error("insert order failed",e); }
+    }
+    if(!saved){
+      var lo=readLS(ORD_KEY,[]); lo.unshift(payload); writeLS(ORD_KEY,lo);
+    }
+
+    state.cart=[]; saveCart(); state.qty={}; state.sheet=false;
+    document.getElementById("mask").classList.remove("on");
+    var sh=document.getElementById("sheet"); sh.classList.remove("on"); sh.innerHTML="";
+    state.viewOrder=payload;
+    if(!saved) toast("订单已记在这台设备上");
+    render();
+    loadOrders();
+  }
+
+  async function loadOrders(){
+    var vid=visitorId();
+    if(supaReady()){
+      try{
+        var r=await sb.from('orders').select('*').eq('visitor_id',vid).order('created_at',{ascending:false}).limit(20);
+        if(!r.error && r.data){ state.orders=r.data; return; }
+      }catch(e){}
+    }
+    state.orders=readLS(ORD_KEY,[]).slice(0,20);
+  }
+
+  function renderOrder(){
+    var o=state.viewOrder;
+    if(!o){ render(); return; }
+    var cb=document.getElementById("cartbar"); if(cb) cb.innerHTML="";
+    var steps=["待制作","制作中","已取餐"];
+    var idx=steps.indexOf(o.status); if(idx<0) idx=0;
+    var stepHtml=steps.map(function(s,i){
+      var cls = i<idx?"on step":(i===idx?"on step now":"step");
+      var hint = i===0?"商家已接单":(i===1?"正在制作":"叫号取餐");
+      return '<div class="'+cls+'"><i></i><b>'+s+'</b><em>'+hint+'</em></div>';
+    }).join("");
+    var items=(o.items||[]).map(function(x){
+      return '<div class="ckerow"><div><div class="n">'+esc(x.name)+' × '+x.qty+'</div>'+
+        '<div class="s">'+esc(specLine(x))+'</div></div><div class="p">'+(x.price?("¥"+money(x.price*x.qty)):"—")+'</div></div>';
+    }).join("");
+
+    app.innerHTML =
+      '<div class="page" style="padding-bottom:60px">'+
+        '<div class="ordhead"><div class="l">取餐号 · ORDER</div>'+
+          '<div class="ordno">'+esc(o.order_no||"—")+'<small>'+(o.total?"¥"+money(o.total):"")+'</small></div></div>'+
+        '<div class="steps">'+stepHtml+'</div>'+
+        '<div class="blk"><div class="lb"><b>本单清单</b><span>整单 '+(o.total_kcal||0)+' 大卡</span></div>'+items+
+          (o.note?'<div class="specnote">备注：'+esc(o.note)+'</div>':"")+'</div>'+
+        '<div class="foot" style="margin:22px 0 0">到店自取，柜台叫号。状态每 6 秒自动刷新，也可以回「我的」里再查。</div>'+
+        '<div style="display:flex;gap:10px;margin-top:22px">'+
+          '<button style="flex:1;background:none;border:1px solid var(--line);padding:12px 0;font:inherit;font-size:11px;letter-spacing:.12em;cursor:pointer" id="ordback">再点一单</button>'+
+          '<button style="flex:1;background:var(--ink);color:#fff;border:1px solid var(--ink);padding:12px 0;font:inherit;font-size:11px;letter-spacing:.12em;cursor:pointer" id="ordme">我的订单</button>'+
+        '</div>'+
+      '</div>';
+
+    document.getElementById("ordback").addEventListener("click",function(){ state.viewOrder=null; state.tab="menu"; render(); });
+    document.getElementById("ordme").addEventListener("click",function(){ state.viewOrder=null; state.tab="me"; state.mePage=null; render(); });
+
+    if(supaReady() && o.status!=="已取餐") pollOrder(o.order_no);
+  }
+
+  async function pollOrder(no){
+    await new Promise(function(r){ setTimeout(r,6000); });
+    if(!state.viewOrder || state.viewOrder.order_no!==no) return;
+    try{
+      var r=await sb.from("orders").select("status").eq("order_no",no).limit(1);
+      if(!r.error && r.data && r.data[0] && r.data[0].status && r.data[0].status!==state.viewOrder.status){
+        state.viewOrder.status=r.data[0].status; render();
+      }
+    }catch(e){}
+  }
+
   var app=document.getElementById("app");
   function render(){
     renderTab();
+    if(state.viewOrder){ renderOrder(); return; }
     if(state.selProduct){ renderDetail(); return; }
     if(state.tab==="menu") renderMenu();
     else if(state.tab==="me"){ state.mePage?renderMeSub():renderMe(); }
     else renderHome();
+    renderCartBar();
   }
 
   async function boot(){
@@ -662,6 +1001,7 @@
     }
     if(db.products.length && !byId(db.products,state.selId)) state.selId=db.products[0].id;
     render();
+    loadOrders().then(function(){ if(state.tab==="me" && !state.mePage && !state.viewOrder) render(); });
   }
   boot();
 })();

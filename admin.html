@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>饮品热量管理系统</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&display=swap">
+<style>
+  :root{
+    --paper:#FCFCFA; --paper-2:#F4F3EF; --card:#FFFFFF; --card-2:#FAF9F5;
+    --ink:#141410; --ink-soft:#6E6C63; --ink-faint:#8C8A80;
+    --line:#E2DFD4; --line-strong:#D5D2C7;
+    --espresso:#181510; --espresso-2:#0F0D0A; --cream:#F4F1E9;
+    --gold:#7A4E33; --gold-soft:#EFE7DE; --caramel:#7A4E33;
+    --accent:#7A4E33; --accent-soft:#F1EBE4;
+    --low:#3F6B52; --low-bg:#EDF2EE;
+    --mid:#8A6A2F; --mid-bg:#F5EFE3;
+    --high:#9C4A38; --high-bg:#F7E9E5;
+    --radius:6px; --radius-sm:4px;
+    --shadow:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#F0EFEB;color:var(--ink);line-height:1.6;padding-bottom:56px;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;width:100%;margin:0 auto;padding:0 20px}
+  .num,.prod-kcal,.ing-kcal,.total-bar .big,.ordno{font-family:"Archivo","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
+
+  /* ===== 顶栏 ===== */
+  .topbar{position:sticky;top:0;z-index:20;background:var(--espresso);border-bottom:1px solid var(--espresso-2)}
+  .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+  .brand{font-weight:500;color:var(--cream);font-size:13px;letter-spacing:.22em;display:flex;align-items:center;gap:10px}
+  .brand::before{content:"";width:3px;height:15px;background:#8C6A4E;display:inline-block;flex:none}
+  .view-switch{display:flex;gap:20px;background:none;padding:0}
+  .view-switch button{
+    border:none;background:none;color:rgba(244,241,233,.55);font:inherit;font-size:11.5px;letter-spacing:.14em;
+    padding:6px 0 5px;cursor:pointer;white-space:nowrap;border-bottom:1px solid transparent;
+  }
+  .view-switch button.active{background:none;color:var(--cream);font-weight:400;border-bottom:1px solid var(--cream);box-shadow:none}
+
+  h1.page-title{font-weight:400;color:var(--ink);font-size:21px;margin:30px 0 6px;letter-spacing:.06em}
+  .page-sub{color:var(--ink-soft);font-size:12.5px;margin-bottom:22px;max-width:64ch;letter-spacing:.02em;line-height:1.9}
+
+  /* ===== 通用卡片/控件 ===== */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .ic{width:1em;height:1em;flex:none}
+  .thumb-ic{display:flex;align-items:center;justify-content:center;background:var(--gold-soft)!important;color:var(--gold);flex:none}
+  .thumb-ic.mono{font-family:"Noto Sans SC",sans-serif;font-size:15px;color:#7A4E33;letter-spacing:0;line-height:1}
+  .thumb-ic .ic{width:46%;height:46%}
+  .card h2{font-weight:500;font-size:14px;color:var(--ink);margin-bottom:5px;letter-spacing:.1em}
+  .sub{font-size:11.5px;color:var(--ink-soft);margin-bottom:16px;letter-spacing:.02em}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
+  .chip{
+    border:1px solid var(--line);background:none;color:var(--ink-soft);
+    font:inherit;font-size:11.5px;padding:8px 13px;border-radius:0;cursor:pointer;letter-spacing:.06em;
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:7px;font-weight:400;letter-spacing:.1em}
+  .field input,.field select,.field textarea{
+    width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--card-2);font:inherit;color:var(--ink);font-size:14px;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:1px solid var(--ink);outline-offset:1px;border-color:var(--ink)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .btn{padding:12px 18px;border:none;border-radius:var(--radius-sm);background:var(--ink);color:#fff;font:inherit;font-weight:400;font-size:12.5px;letter-spacing:.12em;cursor:pointer}
+  .btn:active{opacity:.86}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .btn.ghost{background:none;color:var(--ink);border:1px solid var(--line-strong)}
+  .btn.sm{padding:7px 12px;font-size:11px;border-radius:2px;letter-spacing:.06em}
+  .btn.danger{background:none;color:var(--high);border:1px solid #DCC3BB}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+  .toolbar{display:flex;gap:10px;align-items:center;margin:14px 0;flex-wrap:wrap}
+  .search{flex:1;min-width:160px;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2);font:inherit;color:var(--ink);font-size:13px}
+  .search:focus{outline:1px solid var(--ink);outline-offset:1px;border-color:var(--ink)}
+  .ghost-btn{border:none;background:none;color:var(--ink-soft);font:inherit;font-size:11px;cursor:pointer;padding:8px 10px;border-radius:2px;white-space:nowrap;letter-spacing:.08em}
+  .ghost-btn:hover{background:var(--paper-2);color:var(--ink)}
+  .check-list{display:flex;flex-direction:column;gap:9px}
+  .check-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;cursor:pointer}
+  .check-row input{width:15px;height:15px;accent-color:var(--ink)}
+  .qty-chips{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 2px}
+  .qty-chip{border:1px solid var(--line);background:none;color:var(--ink-soft);font:inherit;font-size:11px;padding:5px 10px;border-radius:2px;cursor:pointer;letter-spacing:.04em}
+  .qty-chip:active{background:var(--paper-2)}
+
+  /* ===== 后台布局 ===== */
+  .admin-tabs{display:flex;gap:24px;margin:4px 0 20px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:0}
+  .admin-tabs button{border:none;background:none;color:var(--ink-soft);font:inherit;font-size:12.5px;letter-spacing:.1em;
+    padding:6px 0 12px;cursor:pointer;border-bottom:2px solid transparent}
+  .admin-tabs button.active{background:none;color:var(--ink);font-weight:500;border-bottom:2px solid var(--ink)}
+
+  .grid{display:grid;gap:16px}
+  @media(min-width:820px){ .grid.two{grid-template-columns:1fr 1fr} }
+
+  /* 配料表 */
+  .ing-table{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+  .ing-row{border:none;border-bottom:1px solid var(--line);border-radius:0;padding:16px 0;display:flex;gap:14px;background:none}
+  .ing-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .ing-name{font-weight:400;font-size:14px;color:var(--ink);letter-spacing:.04em}
+  .ing-cat{font-size:10.5px;color:var(--ink-faint);margin-left:9px;font-weight:400;letter-spacing:.06em}
+  .ing-meta{margin-top:7px;font-size:11.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 16px;letter-spacing:.02em}
+  .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
+  .ing-ops{display:flex;gap:4px;margin-top:10px}
+  .ing-ops .btn{background:none;border:none;padding:5px 8px;font-size:10.5px;color:var(--ink-soft);letter-spacing:.1em}
+  .ing-ops .btn:hover{color:var(--ink);background:var(--paper-2)}
+  .ing-ops .btn.danger{color:#A8635A;border:none;background:none}
+  .ing-ops .btn.danger:hover{color:#8E4436;background:#F7EDEA}
+  .ing-thumb{width:46px;height:46px;border-radius:2px;object-fit:cover;background:var(--paper-2);flex:none}
+  .ing-body{flex:1;min-width:0}
+
+  /* 产品卡片 */
+  .prod-list{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+  .prod{background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:18px 0;display:flex;gap:14px}
+  .prod-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .prod-name{font-weight:400;font-size:14.5px;color:var(--ink);letter-spacing:.05em}
+  .prod-cat{font-size:10.5px;color:var(--ink-faint);margin-left:9px;font-weight:400;letter-spacing:.06em}
+  .prod-kcal{font-weight:400;font-size:19px;color:var(--ink);white-space:nowrap}
+  .prod-kcal small{font-size:10.5px;color:var(--ink-soft);font-weight:400;letter-spacing:.1em}
+  .prod-meta{margin-top:7px;font-size:11.5px;color:var(--ink-soft);letter-spacing:.02em}
+  .tag{display:inline-block;font-size:10px;padding:3px 8px;border-radius:0;font-weight:400;letter-spacing:.08em}
+  .tag.low{background:var(--low-bg);color:var(--low)}
+  .tag.mid{background:var(--mid-bg);color:var(--mid)}
+  .tag.high{background:var(--high-bg);color:var(--high)}
+
+  /* ===== C 端预览 ===== */
+  .shop-grid{display:grid;gap:0;border-top:1px solid var(--line)}
+  @media(min-width:820px){ .shop-grid{grid-template-columns:1fr 1fr;column-gap:44px} }
+  .shop-card{background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:16px 0;cursor:pointer;display:flex;gap:14px}
+  .shop-card:hover{border-color:var(--line);transform:none}
+  .shop-card:active{background:var(--paper-2)}
+  .shop-card .prod-kcal{font-size:22px}
+  .shop-meta{margin-top:8px;font-size:11.5px;color:var(--ink-soft);letter-spacing:.02em}
+  .price{font-weight:400;color:var(--ink);font-size:14px;font-family:"Archivo",sans-serif}
+
+  /* 饮品图片 */
+  .prod-thumb{width:54px;height:54px;border-radius:2px;object-fit:cover;background:var(--paper-2);flex:none}
+  .prod-body{flex:1;min-width:0}
+  .shop-card .prod-body{overflow:hidden}
+  .shop-thumb{width:70px;height:70px;border-radius:2px;object-fit:cover;background:var(--paper-2);flex:none}
+  .shop-card .prod-top,.shop-card .shop-meta{min-width:0}
+  .detail-img{width:100%;height:170px;object-fit:cover;border-radius:2px;margin-bottom:16px;background:var(--paper-2)}
+  .detail-img.thumb-ic .ic{width:56px;height:56px}
+  .img-uploader{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .img-preview{width:82px;height:82px;border-radius:2px;object-fit:cover;background:var(--paper-2);border:1px solid var(--line);flex:none}
+  .img-ops{display:flex;flex-direction:column;gap:8px}
+  .img-hint{font-size:10.5px;color:var(--ink-soft);letter-spacing:.02em}
+
+  .detail-head{display:flex;align-items:center;gap:10px;margin:20px 0}
+  .back{border:none;background:none;color:var(--ink-soft);font:inherit;font-size:11.5px;cursor:pointer;padding:6px 4px;letter-spacing:.1em}
+  .detail-card{margin-top:8px}
+  .milk-switch{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+
+  .split-list{display:flex;flex-direction:column;gap:0;margin-top:14px;border-top:1px solid var(--line-strong)}
+  .split-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;border-bottom:1px solid var(--line-2);padding:11px 0}
+  .split-row:last-child{border-bottom:none}
+  .split-row .s-left{display:flex;gap:10px;align-items:center;min-width:0}
+  .s-thumb{width:34px;height:34px;border-radius:2px;object-fit:cover;background:var(--paper-2);flex:none}
+  .split-row .s-name{color:var(--ink);letter-spacing:.03em}
+  .split-row .s-meta{color:var(--ink-soft);font-size:11px}
+  .split-row .s-kcal{font-weight:400;color:var(--gold);white-space:nowrap;font-family:"Archivo",sans-serif}
+  .split-row .s-pct{font-weight:400;font-size:10px;color:var(--ink-soft)}
+  .total-bar{margin-top:18px;background:var(--espresso);color:var(--cream);border-radius:2px;padding:18px 20px;display:flex;justify-content:space-between;align-items:baseline}
+  .total-bar .big{font-weight:300;font-size:30px;letter-spacing:-.01em}
+  .total-bar small{color:rgba(244,241,233,.6);letter-spacing:.12em;font-size:10px}
+
+  /* ===== 弹层 ===== */
+  .overlay{position:fixed;inset:0;background:rgba(20,20,16,.45);z-index:30;display:none;padding:18px;overflow-y:auto}
+  .overlay.open{display:block}
+  .modal{background:var(--paper);border-radius:2px;max-width:560px;margin:24px auto;padding:26px 26px 0}
+  .modal h2{font-weight:500;color:var(--ink);margin-bottom:16px;padding-bottom:14px;font-size:15px;letter-spacing:.12em;border-bottom:1px solid var(--line)}
+  .modal .btn-row{position:sticky;bottom:0;background:var(--paper);padding:16px 0 18px;margin-top:22px;border-top:1px solid var(--line);z-index:2;box-shadow:0 -12px 16px -14px rgba(20,20,16,.28)}
+  .modal .ing-row-edit .field{margin-bottom:0}
+  .ing-row-edit{border:1px solid var(--line);border-radius:2px;padding:14px;margin-bottom:10px;background:var(--card-2)}
+  .ing-row-edit .row2{align-items:end}
+
+  .note{margin-top:26px;font-size:10.5px;color:var(--ink-soft);line-height:2;max-width:66ch;letter-spacing:.02em}
+  .note b{color:var(--ink);font-weight:500}
+  .empty{color:var(--ink-faint);font-size:12.5px;padding:44px 0;text-align:center;letter-spacing:.06em}
+
+  /* ===== 订单看板 ===== */
+  .legend{display:flex;justify-content:flex-end;font-size:10px;color:var(--ink-faint);letter-spacing:.08em;padding:2px 0 8px}
+  .mockbar{background:#F4EEE6;border:1px solid #E4D6C6;color:#7A4E33;font-size:10.5px;letter-spacing:.08em;padding:8px 12px;margin-bottom:16px}
+  .ordbar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:6px 0 16px;flex-wrap:wrap}
+  .ordbar .cnt{font-size:11px;color:var(--ink-soft);letter-spacing:.08em}
+  .ordbar .cnt b{font-family:"Archivo",sans-serif;font-size:20px;font-weight:400;color:var(--ink);margin-right:5px}
+  .ordlist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .ord{border-bottom:1px solid var(--line);padding:18px 0}
+  .ord.wait{background:linear-gradient(90deg,rgba(122,78,51,.05),rgba(122,78,51,0) 60%)}
+  .ord-top{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+  .ordno{font-size:26px;font-weight:400;letter-spacing:.06em;line-height:1.1}
+  .ord-time{font-size:10.5px;color:var(--ink-faint);letter-spacing:.06em}
+  .ord-items{margin-top:10px;font-size:12.5px;color:var(--ink-soft);line-height:1.9}
+  .ord-items b{color:var(--ink);font-weight:400}
+  .ord-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+  .ord-sum{font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
+  .ord-sum b{font-family:"Archivo",sans-serif;font-size:15px;color:var(--ink);font-weight:400}
+  .ord-ops{display:flex;gap:8px;flex-wrap:wrap}
+  .st{display:inline-block;font-size:10px;padding:3px 9px;letter-spacing:.1em;border-radius:0}
+  .st.wait{background:#F2E6DB;color:#7A4E33}
+  .st.make{background:#EDF2EE;color:#3F6B52}
+  .st.done{background:var(--paper-2);color:var(--ink-soft)}
+  .st.void{background:#F7E9E5;color:#9C4A38}
+  .ord-note{margin-top:8px;font-size:11px;color:var(--gold);letter-spacing:.02em}
+
+  /* ===== 品牌落地页 ===== */
+  .hero{background:linear-gradient(180deg,#1E1A16 0%,var(--espresso) 60%,var(--espresso-2) 100%);color:var(--cream);padding:64px 0 56px;position:relative;overflow:hidden}
+  .hero-in{display:grid;grid-template-columns:1.04fr .96fr;gap:40px;align-items:center}
+  .hero-kicker{font-size:10px;letter-spacing:.26em;color:#B99C82;font-weight:400;margin-bottom:18px}
+  .hero h2{font-weight:300;font-size:34px;line-height:1.28;letter-spacing:.04em;color:#FCFCFA;margin-bottom:16px}
+  .hero h2 em{font-style:normal;color:#C9AE93}
+  .hero p{color:rgba(244,241,233,.72);max-width:50ch;font-size:13px;line-height:1.95;letter-spacing:.02em}
+  .hero-art{display:flex;justify-content:center;align-items:center;position:relative}
+  .hero-art .halo{position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(185,156,130,.2) 0%,rgba(185,156,130,0) 70%)}
+  .hero-art svg.hero-cup{position:relative;width:230px;height:230px}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+  .hero-actions .btn{padding:13px 22px;background:#FCFCFA;color:var(--espresso);letter-spacing:.16em}
+  .hero-actions .btn.ghost{background:none;border:1px solid rgba(244,241,233,.4);color:var(--cream)}
+  .hero-stats{display:flex;gap:40px;flex-wrap:wrap;margin-top:34px;padding-top:22px;border-top:1px solid rgba(244,241,233,.14)}
+  .hero-stats .hs b{display:block;font-size:26px;font-weight:300;color:#FCFCFA;font-family:"Archivo",sans-serif;letter-spacing:-.01em}
+  .hero-stats .hs span{font-size:10px;color:rgba(244,241,233,.6);letter-spacing:.14em}
+  .landing-section{margin-top:44px}
+  .landing-section h3{font-weight:400;color:var(--ink);font-size:16px;margin-bottom:6px;letter-spacing:.12em}
+  .landing-section .ls-sub{font-size:11.5px;color:var(--ink-soft);margin-bottom:18px;letter-spacing:.04em}
+  .landing-grid{display:grid;gap:0;border-top:1px solid var(--line)}
+  @media(min-width:820px){ .landing-grid{grid-template-columns:repeat(3,1fr)} }
+  .landing-card{background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;overflow:hidden;cursor:pointer}
+  .landing-card:hover{border-color:var(--line)}
+  .landing-card .lc-img{height:150px;background:var(--paper-2);object-fit:cover;width:100%;display:block}
+  .landing-card .lc-img.thumb-ic{background:var(--gold-soft);color:var(--gold)}
+  .landing-card .lc-img.thumb-ic .ic{width:44px;height:44px}
+  .landing-card .lc-body{padding:16px 0}
+  .landing-card .lc-name{font-weight:400;font-size:14px;color:var(--ink);letter-spacing:.05em}
+  .landing-card .lc-meta{margin-top:6px;font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;gap:10px;letter-spacing:.04em}
+  .landing-feats{display:grid;gap:0;margin-top:10px;border-top:1px solid var(--line)}
+  @media(min-width:820px){ .landing-feats{grid-template-columns:repeat(3,1fr)} }
+  .feat{background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:20px 0}
+  .feat .feat-ic{width:34px;height:34px;border:none;background:none;color:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .feat .feat-ic .ic{width:20px;height:20px}
+  .feat b{display:block;font-weight:500;color:var(--ink);margin-bottom:6px;font-size:12.5px;letter-spacing:.08em}
+  .feat span{font-size:11px;color:var(--ink-soft);letter-spacing:.02em;line-height:1.9}
+  .landing-foot{margin-top:44px;padding-top:20px;border-top:1px solid var(--line-strong);font-size:10.5px;color:var(--ink-faint);letter-spacing:.04em}
+
+  /* ===== 窄屏（手机）适配 ===== */
+  @media(max-width:520px){
+    .wrap{padding:0 16px}
+    .topbar-in{flex-direction:column;align-items:flex-start;gap:6px;padding:12px 0 0}
+    .view-switch{width:100%;gap:20px;padding-bottom:11px}
+    .brand{font-size:11px;white-space:nowrap;letter-spacing:.08em}
+    .view-switch button{padding:5px 0 4px;font-size:10.5px;letter-spacing:.06em}
+    .admin-tabs{flex-wrap:wrap;gap:6px}
+    .admin-tabs span{margin-left:0;flex-wrap:wrap}
+    .admin-tabs .ghost-btn{padding:8px 10px;font-size:10.5px}
+    .toolbar{flex-direction:column;align-items:stretch;gap:10px}
+    .toolbar .search{min-width:0}
+    .prod-top{flex-direction:column;align-items:stretch;gap:6px}
+    .prod-kcal{white-space:normal}
+    .hero{padding:44px 0 38px}
+    .hero-in{grid-template-columns:1fr;gap:26px}
+    .hero h2{font-size:26px}
+    .hero-art svg.hero-cup{width:170px;height:170px}
+    .hero-art .halo{width:220px;height:220px}
+    .row2{grid-template-columns:1fr}
+    .total-bar{flex-wrap:wrap;gap:6px}
+  }
+
+
+  /* ===== 刻度元件 ===== */
+  .idx{font-family:"Archivo",sans-serif;font-size:10px;color:#B8B4A6;flex:none;width:24px;padding-top:3px;letter-spacing:.06em}
+  .ruler{position:relative;display:block;width:100%;min-width:104px;height:9px;
+    background:repeating-linear-gradient(90deg,#DCD8CA 0 1px,transparent 1px 7px) left bottom/100% 6px no-repeat;
+    border-bottom:1px solid #CFCABA}
+  .ruler .fill{position:absolute;left:0;bottom:-1px;height:2px;background:var(--gold);display:block}
+  .kblock{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;min-width:132px}
+  .kblock .rtxt{font-size:9.5px;color:var(--ink-faint);letter-spacing:.12em}
+  .prod{display:grid;grid-template-columns:24px 56px 1fr 140px;gap:14px;align-items:start}
+  .prod .ing-ops{margin-top:12px}
+  .ing-row{display:grid;grid-template-columns:24px 46px 1fr 132px;gap:14px;align-items:start}
+  .shop-card{display:grid;grid-template-columns:76px minmax(0,1fr) 104px;gap:14px;align-items:start;overflow:hidden}
+  .shop-card .kblock{min-width:0;gap:5px}
+  .shop-card .ruler{min-width:0}
+  .shop-card .kblock{min-width:0}
+  @media(max-width:760px){
+    .shop-card{grid-template-columns:64px minmax(0,1fr);gap:12px}
+    .shop-thumb{width:64px;height:64px}
+    .shop-card .prod-body{grid-column:2}
+    .shop-card .kblock{grid-column:2;flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap}
+    .shop-card .ruler{flex:1;min-width:76px}
+    .shop-card .prod-kcal{font-size:20px}
+    .prod{grid-template-columns:20px 48px minmax(0,1fr);gap:12px}
+    .prod-thumb{width:48px;height:48px}
+    .prod .kblock{grid-column:3;flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap}
+    .prod .ruler{flex:1;min-width:66px}
+    .ing-row{grid-template-columns:20px 44px minmax(0,1fr);gap:12px}
+    .ing-thumb{width:44px;height:44px}
+    .ing-row .kblock{grid-column:3;flex-direction:row;align-items:center;gap:10px}
+    .ing-row .ruler{flex:1;min-width:66px}
+    .idx{width:auto;padding-top:2px}
+    .rtxt{display:none}
+  }
+  .shop-card .prod-kcal{font-size:22px;white-space:nowrap}
+  .landing-card .lc-img{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:4/3;height:auto;object-fit:cover}
+  .landing-card .lc-body{padding:14px 0 18px}
+  .landing-grid{gap:0 24px}
+  .lc-meta{display:flex!important;justify-content:space-between;align-items:baseline;gap:10px}
+  .lc-meta .m{color:var(--ink-soft);font-size:11.5px}
+  .hero-scale{display:flex;align-items:flex-end;gap:0;margin-top:26px;max-width:420px}
+  .hero-scale .tick{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:0}
+  .hero-scale .tick i{display:block;width:1px;background:rgba(244,241,233,.28);height:6px}
+  .hero-scale .tick i.tall{height:11px;background:rgba(244,241,233,.5)}
+  .hero-scale .tick em{font-style:normal;font-size:9px;color:rgba(244,241,233,.4);font-family:"Archivo",sans-serif;margin-top:5px;letter-spacing:.08em}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <div class="brand">饮品热量管理</div>
+    <div class="view-switch" id="viewSwitch">
+      <button data-view="landing">首页</button>
+      <button data-view="shop">顾客端</button>
+      <button data-view="admin">商家后台</button>
+    </div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var LS_KEY = "cafe_calorie_v1";
+  var KJ = 4.184;
+  var CATEGORIES = ["牛奶","奶油","黄油","基底","糖浆","风味酱","果酱","花料","香草","顶料","小料"];
+  var BIG_CATS = ["咖啡","气泡特调"];
+
+  /* ---------- Supabase 配置（公开级 anon key，可写前端） ----------
+     留空 url / anonKey 时，自动回退到本机 localStorage 模式。
+     严禁在此填入 service_role key。 */
+  var SUPA_CONFIG = {
+    url: "https://pnucsuxkduvwpgklizmw.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudWNzdXhrZHV2d3Bna2xpem13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0ODI0MjEsImV4cCI6MjExMTA1ODQyMX0.8H2mNE3KEXZmHdXpV92pJ80OeN_gKAGvVZ69l0zwBGw"
+  };
+  /* 环境开关：null=自动（本地 file:///localhost 走本机，线上域名走云端）；
+     true=强制云端；false=强制本机。 */
+  var FORCE_CLOUD = null;
+  var sb = null;
+  function isLocalEnv(){
+    var h = location.hostname || "";
+    return location.protocol === "file:" || h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "[::1]";
+  }
+  function supaReady(){
+    if(FORCE_CLOUD === false) return false;
+    var configured = !!SUPA_CONFIG.url && !!SUPA_CONFIG.anonKey && typeof supabase !== "undefined";
+    if(FORCE_CLOUD === true) return configured;
+    return !isLocalEnv() && configured;
+  }
+
+  /* ---------- 默认示例数据 ---------- */
+  function defaultData(){
+    return {
+      ings:[
+        {id:"m1", name:"威士特全脂牛奶", category:"牛奶", unit:"ml", base:100, kJ:284, note:""},
+        {id:"m2", name:"优诺牛奶",       category:"牛奶", unit:"ml", base:100, kJ:0,   note:"示例待填"},
+        {id:"m3", name:"悦鲜活牛奶",     category:"牛奶", unit:"ml", base:100, kJ:0,   note:"示例待填"},
+        {id:"s1", name:"黑糖桂圆糖浆",   category:"糖浆", unit:"g",  base:100, kJ:1255, note:""},
+        {id:"s2", name:"榛果糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1338, note:""},
+        {id:"s3", name:"提拉米苏糖浆",   category:"糖浆", unit:"ml", base:100, kJ:1413, note:""},
+        {id:"s4", name:"玫瑰糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1420, note:""},
+        {id:"s5", name:"黄瓜糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1480, note:""},
+        {id:"s6", name:"黄油太妃曲奇酱", category:"风味酱",unit:"ml", base:100, kJ:1413, note:""},
+        {id:"s7", name:"桂花糖浆",       category:"糖浆", unit:"g",  base:100, kJ:893,  note:""},
+        {id:"o1", name:"浓缩咖啡",       category:"基底", unit:"g",  base:100, kJ:0,   note:"热量≈0"},
+        {id:"o2", name:"气泡水",         category:"基底", unit:"ml", base:100, kJ:0,   note:""}
+      ],
+      products:[
+        {id:"p1", name:"澳白", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:28, size:"中杯",
+         items:[{ingId:"m1", qty:180, role:"milk"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p2", name:"榛果拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:32, size:"中杯",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s2", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p3", name:"桂花气泡特调", big:"气泡特调", milkSwitch:false, milkOptions:[], price:26, size:"中杯",
+         items:[{ingId:"o2", qty:300, role:"other"},{ingId:"s7", qty:25, role:"other"}], desc:""}
+      ]
+    };
+  }
+
+  function load(){
+    try{ var raw=localStorage.getItem(LS_KEY); if(raw){ var d=JSON.parse(raw); if(d && d.ings && d.products) return d; } }catch(e){}
+    return defaultData();
+  }
+  function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }catch(e){} }
+
+  /* ---------- 云端字段映射（前端字段名不变，仅在边界转换） ---------- */
+  function ingToRow(i){
+    return { lid:i.id, name:i.name, category:i.category, unit:i.unit,
+      base:Number(i.base)||100, kJ:Number(i.kJ)||0, note:i.note||"", image:i.image||"" };
+  }
+  function rowToIng(r){
+    return { id:r.lid, name:r.name, category:r.category, unit:r.unit,
+      base:Number(r.base)||100, kJ:Number(r.kJ)||0, note:r.note||"", image:r.image||"" };
+  }
+  function prodToRow(p){
+    return { lid:p.id, name:p.name, big:p.big, milk_switch:!!p.milkSwitch,
+      milk_options:(p.milkOptions||[]).slice(),
+      items:JSON.parse(JSON.stringify(p.items||[])), desc:p.desc||"",
+      price:(p.price===null||p.price==="")?null:Number(p.price)||null,
+      size:p.size||"", image:p.image||"" };
+  }
+  function rowToProduct(r){
+    return { id:r.lid, name:r.name, big:r.big, milkSwitch:!!r.milk_switch,
+      milkOptions:Array.isArray(r.milk_options)?r.milk_options:[],
+      items:Array.isArray(r.items)?r.items:[], desc:r.desc||"",
+      price:(r.price==null||r.price==="")?"":Number(r.price), size:r.size||"",
+      image:r.image||"" };
+  }
+
+  /* ---------- 饮品图片：前端压缩 + Storage 上传 ---------- */
+  var IMG_BUCKET = "product-images";
+  var IMG_MAX_W = 720, IMG_QUALITY = 0.72;
+
+  function compressImage(file){
+    return new Promise(function(resolve,reject){
+      if(!file || !file.type || file.type.indexOf("image/")!==0){ reject(new Error("请选择图片文件")); return; }
+      var url=URL.createObjectURL(file);
+      var img=new Image();
+      img.onload=function(){
+        var w=img.width||IMG_MAX_W, h=img.height||IMG_MAX_W;
+        if(w>IMG_MAX_W){ h=Math.round(h*IMG_MAX_W/w); w=IMG_MAX_W; }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        var ctx=c.getContext("2d");
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(blob){
+          if(blob){ resolve({blob:blob, dataUrl:c.toDataURL("image/jpeg",IMG_QUALITY)}); }
+          else{ reject(new Error("图片压缩失败")); }
+        }, "image/jpeg", IMG_QUALITY);
+      };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error("图片读取失败")); };
+      img.src=url;
+    });
+  }
+
+  async function uploadImage(blob, prefix, objId){
+    var path = prefix + "-" + objId + "-" + Date.now() + ".jpg";
+    var up = await sb.storage.from(IMG_BUCKET).upload(path, blob, {contentType:"image/jpeg", upsert:true});
+    if(up.error) throw up.error;
+    var pub = sb.storage.from(IMG_BUCKET).getPublicUrl(path);
+    return (pub.data && pub.data.publicUrl) || "";
+  }
+
+  /* 从 public URL 反推桶内路径；dataURL / 非本桶地址返回 null */
+  function storagePathFromUrl(url){
+    if(!url || typeof url !== "string") return null;
+    var marker = "/object/public/" + IMG_BUCKET + "/";
+    var idx = url.indexOf(marker);
+    if(idx < 0) return null;
+    var path = url.slice(idx + marker.length);
+    return path || null;
+  }
+  /* 删除旧图；失败仅记录，不阻断主流程 */
+  async function deleteProductImage(imageUrl){
+    if(!supaReady() || !imageUrl) return;
+    var path = storagePathFromUrl(imageUrl);
+    if(!path) return;
+    try{ await sb.storage.from(IMG_BUCKET).remove([path]); }
+    catch(e){ console.error('delete old image failed:', e); }
+  }
+
+  /* 全量对齐云端：本地优先，异步同步；失败仅提示，本地改动保留 */
+  async function syncRemote(){
+    if(!supaReady()) return;
+    try{
+      const old = await Promise.all([
+        sb.from('ingredients').select('lid'),
+        sb.from('products').select('lid')
+      ]);
+      if(old[0].error) throw old[0].error;
+      if(old[1].error) throw old[1].error;
+      const oldIng = new Set((old[0].data||[]).map(function(r){return r.lid;}));
+      const oldProd = new Set((old[1].data||[]).map(function(r){return r.lid;}));
+
+      if(db.ings.length) await sb.from('ingredients').upsert(db.ings.map(ingToRow),{onConflict:'lid'});
+      if(db.products.length) await sb.from('products').upsert(db.products.map(prodToRow),{onConflict:'lid'});
+
+      const newIng = new Set(db.ings.map(function(x){return x.id;}));
+      oldIng.forEach(function(lid){ if(!newIng.has(lid)) sb.from('ingredients').delete().eq('lid',lid); });
+      const newProd = new Set(db.products.map(function(x){return x.id;}));
+      oldProd.forEach(function(lid){ if(!newProd.has(lid)) sb.from('products').delete().eq('lid',lid); });
+    }catch(err){
+      console.error('sync remote failed:', err);
+      alert('保存到云端失败，本地改动已保留：' + ((err&&err.message)||err));
+    }
+  }
+
+  /* 启动：云端优先拉取；云端为空则写入示例数据；失败回退本机 */
+  async function boot(){
+    if(!supaReady()){ db = load(); return; }
+    try{
+      sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+      const res = await Promise.all([
+        sb.from('ingredients').select('*'),
+        sb.from('products').select('*')
+      ]);
+      if(res[0].error) throw res[0].error;
+      if(res[1].error) throw res[1].error;
+      const ings = (res[0].data||[]).map(rowToIng);
+      const prods = (res[1].data||[]).map(rowToProduct);
+      if(ings.length || prods.length){
+        db = { ings:ings, products:prods };
+      }else{
+        db = defaultData();
+        await syncRemote();
+      }
+      save();
+    }catch(e){
+      console.error('remote load failed, fallback to localStorage:', e);
+      db = load();
+    }
+  }
+
+  function exportJSON(){
+    var blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="饮品热量数据.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+  function mdEsc(s){ return String(s==null?"":s).replace(/\|/g,"\\|").replace(/\n/g," "); }
+  function exportMarkdown(){
+    var pad=function(n){ return String(n).padStart(2,"0"); };
+    var now=new Date();
+    var stamp=now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+" "+pad(now.getHours())+":"+pad(now.getMinutes());
+    var L=[];
+    L.push("# 饮品热量清单","");
+    L.push("> 导出时间："+stamp+"　热量单位：大卡（kcal）","");
+
+    L.push("## 一、配料库","");
+    L.push("| 配料 | 类别 | 单位 | 基准量 | 基准千焦 | 每单位大卡 | 备注 |");
+    L.push("|---|---|---|---|---|---|---|");
+    db.ings.forEach(function(i){
+      L.push("| "+mdEsc(i.name)+" | "+mdEsc(i.category)+" | "+i.unit+" | "+(+i.base||100)+" | "+(+i.kJ||0)+" | "+r1(kcalPerUnit(i))+" | "+mdEsc(i.note||"")+" |");
+    });
+    L.push("");
+
+    L.push("## 二、饮品配方","");
+    BIG_CATS.forEach(function(big){
+      var list=db.products.filter(function(p){return p.big===big;});
+      if(!list.length) return;
+      L.push("### "+big,"");
+      list.forEach(function(p){
+        var c=productKcal(p, defaultMilk(p));
+        var t=tier(c.total,p.big);
+        var price=(p.price!=null&&p.price!=="")?("¥"+p.price):"未定价";
+        var size=p.size||"杯型未标注";
+        L.push("#### "+mdEsc(p.name)+"（"+size+" · "+price+" · "+r1(c.total)+" 大卡 · "+t.label+"）","");
+        L.push("| 配料 | 用量 | 大卡 | 占比 |");
+        L.push("|---|---|---|---|");
+        c.rows.forEach(function(r){
+          if(r.missing){ L.push("| 配料缺失（"+mdEsc(r.ingId)+"） | "+r.qty+" | — | — |"); return; }
+          var pct=c.total>0?Math.round(r.kcal/c.total*100):0;
+          L.push("| "+mdEsc(r.ing.name)+" | "+r.qty+mdEsc(r.ing.unit)+(r.role==="milk"?"（牛奶位）":"")+" | "+r1(r.kcal)+" | "+pct+"% |");
+        });
+        L.push("");
+      });
+    });
+
+    var blob=new Blob([L.join("\n")],{type:"text/markdown;charset=utf-8"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="饮品热量清单.md";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+  function importJSON(file){
+    if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{
+        var d=JSON.parse(reader.result);
+        if(!d.ings||!d.products) throw new Error("bad");
+        db=d; save(); syncRemote(); render(); alert("导入成功");
+      }catch(e){ alert("文件格式不正确，请选择本系统导出的 JSON"); }
+    };
+    reader.readAsText(file);
+  }
+
+  var db = null;
+
+  var state = {
+    view:"landing", tab:"ings",
+    catFilter:"全部", shopCat:"咖啡",
+    selProduct:null, milkSel:{},
+    ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"",
+    modal:null // {type:'ing'|'product', id:null}
+  };
+
+  /* ---------- 工具 ---------- */
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];}); }
+  function r1(n){ return Math.round((+n||0)*10)/10; }
+  function byId(arr,id){ return arr.find(function(x){return x.id===id;}); }
+  function ing(id){ return byId(db.ings,id); }
+  function kcalPerUnit(i){ if(!i) return 0; return (+i.kJ||0)/KJ/(+i.base||100); }
+
+  /* ---------- 内联线稿图标（纯代码兜底，无外部素材） ---------- */
+  var IC = {
+    cup:'<path d="M5 9h11v4.5A4.5 4.5 0 0 1 11.5 18h-2A4.5 4.5 0 0 1 5 13.5V9z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 20h12"/><path d="M8 5.5c0-1 .8-1 .8-2M11 5.5c0-1 .8-1 .8-2"/>',
+    bubble:'<path d="M7 5h10l-1.6 12.2A2 2 0 0 1 13.4 19h-2.8a2 2 0 0 1-2-1.8L7 5z"/><circle cx="11" cy="11" r="1.1"/><circle cx="13.5" cy="13.5" r=".9"/><circle cx="12" cy="15.5" r=".7"/>',
+    milk:'<path d="M8 4h8l1 5v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l1-5z"/><path d="M8 9h8"/><path d="M10 13h4"/>',
+    syrup:'<path d="M10 3h4v3l1.5 3v9a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V9L10 6V3z"/><path d="M9.5 13h5"/>',
+    bean:'<ellipse cx="12" cy="12" rx="6" ry="8" transform="rotate(30 12 12)"/><path d="M8.5 7.5c3 2.5 4.5 6.5 7 9"/>',
+    shield:'<path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
+    list:'<path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+    drop:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/>',
+    leaf:'<path d="M5 19C5 10 11 5 19 5c0 8-5 14-14 14z"/><path d="M5 19c3-4 6-7 9-9"/>'
+  };
+  function ic(name, cls){
+    var body = IC[name]||IC.bean;
+    return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+body+'</svg>';
+  }
+  function catIcon(big){ return big==="气泡特调" ? "bubble" : "cup"; }
+  function ingIcon(i){
+    if(!i) return "bean";
+    var c=(i.category||"");
+    if(/奶/.test(c)) return "milk";
+    if(/糖浆|糖/.test(c)) return "syrup";
+    if(/酱|淋/.test(c)) return "syrup";
+    if(/浓缩|豆|咖/.test(c)) return "bean";
+    return "bean";
+  }
+  function tier(k, big){
+    if(big==="气泡特调") return k<60?{cls:"low",label:"偏低"}: k<=100?{cls:"mid",label:"中等"}:{cls:"high",label:"偏高"};
+    return k<225?{cls:"low",label:"偏低"}: k<=238?{cls:"mid",label:"中等"}:{cls:"high",label:"偏高"};
+  }
+
+  function productKcal(p, milkId){
+    var total=0, rows=[];
+    p.items.forEach(function(it){
+      var iid = it.role==="milk" ? (milkId||it.ingId) : it.ingId;
+      var i = ing(iid);
+      if(!i){ rows.push({missing:true, ingId:iid, qty:+it.qty||0, role:it.role, kcal:0}); return; }
+      var k = kcalPerUnit(i) * (+it.qty||0);
+      total += k;
+      rows.push({ing:i, qty:+it.qty||0, role:it.role, kcal:k});
+    });
+    return { total:total, rows:rows };
+  }
+  function defaultMilk(p){ return (state.milkSel[p.id]) || (p.milkOptions[0]) || ""; }
+
+  /* ---------- 顶层渲染 ---------- */
+  var app = document.getElementById("app");
+  function render(){
+    if(!db) return;
+    document.querySelectorAll("#viewSwitch button").forEach(function(b){
+      b.classList.toggle("active", b.dataset.view===state.view);
+    });
+    if(state.view==="admin") renderAdmin();
+    else if(state.view==="landing") renderLanding();
+    else renderShop();
+  }
+
+  /* ================= 商家后台 ================= */
+  function renderAdmin(){
+    var html = '<div class="wrap">';
+    html += '<h1 class="page-title">商家后台</h1><p class="page-sub">维护配料库与饮品配方；热量按「每 1g / 1ml 大卡 × 用量」实时计算。'+(supaReady()?'数据已同步到云端，多端一致。':'数据保存在本机浏览器。')+'</p>';
+    html += '<div class="admin-tabs">' +
+      '<button data-tab="ings" class="'+(state.tab==="ings"?"active":"")+'">配料库</button>' +
+      '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
+      '<button data-tab="orders" class="'+(state.tab==="orders"?"active":"")+'">订单看板</button>' +
+      '<span style="margin-left:auto;display:flex;gap:6px">' +
+      '<button class="ghost-btn" id="exportBtn">导出 JSON</button>' +
+      '<button class="ghost-btn" id="exportMdBtn">导出 Markdown</button>' +
+      '<button class="ghost-btn" id="importBtn">导入 JSON</button>' +
+      '<button class="ghost-btn" id="resetBtn">重置示例</button></span>' +
+      '</div>';
+    html += '<input type="file" id="importFile" accept="application/json" hidden>';
+    html += '<div id="adminBody"></div>';
+    html += '</div>';
+    app.innerHTML = html;
+
+    document.querySelectorAll(".admin-tabs button[data-tab]").forEach(function(b){
+      b.addEventListener("click",function(){ state.tab=b.dataset.tab; render(); });
+    });
+    document.getElementById("resetBtn").addEventListener("click",function(){
+      if(confirm("确定恢复默认示例数据？当前改动会清空。")){
+        db.products.forEach(function(p){ if(p.image) deleteProductImage(p.image); });
+        db=defaultData(); save(); syncRemote(); render();
+      }
+    });
+    document.getElementById("exportBtn").addEventListener("click",exportJSON);
+    document.getElementById("exportMdBtn").addEventListener("click",exportMarkdown);
+    document.getElementById("importBtn").addEventListener("click",function(){ document.getElementById("importFile").click(); });
+    document.getElementById("importFile").addEventListener("change",function(e){ importJSON(e.target.files[0]); });
+
+    if(state.tab==="ings") renderIngs();
+    else if(state.tab==="products") renderProducts();
+    else renderOrders();
+  }
+
+  function ruler(kcal,min,max){
+    max=max||300; min=min||0;
+    var pct=Math.max(0,Math.min(1,((+kcal||0)-min)/(max-min)));
+    return '<span class="ruler" aria-hidden="true"><span class="fill" style="width:'+(pct*100).toFixed(1)+'%"></span></span>';
+  }
+
+  /* ----- 订单看板 ----- */
+  var adminOrders=[], ordErr="", ordTimer=null, ordLoaded=false, ordMock=false;
+  var ORDER_SQL = [
+    "create table if not exists public.orders (",
+    "  order_no text primary key,",
+    "  visitor_id text,",
+    "  items jsonb not null default '[]'::jsonb,",
+    "  total numeric not null default 0,",
+    "  total_kcal numeric not null default 0,",
+    "  pickup text default '到店自取',",
+    "  note text default '',",
+    "  status text not null default '待制作',",
+    "  created_at timestamptz not null default now(),",
+    "  updated_at timestamptz not null default now()",
+    ");",
+    "create index if not exists orders_created_idx on public.orders (created_at desc);",
+    "create index if not exists orders_visitor_idx on public.orders (visitor_id);"
+  ].join("\n");
+
+  function mockOrders(){
+    var d=new Date(); var pre="A"+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-";
+    function t(min){ return new Date(Date.now()-min*60000).toISOString(); }
+    return [
+      {order_no:pre+"013", status:"待制作", created_at:t(3), total:30, total_kcal:240.7,
+       note:"少冰，谢谢", items:[{name:"黄油太妃曲奇拿铁",qty:1,milk:"m1",sugar:"少糖",ice:"正常冰"}]},
+      {order_no:pre+"012", status:"制作中", created_at:t(9), total:58, total_kcal:175.6,
+       items:[{name:"澳白",qty:1,milk:"m1",sugar:"无糖",ice:"热"},{name:"桂花气泡特调",qty:1,sugar:"标准糖",ice:"少冰"}]},
+      {order_no:pre+"011", status:"已取餐", created_at:t(24), total:30, total_kcal:243.4,
+       items:[{name:"桂花拿铁",qty:1,milk:"m3",sugar:"标准糖",ice:"去冰"}]}
+    ];
+  }
+
+  async function loadAdminOrders(){
+    if(!supaReady()){ adminOrders=[]; ordErr="本机模式预览，读不到云端订单。"; ordLoaded=true; return; }
+    try{
+      const r=await sb.from("orders").select("*").order("created_at",{ascending:false}).limit(40);
+      if(r.error) throw r.error;
+      adminOrders=r.data||[]; ordErr="";
+    }catch(e){
+      var msg=(e&&e.message)||"";
+      adminOrders=[];
+      ordErr = /Could not find the table|does not exist/i.test(msg) ? "云端还没有 orders 表，订单暂时落在顾客本机。" : (msg||"读取订单失败。");
+    }
+    ordLoaded=true;
+  }
+
+  function stCls(st){ return st==="待制作"?"wait": st==="制作中"?"make": st==="已取餐"?"done":"void"; }
+  function hm(iso){
+    if(!iso) return "";
+    var d=new Date(iso); if(isNaN(d.getTime())) return String(iso).slice(11,16);
+    return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  function milkName(id){ var i=ing(id); return i?i.name:""; }
+
+  function renderOrders(){
+    var body=document.getElementById("adminBody");
+    if(!ordLoaded){ body.innerHTML='<div class="empty">正在读取订单…</div>'; loadAdminOrders().then(renderOrders); return; }
+
+    var today=new Date(); var prefix="A"+String(today.getMonth()+1).padStart(2,"0")+String(today.getDate()).padStart(2,"0")+"-";
+    var list=adminOrders.filter(function(o){ return String(o.order_no||"").indexOf(prefix)===0; });
+    var waiting=list.filter(function(o){ return o.status==="待制作"; }).length;
+    var making=list.filter(function(o){ return o.status==="制作中"; }).length;
+    var revenue=list.filter(function(o){ return o.status!=="作废"; }).reduce(function(a,x){ return a+(+x.total||0); },0);
+
+    var head=(ordMock?'<div class="mockbar">示例数据 · 仅用于预览版式，接入云端后自动显示真实订单</div>':'')+'<div class="ordbar"><div class="cnt"><b>'+waiting+'</b>单待制作 · <b>'+making+'</b>单制作中</div>'+
+      '<div class="cnt">今日 '+list.length+' 单 · 合计 ¥'+r2(revenue)+'　10 秒自动刷新</div></div>';
+
+    var rows=list.map(function(o){
+      var items=(o.items||[]).map(function(x){
+        var bits=[x.milk?milkName(x.milk):"",x.sugar||"",x.ice||""].filter(Boolean).join(" · ");
+        return '<div><b>'+esc(x.name)+' × '+x.qty+'</b>　'+esc(bits)+'</div>';
+      }).join("");
+      var st=o.status||"待制作";
+      var ops="";
+      if(st==="待制作") ops='<button class="btn sm" data-no="'+esc(o.order_no)+'" data-st="制作中">开始制作</button>';
+      if(st==="制作中") ops='<button class="btn sm" data-no="'+esc(o.order_no)+'" data-st="已取餐">已取餐</button>';
+      if(st==="已取餐"||st==="作废") ops='<button class="btn sm ghost" data-no="'+esc(o.order_no)+'" data-st="制作中">退回制作中</button>';
+      if(st!=="作废") ops+='<button class="btn sm danger" data-no="'+esc(o.order_no)+'" data-st="作废">作废</button>';
+
+      return '<div class="ord '+(st==="待制作"?"wait":"")+'">'+
+        '<div class="ord-top"><div><span class="ordno">'+esc(o.order_no)+'</span> <span class="st '+stCls(st)+'">'+esc(st)+'</span></div>'+
+          '<div class="ord-time">'+hm(o.created_at)+' · 到店自取</div></div>'+
+        '<div class="ord-items">'+items+'</div>'+
+        (o.note?'<div class="ord-note">备注：'+esc(o.note)+'</div>':"")+
+        '<div class="ord-foot"><div class="ord-sum">'+(o.total!=null?('¥<b>'+r2(o.total)+'</b>'):"—")+'　·　'+(o.total_kcal||0)+' 大卡</div>'+
+          '<div class="ord-ops">'+ops+'</div></div>'+
+        '</div>';
+    }).join("");
+
+    body.innerHTML = head +
+      (ordErr ? '<div class="empty">'+esc(ordErr)+'<div style="margin:12px 0 16px;font-size:11px;line-height:2">订单看板读云端 orders 表：用线上域名打开本页、并在 Supabase 后台 SQL Editor 跑过建表 SQL，才会显示真实订单。</div>'+
+          '<button class="btn sm ghost" id="copySql">复制建表 SQL</button>' +
+          '<button class="btn sm ghost" id="mockOrd">用示例数据预览版式</button></div>' :
+        (list.length? '<div class="ordlist">'+rows+'</div>' : '<div class="empty">今天还没有订单。顾客端下单后会实时出现在这里。</div>')) +
+      '<div class="note"><b>说明</b>　状态由商家手动推进：待制作 → 制作中 → 已取餐。顾客端每 6 秒自动刷新状态。<br>本 Demo 不接在线支付，到店付款；「作废」用于处理下了不来的单。</div>';
+
+    var mb=body.querySelector("#mockOrd");
+    if(mb) mb.addEventListener("click",function(){ ordMock=true; adminOrders=mockOrders(); ordErr=""; renderOrders(); });
+    var cb=body.querySelector("#copySql");
+    if(cb) cb.addEventListener("click",function(){
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ORDER_SQL).then(function(){ cb.textContent="已复制"; }).catch(function(){ prompt("复制下面的 SQL 到 Supabase 后台 SQL Editor：",ORDER_SQL); }); }
+      else{ prompt("复制下面的 SQL 到 Supabase 后台 SQL Editor：",ORDER_SQL); }
+    });
+
+    Array.prototype.forEach.call(body.querySelectorAll("[data-st]"),function(b){
+      b.addEventListener("click",function(){
+        if(ordMock){ alert("示例数据，接入云端后即可改状态。"); return; }
+        setOrderStatus(b.dataset.no,b.dataset.st);
+      });
+    });
+
+    if(ordTimer) clearInterval(ordTimer);
+    ordTimer=setInterval(function(){
+      if(ordMock) return;
+      if(state.view==="admin" && state.tab==="orders"){ loadAdminOrders().then(function(){ if(state.tab==="orders") renderOrders(); }); }
+    },10000);
+  }
+
+  async function setOrderStatus(no,st){
+    if(!supaReady()){ alert("本机模式改不了云端订单状态。"); return; }
+    try{
+      const r=await sb.from("orders").update({status:st,updated_at:new Date().toISOString()}).eq("order_no",no);
+      if(r.error) throw r.error;
+      var o=adminOrders.filter(function(x){ return x.order_no===no; })[0];
+      if(o) o.status=st;
+      renderOrders();
+    }catch(e){ alert("改状态失败："+((e&&e.message)||e)); }
+  }
+
+  function r2(n){ return (Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,""); }
+
+  /* ----- 配料库 ----- */
+  function refsOfIng(id){
+    return db.products.filter(function(p){ return p.items.some(function(it){return it.ingId===id;}); });
+  }
+
+  function renderIngs(){
+    var body = document.getElementById("adminBody");
+    var cats = ["全部"].concat(CATEGORIES);
+    var chips = cats.map(function(c){
+      return '<button class="chip '+(state.catFilter===c?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';
+    }).join("");
+
+    var q = state.ingQuery.trim();
+    var list = db.ings.filter(function(i){
+      var catOk = state.catFilter==="全部"||i.category===state.catFilter;
+      var qOk = !q || i.name.toLowerCase().indexOf(q.toLowerCase())>=0;
+      return catOk && qOk;
+    });
+    var rows = list.map(function(i,idx){
+      var k = kcalPerUnit(i);
+      return '<div class="ing-row">' +
+        '<div class="idx">'+String(idx+1).padStart(2,"0")+'</div>' +
+        (i.image?'<img class="ing-thumb" src="'+esc(i.image)+'" alt="">':'<div class="ing-thumb thumb-ic mono">'+esc(String(i.name||"").slice(0,1))+'</div>') +
+        '<div class="ing-body">' +
+        '<div class="ing-top"><span class="ing-name">'+esc(i.name)+'<span class="ing-cat">'+esc(i.category)+' · '+esc(i.unit)+'</span></span></div>' +
+        '<div class="ing-meta"><span>基准 每 '+esc(i.base)+esc(i.unit)+' · '+esc(i.kJ)+' 千焦</span>'+(i.note?'<span>'+esc(i.note)+'</span>':"")+'</div>' +
+        '<div class="ing-ops"><button class="btn sm ghost" data-edit-ing="'+i.id+'">编辑</button>' +
+        '<button class="btn sm danger" data-del-ing="'+i.id+'">删除</button></div>' +
+        '</div>' +
+        '<div class="kblock"><span class="ing-kcal">'+r1(k)+'<small style="color:var(--ink-soft);font-weight:400;font-size:10px"> 大卡/'+esc(i.unit)+'</small></span>' +
+        ruler(Math.min(5,k),0,5)+'</div></div>';
+    }).join("");
+
+    body.innerHTML =
+      '<div class="chips">'+chips+'</div>' +
+      '<div class="toolbar">' +
+        '<input type="search" id="ingSearch" class="search" placeholder="搜索配料名称…" value="'+esc(state.ingQuery)+'">' +
+        '<button class="btn" id="addIngBtn">＋ 新增配料</button>' +
+      '</div>' +
+      '<div class="legend">右侧刻度 = 每单位热量（0–5 大卡）</div>' +
+      '<div class="ing-table">'+(rows||'<div class="empty">没有匹配的配料</div>')+'</div>';
+
+    body.querySelectorAll(".chip").forEach(function(c){ c.addEventListener("click",function(){ state.catFilter=c.dataset.cat; renderIngs(); }); });
+    document.getElementById("ingSearch").addEventListener("input",function(e){ state.ingQuery=e.target.value; renderIngs(); document.getElementById("ingSearch").focus(); var s=document.getElementById("ingSearch"); s.setSelectionRange(s.value.length,s.value.length); });
+    document.getElementById("addIngBtn").addEventListener("click",function(){ openIngModal(null); });
+    body.querySelectorAll("[data-edit-ing]").forEach(function(b){ b.addEventListener("click",function(){ openIngModal(b.dataset.editIng); }); });
+    body.querySelectorAll("[data-del-ing]").forEach(function(b){ b.addEventListener("click",function(){
+      var target=byId(db.ings,b.dataset.delIng);
+      var refs=refsOfIng(b.dataset.delIng);
+      var msg = refs.length ? "该配料被以下饮品引用："+refs.map(function(x){return x.name;}).join("、")+"。\n删除后这些饮品会跳过此项，确定删除？" : "删除该配料？";
+      if(confirm(msg)){
+        db.ings=db.ings.filter(function(x){return x.id!==b.dataset.delIng;});
+        save(); syncRemote(); render();
+        if(target && target.image) deleteProductImage(target.image);
+      }
+    }); });
+  }
+
+  function openIngModal(id){
+    var i = id ? ing(id) : {name:"",category:"糖浆",unit:"g",base:100,kJ:"",note:"",image:""};
+    state.modal={type:"ing",id:id};
+    document.getElementById("modal").innerHTML =
+      '<h2>'+(id?"编辑配料":"新增配料")+'</h2>' +
+      '<div class="field"><label>配料名称</label><input id="f_name" value="'+esc(i.name)+'"></div>' +
+      '<div class="row2">' +
+        '<div class="field"><label>类别</label><select id="f_cat">'+CATEGORIES.map(function(c){return '<option '+(i.category===c?"selected":"")+'>'+c+'</option>';}).join("")+'</select></div>' +
+        '<div class="field"><label>单位</label><select id="f_unit"><option value="g"'+(i.unit==="g"?"selected":"")+'>克 g</option><option value="ml"'+(i.unit==="ml"?"selected":"")+'>毫升 ml</option></select></div>' +
+      '</div>' +
+      '<div class="row2">' +
+        '<div class="field"><label>基准量（默认 100）</label><input type="number" id="f_base" min="1" step="1" value="'+esc(i.base)+'"></div>' +
+        '<div class="field"><label>基准能量（千焦 / 基准量）</label><input type="number" id="f_kj" min="0" step="1" value="'+esc(i.kJ)+'"></div>' +
+      '</div>' +
+      '<div class="field"><label>配料图片</label>' +
+        '<div class="img-uploader">' +
+          '<img class="img-preview" id="f_imgPreview" src="'+esc(i.image||"")+'" style="'+(i.image?"":"display:none")+'">' +
+          '<div class="img-ops">' +
+            '<input type="file" id="f_imgFile" accept="image/*" style="display:none">' +
+            '<button type="button" class="btn sm ghost" id="f_imgPick">选择图片</button>' +
+            '<button type="button" class="btn sm danger" id="f_imgRemove" style="'+(i.image?"":"display:none")+'">移除图片</button>' +
+            '<span class="img-hint">原料标签 / 实物图，前端自动压缩</span>' +
+          '</div>' +
+        '</div></div>' +
+      '<div class="field"><label>备注</label><input id="f_note" value="'+esc(i.note||"")+'"></div>' +
+      '<div class="btn-row"><button class="btn" id="saveIng">保存</button><button class="btn ghost" id="closeModal">取消</button></div>';
+    document.getElementById("overlay").classList.add("open");
+
+    document.getElementById("closeModal").addEventListener("click",closeModal);
+
+    /* 配料图片状态 */
+    var ingImg = { current:i.image||"", blob:null, dataUrl:"", removed:false };
+    var ingPreview=document.getElementById("f_imgPreview");
+    var ingPick=document.getElementById("f_imgPick");
+    var ingRemove=document.getElementById("f_imgRemove");
+    var ingFile=document.getElementById("f_imgFile");
+    function renderIngImg(){
+      var shown = ingImg.removed ? "" : (ingImg.dataUrl || ingImg.current);
+      if(shown){ ingPreview.src=shown; ingPreview.style.display=""; ingRemove.style.display=""; }
+      else{ ingPreview.style.display="none"; ingRemove.style.display="none"; }
+    }
+    ingPick.addEventListener("click",function(){ ingFile.click(); });
+    ingFile.addEventListener("change",async function(){
+      var f=ingFile.files && ingFile.files[0];
+      if(!f) return;
+      try{
+        var r=await compressImage(f);
+        ingImg.blob=r.blob; ingImg.dataUrl=r.dataUrl; ingImg.removed=false;
+        renderIngImg();
+      }catch(e){ alert(e.message||"图片处理失败"); }
+      ingFile.value="";
+    });
+    ingRemove.addEventListener("click",function(){
+      ingImg.blob=null; ingImg.dataUrl=""; ingImg.removed=true; renderIngImg();
+    });
+    renderIngImg();
+    var saveIngBtn=document.getElementById("saveIng");
+    function setIngSaving(on){ saveIngBtn.disabled=on; saveIngBtn.textContent=on?"上传中…":"保存"; }
+    saveIngBtn.addEventListener("click",async function(){
+      var name=document.getElementById("f_name").value.trim();
+      if(!name){ alert("请填写配料名称"); return; }
+      var ingId = id || ("i"+Date.now());
+      var oldImage=ingImg.current;
+      var image=oldImage;
+      if(ingImg.removed){
+        image="";
+        deleteProductImage(oldImage);
+      } else if(ingImg.blob){
+        if(supaReady()){
+          setIngSaving(true);
+          try{ image=await uploadImage(ingImg.blob,"ing",ingId); }
+          catch(e){ setIngSaving(false); alert("图片上传失败，未保存："+((e&&e.message)||e)); return; }
+          setIngSaving(false);
+          deleteProductImage(oldImage);
+        } else {
+          image=ingImg.dataUrl;
+        }
+      }
+      var data={
+        name:name, category:document.getElementById("f_cat").value,
+        unit:document.getElementById("f_unit").value,
+        base:parseFloat(document.getElementById("f_base").value)||100,
+        kJ:parseFloat(document.getElementById("f_kj").value)||0,
+        note:document.getElementById("f_note").value.trim(),
+        image:image
+      };
+      if(id){ Object.assign(byId(db.ings,id),data); }
+      else{ data.id=ingId; db.ings.push(data); }
+      save(); syncRemote(); closeModal(); render();
+    });
+  }
+
+  /* ----- 饮品管理 ----- */
+  function cloneProduct(p){
+    var c = JSON.parse(JSON.stringify(p));
+    c.id = "p"+Date.now();
+    c.name = p.name + " 副本";
+    c.image = "";  // 副本不共享原图，避免互相删图
+    db.products.push(c);
+    save(); syncRemote(); render();
+  }
+
+  function renderProducts(){
+    var body = document.getElementById("adminBody");
+    var q = state.prodQuery.trim();
+    var list = db.products.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q.toLowerCase())>=0; });
+    var rows = list.map(function(p,idx){
+      var c = productKcal(p, defaultMilk(p));
+      var t = tier(c.total, p.big);
+      var milkLabel = p.milkSwitch ? "可换牛奶" : "无牛奶位";
+      return '<div class="prod">' +
+        '<div class="idx">'+String(idx+1).padStart(2,"0")+'</div>' +
+        (p.image?'<img class="prod-thumb" src="'+esc(p.image)+'" alt="">':'<div class="prod-thumb thumb-ic">'+ic(catIcon(p.big))+'</div>') +
+        '<div class="prod-body">' +
+        '<div class="prod-top"><span class="prod-name">'+esc(p.name)+'<span class="prod-cat">'+esc(p.big)+' · '+milkLabel+(p.size?' · '+esc(p.size):"")+'</span></span></div>' +
+        '<div class="prod-meta">'+p.items.length+' 项配料'+(p.milkOptions.length?' · 牛奶候选 '+p.milkOptions.length+' 款':"")+'</div>' +
+        '<div class="ing-ops"><button class="btn sm ghost" data-edit-p="'+p.id+'">编辑</button>' +
+        '<button class="btn sm ghost" data-copy-p="'+p.id+'">复制</button>' +
+        '<button class="btn sm danger" data-del-p="'+p.id+'">删除</button></div>' +
+        '</div>' +
+        '<div class="kblock"><span class="prod-kcal">'+r1(c.total)+'<small> 大卡</small></span>' +
+        ruler(c.total,0,300) + '<span class="tag '+t.cls+'">'+t.label+'</span>' +
+        (p.price!=null&&p.price!==""?'<span class="price">¥'+p.price+'</span>':'')+'</div></div>';
+    }).join("");
+
+    body.innerHTML =
+      '<div class="toolbar">' +
+        '<input type="search" id="prodSearch" class="search" placeholder="搜索饮品名称…" value="'+esc(state.prodQuery)+'">' +
+        '<button class="btn" id="addProdBtn">＋ 新增饮品</button>' +
+      '</div>' +
+      '<div class="legend">右侧刻度 = 整杯热量（0–300 大卡）</div>' +
+      '<div class="prod-list">'+(rows||'<div class="empty">没有匹配的饮品</div>')+'</div>';
+
+    document.getElementById("prodSearch").addEventListener("input",function(e){ state.prodQuery=e.target.value; renderProducts(); var s=document.getElementById("prodSearch"); s.focus(); s.setSelectionRange(s.value.length,s.value.length); });
+    document.getElementById("addProdBtn").addEventListener("click",function(){ openProductModal(null); });
+    body.querySelectorAll("[data-edit-p]").forEach(function(b){ b.addEventListener("click",function(){ openProductModal(b.dataset.editP); }); });
+    body.querySelectorAll("[data-copy-p]").forEach(function(b){ b.addEventListener("click",function(){ cloneProduct(byId(db.products,b.dataset.copyP)); }); });
+    body.querySelectorAll("[data-del-p]").forEach(function(b){ b.addEventListener("click",function(){
+      var target=byId(db.products,b.dataset.delP);
+      if(confirm("删除该饮品？")){
+        db.products=db.products.filter(function(x){return x.id!==b.dataset.delP;});
+        save(); syncRemote(); render();
+        if(target && target.image) deleteProductImage(target.image);
+      }
+    }); });
+  }
+
+  function milkIngs(){ return db.ings.filter(function(i){return i.category==="牛奶";}); }
+  function quickQty(cat){
+    if(cat==="牛奶") return [180,280,360];
+    if(cat==="糖浆"||cat==="风味酱"||cat==="果酱") return [10,15,20];
+    if(cat==="基底") return [200,300];
+    if(cat==="小料"||cat==="顶料") return [5,10];
+    return [10,20];
+  }
+
+  function openProductModal(id){
+    var p = id ? byId(db.products,id) : {name:"",big:"咖啡",milkSwitch:true,milkOptions:[],items:[{ingId:"",qty:0,role:"other"}],desc:"",price:"",size:"",image:""};
+    state.modal={type:"product",id:id};
+
+    var milkOpts = milkIngs();
+    var milkRow = p.items.find(function(x){return x.role==="milk";}) || {ingId:milkOpts[0]?milkOpts[0].id:"",qty:0};
+    var otherRows = p.items.filter(function(x){return x.role!=="milk";});
+    var checked = new Set((p.milkOptions && p.milkOptions.length) ? p.milkOptions : (milkOpts[0]?[milkOpts[0].id]:[]));
+
+    function ingOptions(sel){
+      return '<option value="">选择配料</option>' + db.ings.map(function(i){return '<option value="'+i.id+'"'+(i.id===sel?"selected":"")+'>'+esc(i.name)+'（'+esc(i.category)+'）</option>';}).join("");
+    }
+
+    function otherRowHtml(row, idx){
+      var i = ing(row.ingId);
+      var unit = i ? i.unit : "";
+      var chips = quickQty(i?i.category:"").map(function(q){return '<button type="button" class="qty-chip" data-q="'+q+'">'+q+'</button>';}).join("");
+      return '<div class="ing-row-edit" data-idx="'+idx+'">' +
+        '<div class="row2">' +
+          '<div class="field"><label>配料</label><select data-oidx="'+idx+'">'+ingOptions(row.ingId)+'</select></div>' +
+          '<div class="field"><label>用量'+(unit?'（'+esc(unit)+'）':'')+'</label><input type="number" data-qidx="'+idx+'" min="0" step="1" value="'+esc(row.qty)+'"></div>' +
+        '</div>' +
+        '<div class="qty-chips">'+chips+'</div>' +
+        '<button class="btn sm danger" data-del-row="'+idx+'">移除</button></div>';
+    }
+
+    document.getElementById("modal").innerHTML =
+      '<h2>'+(id?"编辑饮品":"新增饮品")+'</h2>' +
+      '<div class="field"><label>饮品名称</label><input id="p_name" value="'+esc(p.name)+'"></div>' +
+      '<div class="row2">' +
+        '<div class="field"><label>大分类</label><select id="p_big">'+BIG_CATS.map(function(c){return '<option '+(p.big===c?"selected":"")+'>'+c+'</option>';}).join("")+'</select></div>' +
+        '<div class="field"><label>牛奶可切换</label><select id="p_milkSwitch"><option value="1"'+(p.milkSwitch?"selected":"")+'>是（咖啡）</option><option value="0"'+(!p.milkSwitch?"selected":"")+'>否</option></select></div>' +
+      '</div>' +
+      '<div class="row2">' +
+        '<div class="field"><label>售价（元）</label><input type="number" id="p_price" min="0" step="0.5" value="'+esc(p.price)+'"></div>' +
+        '<div class="field"><label>杯型</label><select id="p_size">' +
+          '<option value=""'+(p.size===""?"selected":"")+'>不标注</option>' +
+          '<option value="小杯"'+(p.size==="小杯"?"selected":"")+'>小杯</option>' +
+          '<option value="中杯"'+(p.size==="中杯"?"selected":"")+'>中杯</option>' +
+          '<option value="大杯"'+(p.size==="大杯"?"selected":"")+'>大杯</option>' +
+        '</select></div>' +
+      '</div>' +
+      '<div class="field"><label>饮品图片</label>' +
+        '<div class="img-uploader">' +
+          '<img class="img-preview" id="p_imgPreview" src="'+esc(p.image||"")+'" style="'+(p.image?"":"display:none")+'">' +
+          '<div class="img-ops">' +
+            '<input type="file" id="p_imgFile" accept="image/*" style="display:none">' +
+            '<button type="button" class="btn sm ghost" id="p_imgPick">选择图片</button>' +
+            '<button type="button" class="btn sm danger" id="p_imgRemove" style="'+(p.image?"":"display:none")+'">移除图片</button>' +
+            '<span class="img-hint">建议成品图，前端自动压缩后上传</span>' +
+          '</div>' +
+        '</div></div>' +
+      '<div class="field" id="milkBlock"><label>候选牛奶（勾选可切换款）</label>' +
+        '<div class="check-list" id="milkChecks">'+milkOpts.map(function(m){
+          return '<label class="check-row"><input type="checkbox" data-mid="'+m.id+'"'+(checked.has(m.id)?" checked":"")+'> '+esc(m.name)+'</label>';
+        }).join("")+'</div>' +
+        '<div class="row2" style="margin-top:10px">' +
+          '<div class="field"><label>默认牛奶位</label><select id="p_milk"></select></div>' +
+          '<div class="field"><label>牛奶用量（ml）</label><input type="number" id="p_milkQty" min="0" step="1" value="'+esc(milkRow.qty)+'"></div>' +
+        '</div>' +
+        '<div class="qty-chips" id="milkChips">'+[180,280,360].map(function(q){return '<button type="button" class="qty-chip" data-q="'+q+'">'+q+'</button>';}).join("")+'</div></div>' +
+      '<div class="field"><label>其他配料</label><div id="otherRows">'+otherRows.map(otherRowHtml).join("")+'</div>' +
+        '<button class="btn sm ghost" id="addRow" style="margin-top:6px">＋ 添加配料</button></div>' +
+      '<div class="btn-row"><button class="btn" id="saveProd">保存</button><button class="btn ghost" id="closeModal">取消</button></div>';
+
+    document.getElementById("overlay").classList.add("open");
+    document.getElementById("closeModal").addEventListener("click",closeModal);
+
+    var milkBlock=document.getElementById("milkBlock");
+    var switchSel=document.getElementById("p_milkSwitch");
+    function syncMilkBlock(){ milkBlock.style.display = switchSel.value==="1" ? "" : "none"; }
+    switchSel.addEventListener("change",syncMilkBlock);
+    syncMilkBlock();
+
+    function refreshMilkSelect(){
+      var sel=document.getElementById("p_milk");
+      var chosen=milkOpts.filter(function(m){return checked.has(m.id);});
+      var cur=sel.value;
+      sel.innerHTML=chosen.map(function(m){return '<option value="'+m.id+'"'+(m.id===cur?"selected":"")+'>'+esc(m.name)+'</option>';}).join("");
+      if(!checked.has(cur) && chosen.length) sel.value=chosen[0].id;
+    }
+    document.getElementById("milkChecks").querySelectorAll("input[data-mid]").forEach(function(cb){
+      cb.addEventListener("change",function(){
+        if(cb.checked) checked.add(cb.dataset.mid); else checked.delete(cb.dataset.mid);
+        refreshMilkSelect();
+      });
+    });
+    refreshMilkSelect();
+    document.getElementById("milkChips").querySelectorAll(".qty-chip").forEach(function(ch){
+      ch.addEventListener("click",function(){ document.getElementById("p_milkQty").value=ch.dataset.q; });
+    });
+
+    /* 饮品图片状态：current=原有图，blob/dataUrl=本次新选，removed=已移除 */
+    var imgState = { current:p.image||"", blob:null, dataUrl:"", removed:false };
+    var imgPreview=document.getElementById("p_imgPreview");
+    var imgPick=document.getElementById("p_imgPick");
+    var imgRemove=document.getElementById("p_imgRemove");
+    var imgFile=document.getElementById("p_imgFile");
+    function renderImgPreview(){
+      var shown = imgState.removed ? "" : (imgState.dataUrl || imgState.current);
+      if(shown){ imgPreview.src=shown; imgPreview.style.display=""; imgRemove.style.display=""; }
+      else{ imgPreview.style.display="none"; imgRemove.style.display="none"; }
+    }
+    imgPick.addEventListener("click",function(){ imgFile.click(); });
+    imgFile.addEventListener("change",async function(){
+      var f=imgFile.files && imgFile.files[0];
+      if(!f) return;
+      try{
+        var r=await compressImage(f);
+        imgState.blob=r.blob; imgState.dataUrl=r.dataUrl; imgState.removed=false;
+        renderImgPreview();
+      }catch(e){ alert(e.message||"图片处理失败"); }
+      imgFile.value="";
+    });
+    imgRemove.addEventListener("click",function(){
+      imgState.blob=null; imgState.dataUrl=""; imgState.removed=true; renderImgPreview();
+    });
+    renderImgPreview();
+
+    var otherState = otherRows.slice();
+
+    function rebindRows(){
+      var box=document.getElementById("otherRows");
+      box.innerHTML = otherState.map(function(r,idx){return otherRowHtml(r,idx);}).join("");
+      box.querySelectorAll("[data-del-row]").forEach(function(b){ b.addEventListener("click",function(){ otherState.splice(+b.dataset.delRow,1); rebindRows(); }); });
+      box.querySelectorAll("[data-oidx]").forEach(function(s){ s.addEventListener("change",function(){ otherState[+s.dataset.oidx].ingId=s.value; rebindRows(); }); });
+      box.querySelectorAll("[data-qidx]").forEach(function(inp){ inp.addEventListener("input",function(){ otherState[+inp.dataset.qidx].qty=parseFloat(inp.value)||0; }); });
+      box.querySelectorAll(".qty-chip").forEach(function(ch){ ch.addEventListener("click",function(){
+        var row=ch.closest(".ing-row-edit"); var idx=+row.dataset.idx;
+        otherState[idx].qty=parseFloat(ch.dataset.q)||0;
+        row.querySelector("[data-qidx]").value=ch.dataset.q;
+      }); });
+    }
+    rebindRows();
+    document.getElementById("addRow").addEventListener("click",function(){ otherState.push({ingId:"",qty:0,role:"other"}); rebindRows(); });
+
+    var saveBtn=document.getElementById("saveProd");
+    function setSaving(on){ saveBtn.disabled=on; saveBtn.textContent=on?"上传中…":"保存"; }
+    saveBtn.addEventListener("click",async function(){
+      var name=document.getElementById("p_name").value.trim();
+      if(!name){ alert("请填写饮品名称"); return; }
+      var milkSwitch=document.getElementById("p_milkSwitch").value==="1";
+      var milkId=document.getElementById("p_milk").value;
+      var milkQty=parseFloat(document.getElementById("p_milkQty").value)||0;
+      var items=[];
+      if(milkSwitch && milkId) items.push({ingId:milkId,qty:milkQty,role:"milk"});
+      otherState.forEach(function(r){ if(r.ingId) items.push({ingId:r.ingId,qty:r.qty||0,role:"other"}); });
+      var priceVal=document.getElementById("p_price").value.trim();
+      var prodId = id || ("p"+Date.now());
+
+      var oldImage = imgState.current;
+      var image = oldImage;
+      if(imgState.removed){
+        image="";
+        deleteProductImage(oldImage);
+      } else if(imgState.blob){
+        if(supaReady()){
+          setSaving(true);
+          try{ image = await uploadImage(imgState.blob, "prod", prodId); }
+          catch(e){ setSaving(false); alert("图片上传失败，未保存："+((e&&e.message)||e)); return; }
+          setSaving(false);
+          deleteProductImage(oldImage);  // 新图上传成功后再删旧图
+        } else {
+          image = imgState.dataUrl;
+        }
+      }
+
+      var data={
+        name:name, big:document.getElementById("p_big").value, milkSwitch:milkSwitch,
+        milkOptions:milkSwitch?Array.from(checked):[],
+        items:items, desc:"",
+        price:priceVal===""?"":Number(priceVal), size:document.getElementById("p_size").value,
+        image:image
+      };
+      if(id){ Object.assign(byId(db.products,id),data); }
+      else{ data.id=prodId; db.products.push(data); }
+      save(); syncRemote(); closeModal(); render();
+    });
+  }
+
+  function closeModal(){ state.modal=null; document.getElementById("overlay").classList.remove("open"); }
+  document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+
+  /* ================= 顾客端 ================= */
+  function inHeat(k,f){
+    if(f==="全部") return true;
+    if(f==="低") return k<150;
+    if(f==="中") return k>=150&&k<=225;
+    return k>225;
+  }
+  var HEAT_FILTERS=[["全部","全部"],["低","＜150"],["中","150–225"],["高","＞225"]];
+
+  function renderLanding(){
+    var prods = db.products.slice(0,3);
+    var cards = prods.map(function(p){
+      var c=productKcal(p,defaultMilk(p));
+      return '<div class="landing-card" data-p="'+p.id+'">' +
+        (p.image?'<img class="lc-img" src="'+esc(p.image)+'" alt="">':'<div class="lc-img thumb-ic">'+ic(catIcon(p.big))+'</div>') +
+        '<div class="lc-body"><div class="lc-name">'+esc(p.name)+'<span class="prod-cat">'+esc(p.big)+'</span></div>' +
+        '<div class="lc-meta"><span class="m">'+r1(c.total)+' 大卡 · '+p.items.length+' 项配料</span>' +
+        (p.price!=null&&p.price!==""?'<span class="price">¥'+p.price+'</span>':'')+'</div></div></div>';
+    }).join("");
+    var html =
+      '<section class="hero"><div class="wrap hero-in">' +
+        '<div class="hero-text">' +
+        '<div class="hero-kicker">COFFEE MENU · 热量透明</div>' +
+        '<h2>每一杯的热量，<br>都看得见。</h2>' +
+        '<p>从浓缩、牛奶到糖浆，逐项配料拆给你看；咖啡可切换牛奶版本，点单前先知道这一杯多少大卡。</p>' +
+        '<div class="hero-actions">' +
+          '<button class="btn" data-go="shop">浏览菜单</button>' +
+          '<button class="btn ghost" data-go="admin">商家入口</button>' +
+        '</div>' +
+        '<div class="hero-scale">' +
+          '<div class="tick"><i class="tall"></i><em>0</em></div>' +
+          '<div class="tick"><i class="tall"></i><em>75</em></div>' +
+          '<div class="tick"><i class="tall"></i><em>150</em></div>' +
+          '<div class="tick"><i class="tall"></i><em>225</em></div>' +
+          '<div class="tick"><i class="tall"></i><em>300 大卡</em></div>' +
+        '</div>' +
+        '<div class="hero-stats">' +
+          '<div class="hs"><b>'+db.products.length+'</b><span>款饮品</span></div>' +
+          '<div class="hs"><b>'+db.ings.length+'</b><span>项配料</span></div>' +
+          '<div class="hs"><b>4</b><span>条热量档位</span></div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="hero-art"><div class="halo"></div>' +
+          '<svg class="hero-cup" viewBox="0 0 240 240" fill="none" aria-hidden="true">' +
+            '<ellipse cx="120" cy="182" rx="70" ry="12" stroke="#C08A3E" stroke-width="1.6" opacity=".55"/>' +
+            '<path d="M75 95h90v38a38 38 0 0 1-38 38h-14a38 38 0 0 1-38-38V95z" stroke="#F4E9D8" stroke-width="1.8" fill="rgba(192,138,62,.14)"/>' +
+            '<path d="M165 105h12a20 20 0 0 1 0 40h-12" stroke="#F4E9D8" stroke-width="1.8"/>' +
+            '<ellipse cx="120" cy="95" rx="45" ry="8" fill="#C08A3E" opacity=".28"/>' +
+            '<path d="M105 78c0-8 7-8 7-16M120 78c0-8 7-8 7-16M135 78c0-8 7-8 7-16" stroke="#C08A3E" stroke-width="1.6" stroke-linecap="round"/>' +
+            '<circle cx="58" cy="58" r="3" fill="#C08A3E" opacity=".5"/>' +
+            '<circle cx="183" cy="68" r="2.5" fill="#C08A3E" opacity=".4"/>' +
+          '</svg>' +
+        '</div>' +
+      '</div></section>' +
+      '<div class="wrap">' +
+        '<section class="landing-section"><h3>今日菜单</h3><p class="ls-sub">点击任意饮品查看配料构成与热量拆分。</p>' +
+          '<div class="landing-grid">'+(cards||'<div class="empty">暂无饮品</div>')+'</div></section>' +
+        '<section class="landing-section"><div class="landing-feats">' +
+          '<div class="feat"><div class="feat-ic">'+ic('shield')+'</div><b>热量透明</b><span>按配料用量逐项计算，大卡与千焦可核对。</span></div>' +
+          '<div class="feat"><div class="feat-ic">'+ic('list')+'</div><b>配方可溯</b><span>每款饮品的配料、基准量与档位一目了然。</span></div>' +
+          '<div class="feat"><div class="feat-ic">'+ic('drop')+'</div><b>牛奶可换</b><span>咖啡支持切换牛奶版本，热量随之更新。</span></div>' +
+        '</div></section>' +
+        '<div class="landing-foot">饮品热量管理系统 · 数据来自本店配料库与配方</div>' +
+      '</div>';
+    app.innerHTML=html;
+    app.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ state.view=b.dataset.go; state.selProduct=null; render(); }); });
+    app.querySelectorAll(".landing-card").forEach(function(c){ c.addEventListener("click",function(){ state.view="shop"; state.selProduct=c.dataset.p; render(); }); });
+  }
+
+  function renderShop(){
+    var html='<div class="wrap">';
+    html += '<h1 class="page-title">菜单</h1><p class="page-sub">选择大类，查看每款饮品的热量与配料构成；咖啡可切换牛奶版本。</p>';
+    html += '<div class="chips">'+BIG_CATS.map(function(c){return '<button class="chip '+(state.shopCat===c?"active":"")+'" data-sc="'+c+'">'+c+'</button>';}).join("")+'</div>';
+    html += '<div class="chips">'+HEAT_FILTERS.map(function(f){return '<button class="chip '+(state.heatFilter===f[0]?"active":"")+'" data-heat="'+f[0]+'">'+f[1]+'</button>';}).join("")+'</div>';
+    html += '<div class="toolbar"><input type="search" id="shopSearch" class="search" placeholder="搜索饮品名称…" value="'+esc(state.shopQuery)+'"></div>';
+
+    if(!state.selProduct){
+      var sq = state.shopQuery.trim().toLowerCase();
+      var list = db.products.filter(function(p){
+          var qOk = !sq || p.name.toLowerCase().indexOf(sq)>=0;
+          return p.big===state.shopCat && qOk && inHeat(productKcal(p,defaultMilk(p)).total, state.heatFilter);
+        })
+        .sort(function(a,b){ return productKcal(a,defaultMilk(a)).total - productKcal(b,defaultMilk(b)).total; });
+      var cards = list.map(function(p,idx){
+        var c=productKcal(p,defaultMilk(p)); var t=tier(c.total,p.big);
+        var milkTxt = p.milkSwitch ? " · 可换牛奶" : "";
+        return '<div class="shop-card" data-p="'+p.id+'">' +
+          (p.image?'<img class="shop-thumb" src="'+esc(p.image)+'" alt="">':'<div class="shop-thumb thumb-ic">'+ic(catIcon(p.big))+'</div>') +
+          '<div class="prod-body">' +
+          '<div class="prod-top"><span class="prod-name">'+esc(p.name)+'<span class="prod-cat">'+esc(p.big)+milkTxt+(p.size?' · '+esc(p.size):"")+'</span></span></div>' +
+          '<div class="shop-meta">'+(p.price!=null&&p.price!==""?'<span class="price">¥'+p.price+'</span> · ':"")+p.items.length+' 项配料</div>' +
+          '</div>' +
+          '<div class="kblock"><span class="prod-kcal">'+r1(c.total)+'</span>' +
+          '<span class="tag '+t.cls+'">'+t.label+'</span>'+ruler(c.total,0,300)+'<span class="rtxt">大卡</span>' + '</div></div>';
+      }).join("");
+      var emptyTxt = sq ? ('没有匹配「'+esc(state.shopQuery.trim())+'」的饮品') : '该分类暂无饮品';
+      html += '<div class="shop-grid">'+(cards||'<div class="empty">'+emptyTxt+'</div>')+'</div>';
+      html += '</div>';
+      app.innerHTML=html;
+      app.querySelectorAll(".chip").forEach(function(c){c.addEventListener("click",function(){
+        if(c.dataset.sc) state.shopCat=c.dataset.sc;
+        if(c.dataset.heat) state.heatFilter=c.dataset.heat;
+        state.selProduct=null; render();
+      });});
+      var ss=document.getElementById("shopSearch");
+      if(ss) ss.addEventListener("input",function(e){ state.shopQuery=e.target.value; renderShop(); var s=document.getElementById("shopSearch"); s.focus(); s.setSelectionRange(s.value.length,s.value.length); });
+      app.querySelectorAll(".shop-card").forEach(function(c){c.addEventListener("click",function(){state.selProduct=c.dataset.p;render();});});
+    } else {
+      renderDetail();
+    }
+  }
+
+  function renderDetail(){
+    var p=byId(db.products,state.selProduct);
+    if(!p){ state.selProduct=null; renderShop(); return; }
+    var milkId=defaultMilk(p);
+    var c=productKcal(p,milkId); var t=tier(c.total,p.big);
+
+    var milkSwitchHtml="";
+    if(p.milkSwitch){
+      var opts=p.milkOptions.map(function(mid){ var m=ing(mid); if(!m) return "";
+        return '<button class="chip '+(milkId===mid?"active":"")+'" data-milk="'+mid+'">'+esc(m.name)+'</button>';}).join("");
+      milkSwitchHtml='<div class="field"><label>选择牛奶</label><div class="milk-switch">'+opts+'</div></div>';
+    }
+
+    var rows=c.rows.map(function(r){
+      if(r.missing){
+        return '<div class="split-row"><span><span class="s-name">配料缺失</span><br><span class="s-meta">原配料已被删除，请在后台补全</span></span>' +
+          '<span class="s-kcal">—</span></div>';
+      }
+      var pct = c.total>0 ? Math.round(r.kcal/c.total*100) : 0;
+      var thumb = r.ing.image ? '<img class="s-thumb" src="'+esc(r.ing.image)+'" alt="">' : '<div class="s-thumb thumb-ic">'+ic(ingIcon(r.ing))+'</div>';
+      return '<div class="split-row"><span class="s-left">'+thumb+'<span><span class="s-name">'+esc(r.ing.name)+'</span><br><span class="s-meta">'+r.qty+esc(r.ing.unit)+(r.role==="milk"?" · 牛奶位":"")+'</span></span></span>' +
+        '<span class="s-kcal">'+r1(r.kcal)+' 大卡<br><span class="s-pct">占 '+pct+'%</span></span></div>';
+    }).join("");
+
+    app.innerHTML =
+      '<div class="wrap">' +
+      '<div class="detail-head"><button class="back" id="backBtn">← 返回</button></div>' +
+      '<div class="card detail-card">' +
+        (p.image?'<img class="detail-img" src="'+esc(p.image)+'" alt="">':'<div class="detail-img thumb-ic">'+ic(catIcon(p.big))+'</div>') +
+        '<div class="prod-top"><span class="prod-name" style="font-size:19px">'+esc(p.name)+'<span class="prod-cat">'+esc(p.big)+(p.size?' · '+esc(p.size):"")+'</span></span>' +
+        '<span>'+(p.price!=null&&p.price!==""?'<span class="price" style="margin-right:8px">¥'+p.price+'</span>':"")+'<span class="tag '+t.cls+'">'+t.label+'</span></span></div>' +
+        milkSwitchHtml +
+        '<div class="split-list">'+rows+'</div>' +
+        '<div class="total-bar"><span>整杯合计</span><span class="big">'+r1(c.total)+' <small>大卡</small></span></div>' +
+      '</div></div>';
+
+    document.getElementById("backBtn").addEventListener("click",function(){state.selProduct=null;render();});
+    app.querySelectorAll("[data-milk]").forEach(function(b){ b.addEventListener("click",function(){ state.milkSel[p.id]=b.dataset.milk; render(); }); });
+  }
+
+  /* ---------- 视图切换 ---------- */
+  document.getElementById("viewSwitch").querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click",function(){ state.view=b.dataset.view; state.selProduct=null; render(); });
+  });
+
+  app.innerHTML = '<div class="empty" style="padding:80px 0">加载中…</div>';
+  boot().then(function(){ render(); }).catch(function(){ render(); });
+})();
+</script>
+</body>
+</html>
