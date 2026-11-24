@@ -487,6 +487,7 @@
     font-size:12px;padding:6px 0 8px;color:var(--ink);outline:none}
   .set-pass input:focus{border-bottom-color:var(--ink)}
   .set-pass .hint{font-size:10px;color:var(--ink-faint);letter-spacing:.04em}
+  .field-hint{font-size:10px;color:var(--ink-faint);line-height:1.7;margin-top:6px}
   .set-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;max-width:1040px}
   .set-note{font-size:10.5px;color:var(--ink-faint);line-height:1.95;margin-top:20px;padding-top:16px;
     border-top:1px dashed var(--line-strong);max-width:1040px}
@@ -626,7 +627,8 @@
   var LS_KEY = "cafe_calorie_v1";
   var KJ = 4.184;
   var CATEGORIES = ["牛奶","奶油","黄油","基底","糖浆","风味酱","果酱","花料","香草","顶料","小料"];
-  var BIG_CATS = ["咖啡","气泡特调"];
+  var BIG_CATS = ["风味拿铁","美式家族","气泡特调","轻因拿铁"];
+  var NO_MILK_CATS = ["美式家族","气泡特调"];
 
   /* ---------- Supabase 配置（公开级 anon key，可写前端） ----------
      留空 url / anonKey 时，自动回退到本机 localStorage 模式。
@@ -756,9 +758,9 @@
         {id:"o2", name:"气泡水",         category:"基底", unit:"ml", base:100, kJ:0,   note:""}
       ],
       products:[
-        {id:"p1", name:"澳白", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:28, size:"中杯",
+        {id:"p1", name:"澳白", big:"风味拿铁", milkSwitch:true, milkOptions:["m1","m2","m3"], price:28, size:"中杯",
          items:[{ingId:"m1", qty:180, role:"milk"},{ingId:"o1", qty:36, role:"other"}], desc:""},
-        {id:"p2", name:"榛果拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:32, size:"中杯",
+        {id:"p2", name:"榛果拿铁", big:"风味拿铁", milkSwitch:true, milkOptions:["m1","m2","m3"], price:32, size:"中杯",
          items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s2", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
         {id:"p3", name:"桂花气泡特调", big:"气泡特调", milkSwitch:false, milkOptions:[], price:26, size:"中杯",
          items:[{ingId:"o2", qty:300, role:"other"},{ingId:"s7", qty:25, role:"other"}], desc:""}
@@ -1046,6 +1048,11 @@
   function r1(n){ return Math.round((+n||0)*10)/10; }
   function byId(arr,id){ return arr.find(function(x){return x.id===id;}); }
   function ing(id){ return byId(db.ings,id); }
+  function milkAvail(p){
+    if(!p || !p.milkSwitch) return false;
+    if(noMilkCat(p.big)) return false;
+    return (p.milkOptions||[]).some(function(mid){ return !!ing(mid); });
+  }
   function kcalPerUnit(i){ if(!i) return 0; return (+i.kJ||0)/KJ/(+i.base||100); }
 
   /* ---------- 内联线稿图标（纯代码兜底，无外部素材） ---------- */
@@ -1065,6 +1072,7 @@
     return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+body+'</svg>';
   }
   function catIcon(big){ return big==="气泡特调" ? "bubble" : "cup"; }
+  function noMilkCat(big){ return NO_MILK_CATS.indexOf(big)>=0; }
   function ingIcon(i){
     if(!i) return "bean";
     var c=(i.category||"");
@@ -1075,7 +1083,7 @@
     return "bean";
   }
   function tier(k, big){
-    if(big==="气泡特调") return k<60?{cls:"low",label:"偏低"}: k<=100?{cls:"mid",label:"中等"}:{cls:"high",label:"偏高"};
+    if(NO_MILK_CATS.indexOf(big)>=0) return k<60?{cls:"low",label:"偏低"}: k<=100?{cls:"mid",label:"中等"}:{cls:"high",label:"偏高"};
     return k<225?{cls:"low",label:"偏低"}: k<=238?{cls:"mid",label:"中等"}:{cls:"high",label:"偏高"};
   }
 
@@ -1672,7 +1680,7 @@
     var rows = list.map(function(p,idx){
       var c = productKcal(p, defaultMilk(p));
       var t = tier(c.total, p.big);
-      var milkLabel = p.milkSwitch ? "可换牛奶" : "无牛奶位";
+      var milkLabel = milkAvail(p) ? "可换牛奶" : "无牛奶位";
       return '<div class="prod">' +
         '<div class="idx">'+String(idx+1).padStart(2,"0")+'</div>' +
         (p.image?'<img class="prod-thumb" src="'+esc(p.image)+'" alt="">':'<div class="prod-thumb thumb-ic">'+ic(catIcon(p.big))+'</div>') +
@@ -1727,7 +1735,7 @@
   }
 
   function openProductModal(id){
-    var p = id ? byId(db.products,id) : {name:"",big:"咖啡",milkSwitch:true,milkOptions:[],items:[{ingId:"",qty:0,role:"other"}],desc:"",price:"",size:"",image:""};
+    var p = id ? byId(db.products,id) : {name:"",big:BIG_CATS[0],milkSwitch:true,milkOptions:[],items:[{ingId:"",qty:0,role:"other"}],desc:"",price:"",size:"",image:""};
     state.modal={type:"product",id:id};
 
     var milkOpts = milkIngs();
@@ -1757,7 +1765,8 @@
       '<div class="field"><label>饮品名称</label><input id="p_name" value="'+esc(p.name)+'"></div>' +
       '<div class="row2">' +
         '<div class="field"><label>大分类</label><select id="p_big">'+BIG_CATS.map(function(c){return '<option '+(p.big===c?"selected":"")+'>'+c+'</option>';}).join("")+'</select></div>' +
-        '<div class="field"><label>牛奶可切换</label><select id="p_milkSwitch"><option value="1"'+(p.milkSwitch?"selected":"")+'>是（咖啡）</option><option value="0"'+(!p.milkSwitch?"selected":"")+'>否</option></select></div>' +
+        '<div class="field"><label>牛奶可切换</label><select id="p_milkSwitch"><option value="1"'+((p.milkSwitch && !noMilkCat(p.big))?"selected":"")+'>是（可换奶）</option><option value="0"'+((!p.milkSwitch || noMilkCat(p.big))?"selected":"")+'>否</option></select>'+
+          '<div class="field-hint" id="milkLockHint"></div></div>' +
       '</div>' +
       '<div class="row2">' +
         '<div class="field"><label>售价（元）</label><input type="number" id="p_price" min="0" step="0.5" value="'+esc(p.price)+'"></div>' +
@@ -1796,9 +1805,26 @@
 
     var milkBlock=document.getElementById("milkBlock");
     var switchSel=document.getElementById("p_milkSwitch");
-    function syncMilkBlock(){ milkBlock.style.display = switchSel.value==="1" ? "" : "none"; }
+    var bigSel=document.getElementById("p_big");
+    var lockHint=document.getElementById("milkLockHint");
+    function syncMilkBlock(){ milkBlock.style.display = (switchSel.value==="1" && !switchSel.disabled) ? "" : "none"; }
+    function syncCatRule(){
+      var locked=noMilkCat(bigSel.value);
+      if(locked){
+        switchSel.value="0";
+        switchSel.disabled=true;
+        switchSel.style.opacity=".55";
+        if(lockHint) lockHint.textContent="「"+bigSel.value+"」固定不换奶：牛奶位、牛奶用量随配料自己填。";
+      }else{
+        switchSel.disabled=false;
+        switchSel.style.opacity="";
+        if(lockHint) lockHint.textContent="";
+      }
+      syncMilkBlock();
+    }
+    bigSel.addEventListener("change",syncCatRule);
     switchSel.addEventListener("change",syncMilkBlock);
-    syncMilkBlock();
+    syncCatRule();
 
     function refreshMilkSelect(){
       var sel=document.getElementById("p_milk");
@@ -1867,7 +1893,8 @@
     saveBtn.addEventListener("click",async function(){
       var name=document.getElementById("p_name").value.trim();
       if(!name){ alert("请填写饮品名称"); return; }
-      var milkSwitch=document.getElementById("p_milkSwitch").value==="1";
+      var bigVal=document.getElementById("p_big").value;
+      var milkSwitch=document.getElementById("p_milkSwitch").value==="1" && !noMilkCat(bigVal);
       var milkId=document.getElementById("p_milk").value;
       var milkQty=parseFloat(document.getElementById("p_milkQty").value)||0;
       var items=[];
@@ -1893,9 +1920,14 @@
         }
       }
 
+      var milkOpts=milkSwitch?Array.from(checked):[];
+      if(milkSwitch && milkOpts.length===0){
+        milkSwitch=false;
+        toast("没勾牛奶选项，已按「无牛奶位」保存");
+      }
       var data={
-        name:name, big:document.getElementById("p_big").value, milkSwitch:milkSwitch,
-        milkOptions:milkSwitch?Array.from(checked):[],
+        name:name, big:bigVal, milkSwitch:milkSwitch,
+        milkOptions:milkOpts,
         items:items, desc:"",
         price:priceVal===""?"":Number(priceVal), size:document.getElementById("p_size").value,
         image:image
@@ -2059,7 +2091,7 @@
         .sort(function(a,b){ return productKcal(a,defaultMilk(a)).total - productKcal(b,defaultMilk(b)).total; });
       var cards = list.map(function(p,idx){
         var c=productKcal(p,defaultMilk(p)); var t=tier(c.total,p.big);
-        var milkTxt = p.milkSwitch ? " · 可换牛奶" : "";
+        var milkTxt = milkAvail(p) ? " · 可换牛奶" : "";
         return '<div class="shop-card" data-p="'+p.id+'">' +
           (p.image?'<img class="shop-thumb" src="'+esc(p.image)+'" alt="">':'<div class="shop-thumb thumb-ic">'+ic(catIcon(p.big))+'</div>') +
           '<div class="prod-body">' +
