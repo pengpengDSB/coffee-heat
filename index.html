@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>精品咖啡</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Archivo:wght@300;400;500&display=swap">
+<style>
+  :root{
+    --paper:#FCFCFA;
+    --ink:#141410;
+    --ink-2:#3D3C36;
+    --gray:#6E6C63;
+    --gray-2:#8C8A80;
+    --line:#E2DFD4;
+    --line-2:#EDEAE1;
+    --brown:#7A4E33;
+    --dark:#181510;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#EFEEEA;color:var(--ink);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  .phone{max-width:420px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative}
+  @media(min-width:481px){
+    body{padding:24px 0}
+    .phone{border-radius:4px;min-height:calc(100vh - 48px);box-shadow:0 20px 60px rgba(0,0,0,.14)}
+  }
+  .num{font-family:"Archivo","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
+
+  .top{display:flex;justify-content:space-between;align-items:center;padding:24px 22px 0;font-size:10px;letter-spacing:.26em}
+  .top .r{color:var(--gray-2);letter-spacing:.18em}
+
+  .hd{padding:30px 22px 0;display:flex;justify-content:space-between;align-items:baseline}
+  .hd h1{font-size:12.5px;font-weight:500;letter-spacing:.22em}
+  .hd span{font-size:10px;color:var(--gray);letter-spacing:.06em}
+
+  /* ---------- 刻度 ---------- */
+  .ruler{position:relative;margin:10px 22px 0;height:100px;border-bottom:2px solid var(--ink);touch-action:none}
+  .axis{position:absolute;left:0;right:0;bottom:25px;height:1px;background:var(--ink)}
+  .tick{position:absolute;bottom:25px;width:1px;background:#D5D2C7}
+  .tick.major{height:11px;background:var(--ink)}
+  .tick.minor{height:6px}
+  .lab{position:absolute;bottom:5px;font-size:10px;color:var(--gray);transform:translateX(-50%);letter-spacing:.02em}
+  .band-strip{position:absolute;bottom:25px;height:4px;background:var(--ink)}
+  .mk{position:absolute;transform:translateX(-50%);cursor:pointer;padding:0;background:none;border:none}
+  .mk .dot{display:block;width:6px;height:6px;border-radius:50%;background:var(--ink);margin:0 auto}
+  .mk .tag{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:12.5px;color:var(--brown);letter-spacing:.02em;font-family:Archivo,sans-serif;font-weight:500}
+  .mk.sel .dot{width:11px;height:11px;background:var(--brown)}
+  .mk.sel .stem{display:block;width:1px;height:18px;background:var(--brown);margin:0 auto}
+
+  /* ---------- 选中卡 ---------- */
+  .card{display:flex;gap:16px;align-items:flex-start;margin:24px 22px 0}
+  .thumb{width:150px;height:190px;overflow:hidden;background:#EFEDE6;flex:none;position:relative}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .ph{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+    font-size:9.5px;color:var(--gray-2);letter-spacing:.1em}
+  .tx{flex:1;min-width:0;padding-top:2px}
+  .tx .n{font-size:23px;font-weight:300;letter-spacing:.07em;line-height:1.25}
+  .tx .s{font-size:10.5px;color:var(--gray);margin-top:6px;letter-spacing:.05em}
+  .tx .k{margin-top:20px;display:flex;align-items:baseline;gap:6px}
+  .tx .k b{font-size:56px;font-weight:400;letter-spacing:-.02em;line-height:.88}
+  .tx .k span{font-size:10.5px;color:var(--gray);letter-spacing:.1em}
+  .tx .lv{margin-top:12px;font-size:10px;color:var(--brown);letter-spacing:.12em}
+  .tx .go{margin-top:14px;display:inline-block;font-size:10.5px;color:var(--ink);letter-spacing:.1em;
+    border-bottom:1px solid var(--ink);padding-bottom:2px}
+
+  .listcap{display:flex;justify-content:space-between;margin:30px 22px 0;font-size:9.5px;color:var(--gray-2);letter-spacing:.14em}
+  .list{margin:10px 22px 0;border-top:1px solid var(--line)}
+  .li{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line-2);cursor:pointer}
+  .li .nm{font-size:11px;letter-spacing:.04em;width:100px;flex:none;color:var(--ink-2);line-height:1.5}
+  .li .bar{flex:1;height:1px;background:var(--line);position:relative;margin:0 4px}
+  .li .bar i{position:absolute;top:-3.5px;width:7px;height:7px;border-radius:50%;background:var(--ink);transform:translateX(-50%)}
+  .li .v{font-size:12px;width:46px;text-align:right;flex:none;font-family:Archivo,sans-serif}
+  .li .pr{font-size:11px;color:var(--gray);width:36px;text-align:right;flex:none}
+  .foot{margin:22px 22px 0;font-size:9.5px;color:var(--gray-2);line-height:1.95;letter-spacing:.04em}
+
+  /* ---------- 点单：深色筛选带 ---------- */
+  .band{background:var(--dark);color:#F4F1E9;padding:26px 22px 22px}
+  .band .bhd{display:flex;justify-content:space-between;align-items:baseline}
+  .band .bhd h1{font-size:12.5px;font-weight:500;letter-spacing:.22em}
+  .band .bhd span{font-size:9.5px;color:rgba(244,241,233,.55);letter-spacing:.14em}
+  .tabs{display:flex;gap:22px;margin-top:18px}
+  .tabs button{border:none;background:none;font:inherit;font-size:11.5px;color:rgba(244,241,233,.6);
+    cursor:pointer;padding:0 0 6px;letter-spacing:.08em}
+  .tabs button.on{color:#F4F1E9;font-weight:500;border-bottom:1.5px solid #F4F1E9}
+  .heatrow{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:10px;color:rgba(244,241,233,.5);letter-spacing:.06em}
+  .heatrow button{border:none;background:none;font:inherit;font-size:10px;color:rgba(244,241,233,.5);cursor:pointer;padding:0;letter-spacing:.06em}
+  .heatrow button.on{color:#F4F1E9}
+  .heatrow .sep{color:rgba(244,241,233,.28)}
+
+  .searchline{display:flex;align-items:center;gap:9px;margin:20px 22px 0;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .searchline svg{width:13px;height:13px;color:var(--gray-2);flex:none}
+  .searchline input{flex:1;min-width:0;border:none;background:none;font:inherit;font-size:12.5px;color:var(--ink);outline:none;letter-spacing:.05em}
+  .searchline input::placeholder{color:var(--gray-2);letter-spacing:.12em;font-size:11px}
+
+  .mrows{margin:14px 22px 0}
+  .mrow{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line-2);cursor:pointer;align-items:flex-start}
+  .mrow .th{width:76px;height:95px;flex:none;overflow:hidden;background:#EFEDE6}
+  .mrow .th img{width:100%;height:100%;object-fit:cover;display:block}
+  .mrow .in{flex:1;min-width:0}
+  .mrow .n{font-size:14px;font-weight:400;letter-spacing:.05em}
+  .mrow .s{font-size:10px;color:var(--gray);margin-top:4px;letter-spacing:.04em}
+  .mrow .k{font-size:10.5px;color:var(--brown);margin-top:7px;letter-spacing:.06em}
+  .mrow .k b{font-family:Archivo,sans-serif;font-weight:500;font-size:12px}
+  .mrow .pr{font-size:13px;color:var(--ink-2);flex:none;padding-top:1px;font-family:Archivo,sans-serif}
+
+  /* ---------- 详情：记录卡 ---------- */
+  .page{padding:0 22px 104px}
+  .dback{display:flex;align-items:center;gap:6px;margin-top:20px;border:none;background:none;font:inherit;
+    font-size:10.5px;color:var(--gray);cursor:pointer;letter-spacing:.12em;padding:12px 0}
+  .dback svg{width:11px;height:11px}
+  .dshot{width:100%;aspect-ratio:1/1.02;overflow:hidden;background:#EFEDE6;margin-top:12px}
+  .dshot img{width:100%;height:100%;object-fit:cover;display:block}
+
+  .rec{margin-top:22px}
+  .rec .r1{display:flex;justify-content:space-between;align-items:baseline;font-size:9px;letter-spacing:.2em;color:var(--gray)}
+  .rec h1{font-size:26px;font-weight:300;letter-spacing:.08em;margin-top:8px;line-height:1.2}
+  .rec .en{font-family:Archivo,sans-serif;font-size:9px;letter-spacing:.22em;color:var(--gray);margin-top:3px}
+  .rec .double{height:3px;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);margin-top:14px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;margin-top:2px}
+  .meta div{padding:10px 0;border-bottom:1px solid var(--line);font-size:10.5px;display:flex;justify-content:space-between;padding-right:14px}
+  .meta div:nth-child(2n){padding-right:0;padding-left:14px;border-left:1px solid var(--line)}
+  .meta div span{color:var(--gray);letter-spacing:.1em}
+  .meta div b{font-weight:400;letter-spacing:.04em}
+
+  .blk{margin-top:24px}
+  .blk .lb{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:7px;border-bottom:1px solid var(--ink)}
+  .blk .lb b{font-size:10px;font-weight:500;letter-spacing:.18em}
+  .blk .lb span{font-size:9px;color:var(--gray);letter-spacing:.06em}
+  .milks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .milks button{border:1px solid var(--line);background:none;font:inherit;font-size:11px;color:var(--ink-2);
+    padding:12px 15px;cursor:pointer;letter-spacing:.04em}
+  .milks button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .milks button:disabled{color:var(--gray-2);border-color:var(--line-2);cursor:default}
+  .milks button i{font-style:normal;font-size:8.5px;margin-left:4px;letter-spacing:0}
+  .gapnote{font-size:9.5px;color:var(--gray-2);margin-top:9px;letter-spacing:.03em}
+
+  .tbl{width:100%;border-collapse:collapse;margin-top:2px}
+  .tbl tr{border-bottom:1px solid var(--line-2)}
+  .tbl td{padding:12px 0;font-size:12px;letter-spacing:.03em;vertical-align:baseline}
+  .tbl td.u{text-align:right;color:var(--gray);font-size:9.5px;width:58px}
+  .tbl td.c{text-align:right;color:var(--brown);font-size:11.5px;width:62px;font-family:Archivo,sans-serif}
+  .tbl td.c.miss{color:var(--gray-2)}
+  .totrow{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--ink);padding-top:14px;margin-top:2px}
+  .totrow .l{font-size:10px;letter-spacing:.14em;color:var(--gray);padding-bottom:5px}
+  .totrow .r b{font-size:34px;font-weight:300;letter-spacing:-.01em;font-family:Archivo,sans-serif}
+  .totrow .r em{font-style:normal;font-size:9.5px;color:var(--gray);letter-spacing:.1em;margin-left:4px}
+
+  /* ---------- 我的 ---------- */
+  .mehead{padding:44px 0 0}
+  .mehead h1{font-size:27px;font-weight:300;letter-spacing:.05em;line-height:1.5}
+  .mehead p{font-size:11px;color:var(--gray);margin-top:12px;letter-spacing:.06em}
+  .mestats{display:flex;margin-top:32px;border-top:1px solid var(--ink)}
+  .mestats div{flex:1;padding:16px 0 0;border-right:1px solid var(--line)}
+  .mestats div:last-child{border-right:none}
+  .mestats b{display:block;font-size:30px;font-weight:400;line-height:34px;height:34px;font-family:"Archivo","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
+  .mestats span{display:block;font-size:9.5px;color:var(--gray);margin-top:8px;letter-spacing:.1em}
+  .melist{margin-top:30px}
+  .merow{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;
+    background:none;border:none;border-bottom:1px solid var(--line-2);font:inherit;padding:16px 0;cursor:pointer;text-align:left}
+  .merow .t b{display:block;font-size:12.5px;font-weight:400;letter-spacing:.06em}
+  .merow .t span{display:block;font-size:10.5px;color:var(--gray);margin-top:4px;letter-spacing:.03em}
+  .merow .go{color:var(--gray-2)}
+  .merow .go svg{width:11px;height:11px}
+
+  .subhead{margin-top:20px}
+  .subhead h1{font-size:23px;font-weight:300;letter-spacing:.06em}
+  .subbody{margin-top:18px}
+  .subbody p{font-size:11.5px;color:var(--gray);line-height:2;margin-top:8px;letter-spacing:.02em}
+
+  .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;
+    background:rgba(252,252,250,.95);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:15px 0 20px}
+  .tb{border:none;background:none;font:inherit;font-size:11.5px;letter-spacing:.2em;color:var(--gray-2);cursor:pointer;padding:4px 14px}
+  .tb.on{color:var(--ink);font-weight:500}
+
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .anim{animation:rise .42s cubic-bezier(.2,.7,.2,1) both}
+  @media(prefers-reduced-motion:reduce){.anim{animation:none}}
+
+  /* === 首页 v8：hero + 可拖刻度 + 三杯推荐 === */
+  .hero{position:relative;height:306px;overflow:hidden;background:#1B1917}
+  .hbrand{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:22px;
+    font-size:9px;letter-spacing:.24em;color:rgba(255,255,255,.8)}
+  .hmedia{position:absolute;inset:0}
+  .hmedia img{width:100%;height:100%;object-fit:cover;display:block}
+  .hscrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,14,12,.28) 0%,rgba(16,14,12,0) 34%,rgba(16,14,12,.72) 100%)}
+  .hero .hmeta{position:absolute;left:22px;bottom:74px;color:#FFF}
+  .hname{font-size:26px;font-weight:300;letter-spacing:.09em;line-height:1.2;text-shadow:0 1px 12px rgba(0,0,0,.45)}
+  .hsub{font-size:10.5px;color:rgba(255,255,255,.82);margin-top:6px;letter-spacing:.06em}
+  .hval{position:absolute;left:22px;bottom:26px;display:flex;align-items:baseline;gap:7px;color:#FFF}
+  .hval b{font-size:56px;font-weight:400;line-height:.9;font-family:Archivo,sans-serif;letter-spacing:-.01em}
+  .hval span{font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.8)}
+  .hval em{font-style:normal;font-size:10px;letter-spacing:.1em;color:#FFF;border:1px solid rgba(255,255,255,.45);padding:3px 7px;margin-left:4px}
+  .hgo{position:absolute;right:22px;bottom:30px;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.7);
+    color:#FFF;font:inherit;font-size:10.5px;letter-spacing:.12em;padding:0 0 3px;cursor:pointer}
+
+  .stripwrap{margin-top:22px}
+  .striphead{display:flex;justify-content:space-between;margin:0 22px;font-size:10px;color:var(--gray);letter-spacing:.1em}
+  .striphint{margin:6px 22px 0;font-size:9.5px;color:var(--gray-2);letter-spacing:.06em}
+
+  .picks{margin-top:26px}
+  .pickhead{display:flex;justify-content:space-between;margin:0 22px;font-size:9.5px;color:var(--gray-2);letter-spacing:.14em}
+  .pickrow{display:flex;gap:9px;margin:12px 22px 0}
+  .pcard{flex:1;min-width:0;background:none;border:none;padding:0;text-align:left;font:inherit;cursor:pointer}
+  .pth{width:100%;aspect-ratio:1/1.16;overflow:hidden;background:#EFEDE6}
+  .pth img{width:100%;height:100%;object-fit:cover;display:block}
+  .ptag{font-size:8.5px;color:var(--brown);letter-spacing:.08em;margin-top:8px}
+  .pn{font-size:11px;letter-spacing:.03em;margin-top:3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pk{font-size:8.5px;color:var(--gray);margin-top:3px;letter-spacing:.02em}
+  .pk b{font-family:Archivo,sans-serif;font-size:11px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div id="app"></div>
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var SUPA_CONFIG = {
+    url: "https://pnucsuxkduvwpgklizmw.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudWNzdXhrZHV2d3Bna2xpem13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0ODI0MjEsImV4cCI6MjExMTA1ODQyMX0.8H2mNE3KEXZmHdXpV92pJ80OeN_gKAGvVZ69l0zwBGw"
+  };
+  var KJ = 4.184;
+  var BIG_CATS = ["咖啡","气泡特调"];
+  var IMG_BASE = "https://pnucsuxkduvwpgklizmw.supabase.co/storage/v1/object/public/product-images/";
+  var SCALE_FLOOR = 200;
+  var sb = null, db = {ings:[], products:[]}, ready=false;
+  var state = { tab:"home", selProduct:null, milkSel:{}, cat:"咖啡", heat:"全部", q:"", mePage:null, selId:null };
+
+  function defaultData(){
+    return {
+      ings:[
+        {id:"m1", name:"威士特全脂牛奶", category:"牛奶", unit:"ml", base:100, kJ:284, note:""},
+        {id:"m2", name:"优诺牛奶",       category:"牛奶", unit:"ml", base:100, kJ:0,   note:"示例待填"},
+        {id:"m3", name:"悦鲜活牛奶",     category:"牛奶", unit:"ml", base:100, kJ:0,   note:"示例待填"},
+        {id:"s1", name:"黑糖桂圆糖浆",   category:"糖浆", unit:"g",  base:100, kJ:1255, note:""},
+        {id:"s2", name:"榛果糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1338, note:""},
+        {id:"s3", name:"提拉米苏糖浆",   category:"糖浆", unit:"ml", base:100, kJ:1413, note:""},
+        {id:"s4", name:"玫瑰糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1420, note:""},
+        {id:"s5", name:"黄瓜糖浆",       category:"糖浆", unit:"ml", base:100, kJ:1480, note:""},
+        {id:"s6", name:"黄油太妃曲奇酱", category:"风味酱", unit:"ml", base:100, kJ:1413, note:""},
+        {id:"s7", name:"桂花糖浆",       category:"糖浆", unit:"g",  base:100, kJ:893,  note:""},
+        {id:"o1", name:"浓缩咖啡",       category:"基底", unit:"g",  base:100, kJ:0,   note:"热量≈0"},
+        {id:"o2", name:"气泡水",         category:"基底", unit:"ml", base:100, kJ:0,   note:""}
+      ],
+      products:[
+        {id:"p1", name:"澳白", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:28, size:"中杯", image:IMG_BASE+"pw-aobai.jpg",
+         items:[{ingId:"m1", qty:180, role:"milk"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p2", name:"榛果拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:32, size:"中杯", image:IMG_BASE+"pw-hazelnut.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s2", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p4", name:"黑糖桂圆拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-brownsugar.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s1", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p5", name:"提拉米苏拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-tiramisu.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s3", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p6", name:"玫瑰拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-rose.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s4", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p7", name:"黄瓜拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-cucumber.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s5", qty:10, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p8", name:"黄油太妃曲奇拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-toffee.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s6", qty:15, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p9", name:"桂花拿铁", big:"咖啡", milkSwitch:true, milkOptions:["m1","m2","m3"], price:null, size:"中杯", image:IMG_BASE+"pw-osmanthuslatte.jpg",
+         items:[{ingId:"m1", qty:280, role:"milk"},{ingId:"s7", qty:25, role:"other"},{ingId:"o1", qty:36, role:"other"}], desc:""},
+        {id:"p3", name:"桂花气泡特调", big:"气泡特调", milkSwitch:false, milkOptions:[], price:26, size:"中杯", image:IMG_BASE+"pw-osmanthus.jpg",
+         items:[{ingId:"o2", qty:300, role:"other"},{ingId:"s7", qty:25, role:"other"}], desc:""}
+      ]
+    };
+  }
+
+  function rowToIng(r){ return { id:r.lid, name:r.name, category:r.category, unit:r.unit,
+    base:Number(r.base)||100, kJ:Number(r.kJ)||0, note:r.note||"", image:r.image||"" }; }
+  function rowToProduct(r){ return { id:r.lid, name:r.name, big:r.big, milkSwitch:!!r.milk_switch,
+    milkOptions:Array.isArray(r.milk_options)?r.milk_options:[],
+    items:Array.isArray(r.items)?r.items:[], desc:r.desc||"",
+    price:(r.price==null||r.price==="")?"":Number(r.price), size:r.size||"", image:r.image||"" }; }
+
+  function isLocalEnv(){ var h=location.hostname||""; return location.protocol==="file:"||h==="localhost"||h==="127.0.0.1"||h==="::1"||h==="[::1]"; }
+  function supaReady(){ return !!SUPA_CONFIG.url && !!SUPA_CONFIG.anonKey && typeof supabase!=="undefined" && !isLocalEnv(); }
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];}); }
+  function r1(n){ return Math.round((+n||0)*10)/10; }
+  function byId(a,id){ return a.find(function(x){return x.id===id;}); }
+  function ing(id){ return byId(db.ings,id); }
+  function kcalPerUnit(i){ if(!i) return 0; return (+i.kJ||0)/KJ/(+i.base||100); }
+  function tier(k,big){ if(big==="气泡特调") return k<60?"低卡":k<=100?"中卡":"高卡"; return k<225?"低卡":k<=238?"中卡":"高卡"; }
+  function inHeat(k,f){ if(f==="全部") return true; if(f==="低") return k<150; if(f==="中") return k>=150&&k<=225; return k>225; }
+  function productKcal(p, milkId){
+    var total=0, rows=[];
+    p.items.forEach(function(it){
+      var iid = it.role==="milk" ? (milkId||it.ingId) : it.ingId;
+      var i = ing(iid);
+      if(!i){ rows.push({missing:true, ingId:iid, qty:+it.qty||0, role:it.role, kcal:0}); return; }
+      var k = kcalPerUnit(i)*(+it.qty||0); total+=k;
+      rows.push({ing:i, qty:+it.qty||0, role:it.role, kcal:k});
+    });
+    return { total:total, rows:rows };
+  }
+  function defaultMilk(p){ return (state.milkSel[p.id]) || (p.milkOptions[0]) || ""; }
+  function nz(v){ if(v===0) return "0"; return v>0 ? r1(v).toFixed(1) : "—"; }
+  function thumb(p){
+    if(p.image) return '<div class="thumb"><img src="'+esc(p.image)+'" alt=""></div>';
+    return '<div class="thumb"><div class="ph">暂无图片</div></div>';
+  }
+  function subline(p){
+    var a=[p.big,p.size].filter(Boolean);
+    if(p.milkSwitch) a.push("可换牛奶");
+    return a.join("　");
+  }
+
+  var IC = {
+    search:'<svg viewBox="0 0 24 24" fill="none"><circle cx="10.6" cy="10.4" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M15.2 15.2l4.4 4.4" stroke="currentColor" stroke-width="1.4"/></svg>',
+    back:'<svg viewBox="0 0 24 24" fill="none"><path d="M15 4.8l-7 7.2 7 7.2" stroke="currentColor" stroke-width="1.4"/></svg>',
+    go:'<svg viewBox="0 0 24 24" fill="none"><path d="M9 4.8l7 7.2-7 7.2" stroke="currentColor" stroke-width="1.4"/></svg>'
+  };
+
+  /* ---------- 视图 ---------- */
+  function renderTab(){
+    var t=[["home","首页"],["menu","点单"],["me","我的"]];
+    document.getElementById("tabbar").innerHTML=t.map(function(x){
+      return '<button class="tb '+(state.tab===x[0]&&!state.selProduct?"on":"")+'" data-tab="'+x[0]+'">'+x[1]+'</button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
+      b.addEventListener("click",function(){ state.selProduct=null; state.mePage=null; state.tab=b.dataset.tab; render(); });
+    });
+  }
+
+  function scaleMax(){
+    var mx=0;
+    db.products.forEach(function(p){ mx=Math.max(mx, productKcal(p,defaultMilk(p)).total); });
+    return Math.max(200, Math.ceil(mx/20)*20+20);
+  }
+
+  function denseRun(){
+    var arr=db.products.map(function(p){ return {id:p.id, k:productKcal(p,defaultMilk(p)).total}; })
+      .sort(function(a,b){ return a.k-b.k; });
+    var best={a:0,b:0,n:0}, cur={a:0,b:0,n:0};
+    for(var i=0;i<arr.length;i++){
+      if(i===0 || arr[i].k-arr[i-1].k<=18){ cur.b=arr[i].k; cur.n++; }
+      else { cur={a:arr[i].k,b:arr[i].k,n:1}; }
+      if(cur.n>best.n) best={a:cur.a,b:cur.b,n:cur.n};
+    }
+    return best;
+  }
+
+  function marksLayout(){
+    var mx=scaleMax();
+    var prods=db.products.slice(0).sort(function(a,b){
+      return productKcal(a,defaultMilk(a)).total-productKcal(b,defaultMilk(b)).total;
+    });
+    var out=[];
+    prods.forEach(function(p){
+      var k=productKcal(p,defaultMilk(p)).total;
+      var x=Math.min(94,Math.max(5,(k/mx)*100));
+      var taken={}; out.forEach(function(o){ if(Math.abs(o.x-x)<4.6) taken[o.lvl]=true; });
+      var lvl=0; while(taken[lvl]) lvl++;
+      out.push({p:p, x:x, lvl:lvl, kcal:k});
+    });
+    return out;
+  }
+
+  function rulerMarks(sel){
+    return marksLayout().map(function(o){
+      var y=33+o.lvl*10;
+      var isSel=o.p.id===sel;
+      return '<button class="mk '+(isSel?"sel":"")+'" data-sel="'+o.p.id+'" style="left:'+o.x+'%;bottom:'+y+'px">'+
+        (isSel?'<span class="tag" style="bottom:13px">'+r1(o.kcal).toFixed(1)+'</span>':'')+
+        (isSel?'<span class="stem"></span>':"")+
+        '<span class="dot"></span></button>';
+    }).join("");
+  }
+
+  function rulerHtml(sel){
+    var mx=scaleMax(), ticks='';
+    for(var v=0; v<=mx; v+=10){
+      var x=(v/mx)*100, major=(v%50===0);
+      ticks+='<div class="tick '+(major?'major':'minor')+'" style="left:'+x+'%"></div>';
+      if(major) ticks+='<div class="lab" style="left:'+x+'%">'+v+'</div>';
+    }
+    var run=denseRun(), band='';
+    if(run.n>=3){
+      var x1=(run.a/mx)*100, x2=(run.b/mx)*100;
+      band='<div class="band-strip" style="left:'+x1+'%;width:'+(x2-x1)+'%"></div>';
+    }
+    return '<div class="ruler"><div class="axis"></div>'+ticks+band+'<div class="marks">'+rulerMarks(sel)+'</div></div>';
+  }
+
+  function heroFor(p){
+    var c=productKcal(p,defaultMilk(p));
+    var img=p.image?'<img id="himg" src="'+esc(p.image)+'" alt="">':"";
+    return '<div class="hero"><div class="hmedia">'+img+'<div class="hscrim"></div></div>'+
+      '<div class="hbrand"><span>精品咖啡</span><span>NANJING · 2026</span></div>'+
+      '<div class="hmeta"><div class="hname" id="hname">'+esc(p.name)+'</div>'+
+        '<div class="hsub" id="hsub">'+esc(subline(p))+'</div></div>'+
+      '<div class="hval"><b id="hnum">'+nz(c.total)+'</b><span>大卡</span><em id="htier">'+esc(tier(c.total,p.big))+'</em></div>'+
+      '<button class="hgo" id="hgo" data-sel="'+p.id+'">看配料</button>'+
+      '</div>';
+  }
+
+  function pickCards(sel){
+    var list=db.products.slice(0).sort(function(a,b){
+      return productKcal(a,defaultMilk(a)).total-productKcal(b,defaultMilk(b)).total;
+    });
+    var lo=list[0], hi=list[list.length-1];
+    var chosen=[{p:lo,tag:"店里最轻"},{p:byId(db.products,"p1")||sel,tag:"招牌"},{p:hi,tag:"店里最浓"}];
+    var seen={};
+    return chosen.filter(function(x){
+      if(!x.p||seen[x.p.id]) return false; seen[x.p.id]=true; return true;
+    }).map(function(x){
+      var k=productKcal(x.p,defaultMilk(x.p)).total;
+      return '<button class="pcard" data-sel="'+x.p.id+'">'+
+        '<div class="pth">'+(x.p.image?'<img src="'+esc(x.p.image)+'" alt="">':'')+'</div>'+
+        '<div class="ptag">'+esc(x.tag)+'</div>'+
+        '<div class="pn">'+esc(x.p.name)+'</div>'+
+        '<div class="pk"><b>'+r1(k).toFixed(1)+'</b> 大卡</div>'+
+        '</button>';
+    }).join("");
+  }
+
+  function renderHome(){
+    if(!db.products.length){ app.innerHTML='<div class="page" style="padding-top:60px"><div class="foot">暂时没有饮品，请先在后台添加。</div></div>'; return; }
+    var sel = byId(db.products, state.selId) || db.products[0];
+    state.selId = sel.id;
+    var mx=scaleMax();
+
+    app.innerHTML =
+      heroFor(sel) +
+      '<div class="stripwrap">'+
+        '<div class="striphead"><span>它在店里的位置</span><span id="stripval">第 '+rankOf(sel.id)+' 轻 · 共 '+db.products.length+' 款</span></div>'+
+        rulerHtml(sel.id) +
+        '<div class="striphint">按住刻度左右拖动，换一杯看看</div>'+
+      '</div>' +
+      '<div class="picks"><div class="pickhead"><span>三杯值得先试</span><span>点一下换到上面</span></div>'+
+        '<div class="pickrow">'+pickCards(sel)+'</div></div>' +
+      '<div class="foot">热量由配料逐项累加，1 大卡 = 4.184 千焦。<br>刻度按 0–'+mx+' 等比，实心段是最密的 '+denseRun().n+' 款。</div>';
+
+    bindHome();
+  }
+
+  function rankOf(id){
+    var list=db.products.slice(0).sort(function(a,b){ return productKcal(a,defaultMilk(a)).total-productKcal(b,defaultMilk(b)).total; });
+    var idx=list.findIndex(function(p){ return p.id===id; });
+    return idx<0?1:idx+1;
+  }
+
+  function updateSel(id){
+    var p=byId(db.products,id); if(!p) return;
+    state.selId=id;
+    var c=productKcal(p,defaultMilk(p));
+    var img=document.getElementById("himg");
+    if(img){ if(p.image) img.src=p.image; }
+    document.getElementById("hname").textContent=p.name;
+    document.getElementById("hsub").textContent=subline(p);
+    document.getElementById("hnum").textContent=nz(c.total);
+    document.getElementById("htier").textContent=tier(c.total,p.big);
+    document.getElementById("hgo").dataset.sel=id;
+    var sv=document.getElementById("stripval");
+    if(sv) sv.textContent="第 "+rankOf(id)+" 轻 · 共 "+db.products.length+" 款";
+    var mk=app.querySelector(".marks");
+    if(mk) mk.innerHTML=rulerMarks(id);
+  }
+
+  function bindHome(){
+    Array.prototype.forEach.call(app.querySelectorAll(".pcard"),function(el){
+      el.addEventListener("click",function(){
+        updateSel(el.dataset.sel);
+        window.scrollTo({top:0,behavior:"smooth"});
+      });
+    });
+    var go=app.querySelector(".hgo");
+    if(go) go.addEventListener("click",function(){ state.selProduct=state.selId; render(); });
+    var ruler=app.querySelector(".ruler");
+    if(!ruler) return;
+    var drag=false, mx=scaleMax();
+    function at(ev){
+      var r=ruler.getBoundingClientRect();
+      var x=Math.max(0,Math.min(100,(ev.clientX-r.left)/r.width*100));
+      var kcal=x*mx/100;
+      var best=null, bd=1e9;
+      db.products.forEach(function(p){
+        var k=productKcal(p,defaultMilk(p)).total, d=Math.abs(k-kcal);
+        if(d<bd){ bd=d; best=p; }
+      });
+      if(best && best.id!==state.selId) updateSel(best.id);
+    }
+    ruler.addEventListener("click",function(e){
+      var t=e.target.closest(".mk");
+      if(t && !drag) updateSel(t.dataset.sel);
+    });
+    ruler.addEventListener("pointerdown",function(e){ drag=true; ruler.setPointerCapture(e.pointerId); at(e); });
+    ruler.addEventListener("pointermove",function(e){ if(drag) at(e); });
+    ruler.addEventListener("pointerup",function(){ setTimeout(function(){ drag=false; },0); });
+    ruler.addEventListener("pointercancel",function(){ drag=false; });
+  }
+
+  function renderMenu(){
+    var list=db.products.filter(function(p){
+      var q=state.q.trim().toLowerCase();
+      return p.big===state.cat && (!q||p.name.toLowerCase().indexOf(q)>=0)
+        && inHeat(productKcal(p,defaultMilk(p)).total,state.heat);
+    }).sort(function(a,b){ return productKcal(a,defaultMilk(a)).total-productKcal(b,defaultMilk(b)).total; });
+
+    app.innerHTML =
+      '<div class="band">' +
+        '<div class="bhd"><h1>点单</h1><span>'+list.length+' / '+db.products.length+' 款</span></div>' +
+        '<div class="tabs">'+BIG_CATS.map(function(c){
+          return '<button data-cat="'+c+'" class="'+(state.cat===c?"on":"")+'">'+c+'</button>'; }).join("")+'</div>' +
+        '<div class="heatrow">'+[["全部","热量不限"],["低","＜150"],["中","150–225"],["高","＞225"]].map(function(f,i){
+          return (i?'<span class="sep">/</span>':"")+'<button data-heat="'+f[0]+'" class="'+(state.heat===f[0]?"on":"")+'">'+f[1]+'</button>';
+        }).join("")+'</div>' +
+      '</div>' +
+      '<div class="searchline">'+IC.search+'<input id="q" type="text" placeholder="搜索饮品" value="'+esc(state.q)+'"></div>' +
+      '<div class="mrows">' + (list.length?list.map(function(p){
+        var c=productKcal(p,defaultMilk(p));
+        return '<div class="mrow" data-p="'+p.id+'">' +
+          (p.image?'<div class="th"><img src="'+esc(p.image)+'" alt=""></div>':'<div class="th"></div>') +
+          '<div class="in"><div class="n">'+esc(p.name)+'</div><div class="s">'+esc(subline(p))+'</div>' +
+            '<div class="k"><b>'+nz(c.total)+'</b> 大卡 · '+esc(tier(c.total,p.big))+'</div></div>' +
+          '<div class="pr">'+(p.price!=null&&p.price!==""?"¥"+p.price:'<span style="color:#B5B3AA">—</span>')+'</div></div>';
+      }).join(""):'<div class="foot" style="margin:26px 0 0">没有符合条件的饮品，试试放宽热量范围。</div>') + '</div>' +
+      '<div class="foot">共 '+list.length+' 款 · 按热量由低到高</div>';
+
+    Array.prototype.forEach.call(app.querySelectorAll(".tabs button"),function(b){
+      b.addEventListener("click",function(){ state.cat=b.dataset.cat; renderMenu(); });
+    });
+    Array.prototype.forEach.call(app.querySelectorAll(".heatrow button"),function(b){
+      b.addEventListener("click",function(){ state.heat=b.dataset.heat; renderMenu(); });
+    });
+    var q=document.getElementById("q");
+    if(q) q.addEventListener("input",function(e){ state.q=e.target.value; renderMenu();
+      var el=document.getElementById("q"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-p]"),function(el){
+      el.addEventListener("click",function(){ state.selProduct=el.dataset.p; render(); });
+    });
+  }
+
+  function renderDetail(){
+    var p=byId(db.products,state.selProduct);
+    if(!p){ state.selProduct=null; render(); return; }
+    var milkId=defaultMilk(p), c=productKcal(p,milkId), tg=tier(c.total,p.big);
+
+    var milk = '';
+    if(p.milkSwitch){
+      var hasGap=p.milkOptions.some(function(mid){ var m=ing(mid); return m && (+m.kJ||0)<=0; });
+      milk = '<div class="blk"><div class="lb"><b>牛奶</b><span>换奶后热量重算</span></div><div class="milks">'+
+        p.milkOptions.map(function(mid){
+          var m=ing(mid); if(!m) return "";
+          var ok=(+m.kJ||0)>0;
+          return '<button data-milk="'+mid+'"'+(ok?'':' disabled')+' class="'+(milkId===mid?"on":"")+'">'+esc(m.name)+(ok?'':'<i>待补</i>')+'</button>';
+        }).join("")+'</div>'+
+        (hasGap?'<div class="gapnote">灰掉的牛奶还没填千焦值，补完后台就能切换重算。</div>':"")+'</div>';
+    }
+
+    var rows=c.rows.map(function(r){
+      if(r.missing) return '<tr><td>配料缺失</td><td class="u">已删除</td><td class="c miss">—</td></tr>';
+      var pct = c.total>0 ? Math.round(r.kcal/c.total*100) : 0;
+      return '<tr><td>'+esc(r.ing.name)+'</td><td class="u">'+r.qty+esc(r.ing.unit)+'</td>' +
+        '<td class="c">'+nz(r.kcal)+(pct>0?'<span style="font-size:8.5px;color:#8C8A80;margin-left:3px">'+pct+'%</span>':"")+'</td></tr>';
+    }).join("");
+
+    app.innerHTML =
+      '<div class="page">' +
+        '<button class="dback" id="bk">'+IC.back+'返回</button>' +
+        (p.image?'<div class="dshot"><img src="'+esc(p.image)+'" alt=""></div>':'<div class="dshot"></div>') +
+        '<div class="rec">' +
+          '<div class="r1"><span>RECORD · '+esc(p.big)+'</span><span>NANJING 2026</span></div>' +
+          '<h1>'+esc(p.name)+'</h1>' +
+          '<div class="en">'+esc((p.size||"")+' / '+(p.milkSwitch?"MILK OPTIONAL":"FIXED RECIPE"))+'</div>' +
+          '<div class="double"></div>' +
+          '<div class="meta">' +
+            '<div><span>分类</span><b>'+esc(p.big)+'</b></div>' +
+            '<div><span>杯型</span><b>'+esc(p.size||"—")+'</b></div>' +
+            '<div><span>售价</span><b>'+(p.price!=null&&p.price!==""?"¥"+p.price:"—")+'</b></div>' +
+            '<div><span>档位</span><b>'+esc(tg)+'</b></div>' +
+          '</div>' +
+        '</div>' +
+        milk +
+        '<div class="blk"><div class="lb"><b>配料记录</b><span>单位热量 × 用量</span></div>' +
+          '<table class="tbl">'+rows+'</table>' +
+          '<div class="totrow"><div class="l">整杯合计</div><div class="r"><b>'+nz(c.total)+'</b><em>大卡</em></div></div>' +
+        '</div>' +
+        '<div class="foot" style="margin:24px 0 0">按每 1g / 1ml 单位热量 × 配方用量逐项累加，1 大卡 = 4.184 千焦。<br>数据由商家后台配料库统一维护。</div>' +
+      '</div>';
+
+    document.getElementById("bk").addEventListener("click",function(){ state.selProduct=null; render(); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-milk]"),function(b){
+      b.addEventListener("click",function(){ state.milkSel[p.id]=b.dataset.milk; render(); });
+    });
+  }
+
+  function renderMe(){
+    var milkCount=db.ings.filter(function(i){return /奶/.test(i.category);}).length;
+    app.innerHTML =
+      '<div class="page">' +
+        '<div class="top" style="padding:24px 0 0"><div>精品咖啡</div><div class="r">NANJING · 2026</div></div>' +
+        '<div class="mehead"><h1>喝得明白，<br>喝得安心。</h1>' +
+          '<p>配方与热量全部公开，改配方即刻重算。</p></div>' +
+        '<div class="mestats">' +
+          '<div><b>'+db.products.length+'</b><span>款饮品</span></div>' +
+          '<div><b>'+db.ings.length+'</b><span>项配料</span></div>' +
+          '<div><b>'+milkCount+'</b><span>款牛奶</span></div>' +
+        '</div>' +
+        '<div class="melist">' +
+          '<button class="merow" data-me="about"><div class="t"><b>热量怎么算</b><span>单位热量 × 用量，逐项相加</span></div><div class="go">'+IC.go+'</div></button>' +
+          '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>低卡 / 中卡 / 高卡，三档参考</span></div><div class="go">'+IC.go+'</div></button>' +
+          '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>咖啡类可切换牛奶，热量随之更新</span></div><div class="go">'+IC.go+'</div></button>' +
+        '</div>' +
+        '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>本页仅作展示，不含下单支付。</div>' +
+      '</div>';
+    Array.prototype.forEach.call(app.querySelectorAll(".merow"),function(b){
+      b.addEventListener("click",function(){ state.mePage=b.dataset.me; renderMeSub(); });
+    });
+  }
+
+  function renderMeSub(){
+    var t={
+      about:{t:"热量怎么算",b:["每一项配料都有单位热量，按每 1g 或 1ml 的大卡值记录。","饮品热量 = Σ（单位热量 × 该配料用量）。","换牛奶只替换牛奶位，其余配料保持不变。"],
+        rows:[["拿铁 · 全脂奶 280ml","222.0"],["拿铁 · 燕麦奶 280ml","186.4"],["拿铁 · 去糖浆","190.0"]]},
+      legend:{t:"热量档位",b:["咖啡类：低于 225 为低卡，225–238 为中卡，高于 238 为高卡。","气泡特调：低于 60 为低卡，60–100 为中卡，高于 100 为高卡。"],
+        rows:[["澳白 · 中杯","122.2"],["榛果拿铁 · 中杯","222.0"],["桂花气泡 · 中杯","53.4"]]},
+      milk:{t:"牛奶可换",b:["咖啡类饮品都支持换奶，热量随牛奶类型自动重算。","牛奶位按每 1ml 的单位热量换算，具体数值以配料库为准。"],
+        rows:[["威士特全脂牛奶","62 / 100ml"],["优诺牛奶","待填"],["悦鲜活牛奶","待填"]]}
+    }[state.mePage] || {t:"",b:[],rows:[]};
+    app.innerHTML =
+      '<div class="page">' +
+        '<button class="dback" id="bk">'+IC.back+'返回</button>' +
+        '<div class="subhead"><h1>'+esc(t.t)+'</h1></div>' +
+        '<div class="subbody">'+t.b.map(function(x){ return '<p>'+esc(x)+'</p>'; }).join("")+'</div>' +
+        (t.rows.length?'<div class="blk"><div class="lb"><b>示例</b><span>大卡</span></div><table class="tbl">'+
+          t.rows.map(function(r){ return '<tr><td>'+esc(r[0])+'</td><td class="u"></td><td class="c">'+esc(r[1])+'</td></tr>'; }).join("")+
+          '</table></div>':"") +
+      '</div>';
+    document.getElementById("bk").addEventListener("click",function(){ state.mePage=null; render(); });
+  }
+
+  var app=document.getElementById("app");
+  function render(){
+    renderTab();
+    if(state.selProduct){ renderDetail(); return; }
+    if(state.tab==="menu") renderMenu();
+    else if(state.tab==="me"){ state.mePage?renderMeSub():renderMe(); }
+    else renderHome();
+  }
+
+  async function boot(){
+    app.innerHTML='<div class="page" style="padding-top:56px"><div class="foot">正在读取配料库…</div></div>';
+    if(!supaReady()){ db=defaultData(); render(); return; }
+    try{
+      sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+      const res = await Promise.all([ sb.from('ingredients').select('*'), sb.from('products').select('*') ]);
+      if(res[0].error) throw res[0].error;
+      if(res[1].error) throw res[1].error;
+      var ings=(res[0].data||[]).map(rowToIng), prods=(res[1].data||[]).map(rowToProduct);
+      db=(ings.length||prods.length)?{ings:ings,products:prods}:defaultData();
+    }catch(e){
+      db=defaultData();
+    }
+    if(db.products.length && !byId(db.products,state.selId)) state.selId=db.products[0].id;
+    render();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
