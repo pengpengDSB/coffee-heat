@@ -425,6 +425,89 @@
   }
 
 
+  /* ===== 登录 / 鉴权 ===== */
+  .acct{display:none;align-items:center;gap:12px;margin-left:6px}
+  .acct.on{display:flex}
+  .acct .who{font-size:9.5px;letter-spacing:.14em;color:var(--ink-soft);font-family:"Archivo",sans-serif}
+  .acct .out{border:none;background:none;font:inherit;font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);
+    cursor:pointer;padding:0 0 2px;border-bottom:1px solid var(--line-2)}
+  .topbar:not(.light) .acct .who{color:rgba(244,241,233,.72)}
+  .topbar:not(.light) .acct .out{color:rgba(244,241,233,.60);border-bottom-color:rgba(244,241,233,.28)}
+
+  .lg{min-height:calc(100vh - 57px);background:var(--paper);display:flex;align-items:center;justify-content:center;padding:60px 24px}
+  .lgbox{width:min(400px,100%)}
+  .lg-kicker{font-size:10px;letter-spacing:.28em;color:var(--ink-faint);font-family:"Archivo",sans-serif}
+  .lgbox h1{font-size:30px;font-weight:300;letter-spacing:.05em;margin:18px 0 0;line-height:1.35;color:var(--ink)}
+  .lgsub{font-size:11.5px;color:var(--ink-soft);line-height:1.95;margin-top:12px;letter-spacing:.02em}
+  .lgruler{position:relative;height:26px;margin:32px 0 26px;
+    background:repeating-linear-gradient(90deg,#DCD8CA 0 1px,transparent 1px 28px) left bottom/100% 6px no-repeat;
+    border-bottom:1px solid #CFCABA}
+  .lgform{margin-top:26px}
+  .lgfield{margin-bottom:20px}
+  .lgfield label{display:block;font-size:9.5px;letter-spacing:.16em;color:var(--ink-faint);margin-bottom:8px;transition:color .18s}
+  .lgfield input{width:100%;border:none;border-bottom:1.5px solid var(--line-strong);background:none;font:inherit;font-size:13px;
+    padding:8px 0 9px;line-height:1.45;letter-spacing:.05em;color:var(--ink);outline:none;transition:border-color .18s}
+  .lgfield input::placeholder{color:#B4B1A6;letter-spacing:.06em}
+  .lgfield input:focus{border-bottom-color:var(--ink);box-shadow:0 1px 0 0 var(--ink)}
+  .lgfield input:focus::placeholder{color:#9C9A8F}
+  .lgfield.on label{color:var(--ink)}
+  .lgfield input:disabled{opacity:.6}
+  .lgbtn{width:100%;border:1px solid var(--ink);background:var(--ink);color:#fff;font:inherit;font-size:12px;
+    letter-spacing:.16em;padding:14px 0;cursor:pointer;margin-top:10px;transition:opacity .18s}
+  .lgbtn:disabled{opacity:.45;cursor:default}
+  .lgerr{font-size:10.5px;color:#9C4A38;letter-spacing:.04em;margin-top:12px;min-height:15px}
+  .lgdemo{margin-top:18px;padding:11px 12px;border:1px dashed var(--line-strong);background:var(--paper-2);
+    font-size:10px;letter-spacing:.03em;color:var(--ink-soft);line-height:1.8;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .lgdemo .dot{font-family:"Archivo",sans-serif;color:var(--gold);letter-spacing:.14em;font-size:9px}
+  .lgdemo b{font-family:"Archivo",sans-serif;font-weight:400;color:var(--ink);letter-spacing:.06em}
+  .lgdemo .fill{margin-left:auto;border:none;background:none;font:inherit;font-size:10px;letter-spacing:.1em;
+    color:var(--gold);cursor:pointer;border-bottom:1px solid var(--gold);padding:0 0 2px}
+  .lgnote{font-size:10px;color:var(--ink-faint);line-height:1.95;margin-top:24px;letter-spacing:.02em}
+  .lgback{border:none;background:none;font:inherit;font-size:10px;letter-spacing:.14em;color:var(--ink-soft);cursor:pointer;
+    padding:0 0 3px;margin-top:20px;border-bottom:1px solid var(--line-2)}
+
+  /* 登录 · 对开（图 + 表单） */
+  .lg2{min-height:calc(100vh - 57px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--paper)}
+  .lg2-art{position:relative;overflow:hidden}
+  .lg2-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 50%}
+  .lg2-art .sh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,9,7,.35) 0%,rgba(11,9,7,.72) 62%,rgba(11,9,7,.9) 100%)}
+  .lg2-art .cap{position:absolute;left:40px;bottom:44px;right:40px;color:var(--cream)}
+  .lg2-art .cap .k{font-size:9.5px;letter-spacing:.26em;color:rgba(244,241,233,.62);font-family:"Archivo",sans-serif}
+  .lg2-art .cap h2{font-size:26px;font-weight:300;line-height:1.4;margin:14px 0 0;color:#FCFCFA}
+  .lg2-art .cap p{font-size:11px;color:rgba(244,241,233,.66);margin-top:12px;letter-spacing:.03em;line-height:1.9}
+  .lg2-form{display:flex;align-items:center;justify-content:center;padding:60px clamp(28px,5vw,80px)}
+  .lg2-form .lgbox h1{font-size:26px}
+
+  /* 登录 · 账页 */
+  .lg3{min-height:calc(100vh - 57px);position:relative;background:var(--paper);padding:clamp(40px,7vh,90px) 24px;overflow:hidden}
+  .lg3-ghost{position:absolute;left:0;top:1vh;font-family:"Archivo",sans-serif;font-size:clamp(72px,11.5vw,168px);
+    line-height:1;letter-spacing:-.03em;color:#EFEDE4;user-select:none}
+  .lg3-grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,440px);gap:clamp(30px,6vw,100px);
+    align-items:center;max-width:1200px;margin:0 auto;min-height:calc(100vh - 57px - 2*clamp(40px,7vh,90px))}
+  .lg3-side .k{font-size:9.5px;letter-spacing:.26em;color:var(--ink-faint);font-family:"Archivo",sans-serif}
+  .lg3-side h1{font-size:clamp(26px,3vw,36px);font-weight:300;line-height:1.4;margin:18px 0 0;letter-spacing:.04em}
+  .lg3-side p{font-size:11.5px;color:var(--ink-soft);line-height:2;margin-top:14px;max-width:34ch;letter-spacing:.02em}
+  .lg3-meta{display:flex;gap:28px;margin-top:38px}
+  .lg3-meta div span{display:block;font-size:9px;letter-spacing:.14em;color:var(--ink-faint)}
+  .lg3-meta div b{display:block;font-family:"Archivo",sans-serif;font-size:15px;font-weight:400;margin-top:6px;color:var(--ink)}
+  .lg3-card{border:1px solid var(--ink);background:var(--card);padding:clamp(30px,3.2vw,44px)}
+  .lg3-card .lg-kicker{margin-bottom:0}
+  .lg3-card h1{font-size:24px;font-weight:300;letter-spacing:.06em;margin:16px 0 0;line-height:1.3;color:var(--ink)}
+  .lg3-card .lgsub{font-size:11px;color:var(--ink-soft);margin-top:10px;line-height:1.9}
+  .lg3-card .lgform{margin-top:22px}
+  @media (max-width:900px){
+    .lg2{grid-template-columns:1fr;min-height:0}
+    .lg2-art{height:min(46vh,340px)}
+    .lg2-art .cap{left:26px;right:26px;bottom:26px}
+    .lg2-form{padding:44px 24px 64px}
+    .lg3-grid{grid-template-columns:1fr;gap:32px}
+    .lg3-side h1{font-size:26px}
+    .lg3-ghost{display:none}
+    .lgdemo .fill{margin-left:0}
+    .lg{min-height:0;padding:56px 22px 72px;align-items:flex-start}
+    .lgbox{width:100%}
+  }
+
   /* ===== 刻度元件 ===== */
   .idx{font-family:"Archivo",sans-serif;font-size:10px;color:#B8B4A6;flex:none;width:24px;padding-top:3px;letter-spacing:.06em}
   .ruler{position:relative;display:block;width:100%;min-width:104px;height:9px;
@@ -499,6 +582,10 @@
       <button data-view="landing">首页</button>
       <button data-view="shop">顾客端</button>
       <button data-view="admin">商家后台</button>
+    </div>
+    <div class="acct" id="acct">
+      <span class="who" id="acctWho">merchant</span>
+      <button class="out" id="logoutBtn">登出</button>
     </div>
   </div>
 </div>
@@ -875,16 +962,169 @@
     });
     return { total:total, rows:rows };
   }
+  /* ================= 商家登录 ================= */
+  var AUTH_KEY="cafe_admin_auth_v1", AUTH_HOURS=12, AUTH_USER="merchant", AUTH_HASH="68522a13";
+  var loginVar=(function(){
+    try{ var q=new URLSearchParams(location.search).get("lv"); return (q==="2"||q==="3")?q:"1"; }catch(e){ return "1"; }
+  })();
+
+  function fnv1a(str){
+    var h=0x811c9dc5;
+    for(var i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
+    var x=h.toString(16); while(x.length<8){ x="0"+x; } return x;
+  }
+  function authToken(u,pass){ return fnv1a("cafe::"+u+"::"+pass); }
+
+  function readAuth(){
+    try{
+      var j=JSON.parse(localStorage.getItem(AUTH_KEY)||"null");
+      if(!j||!j.exp||j.exp<Date.now()){ localStorage.removeItem(AUTH_KEY); return null; }
+      return j;
+    }catch(e){ return null; }
+  }
+  function isAuthed(){ return !!readAuth(); }
+  function setAuth(u){ try{ localStorage.setItem(AUTH_KEY, JSON.stringify({u:u, exp:Date.now()+AUTH_HOURS*3600*1000, at:Date.now()})); }catch(e){} }
+  function clearAuth(){ try{ localStorage.removeItem(AUTH_KEY); }catch(e){} }
+
+  function applyAuthUI(){
+    var el=document.getElementById("acct"); if(!el) return;
+    var a=readAuth();
+    el.classList.toggle("on", !!a);
+    if(a){ var w=document.getElementById("acctWho"); if(w) w.textContent=a.u; }
+  }
+
+  /* 进入某视图：后台需登录，未登录先询问是否去登录 */
+  function goView(v){
+    if(v==="admin" && !isAuthed()){
+      askConfirm({
+        title:"进入商家后台",
+        body:"商家后台仅对店主开放。<br>未登录时你可以浏览「首页」与「顾客端」，是否前往登录？",
+        ok:"去登录", cancel:"先逛前台"
+      }).then(function(ok){ if(ok) openLogin(); });
+      return;
+    }
+    state.view=v; state.selProduct=null; render();
+  }
+  function openLogin(){ state.view="login"; state.selProduct=null; render(); }
+
+  function loginFormHTML(){
+    return '<form id="lgform" class="lgform" autocomplete="off">'+
+      '<div class="lgfield"><label for="lgUser">账号</label>'+
+        '<input id="lgUser" type="text" placeholder="商家账号" spellcheck="false" autocapitalize="off"></div>'+
+      '<div class="lgfield"><label for="lgPass">密码</label>'+
+        '<input id="lgPass" type="password" placeholder="登录密码"></div>'+
+      '<div class="lgerr" id="lgErr"></div>'+
+      '<button class="lgbtn" id="lgBtn" type="submit">登录商家后台</button>'+
+      '<div class="lgdemo"><span class="dot">DEMO</span>账号 <b>merchant</b> 密码 <b>cafe-heat-2026</b>'+
+        '<button type="button" class="fill" id="lgFill">一键填入</button></div>'+
+    '</form>'+
+    '<div class="lgnote">这是演示环境：门禁只挡界面，配方数据仍托管在云端，请勿放入真实商业信息。<br>登录状态保留 12 小时，也可随时在右上角登出。</div>'+
+    '<button class="lgback" id="lgBack">← 返回首页</button>';
+  }
+
+  function renderLogin(){
+    var v=loginVar;
+    var html="";
+    if(v==="2"){
+      html='<div class="lg2">'+
+        '<div class="lg2-art"><img src="'+HERO_SRC+'" alt=""><div class="sh"></div>'+
+          '<div class="cap"><div class="k">MERCHANT ACCESS · 店主专用</div>'+
+            '<h2>配方与成本，<br>不对外公开。</h2>'+
+            '<p>后台可维护配料库、饮品配方与订单流转。前台访客无需登录。</p></div></div>'+
+        '<div class="lg2-form"><div class="lgbox">'+
+          '<div class="lg-kicker">SIGN IN</div><h1>店主登录</h1>'+
+          '<div class="lgsub">输入商家账号进入后台；没有账号请联系店主。</div>'+
+          '<div class="lgruler"></div>'+
+          loginFormHTML()+
+        '</div></div>'+
+      '</div>';
+    }else if(v==="3"){
+      html='<div class="lg3"><div class="lg3-ghost">ADMIN</div>'+
+        '<div class="lg3-grid">'+
+          '<div class="lg3-side">'+
+            '<div class="k">MERCHANT BACKOFFICE</div>'+
+            '<h1>只给店主开门。</h1>'+
+            '<p>首页与顾客端公开可看；配方、配料库与订单只在登录后可见、可改。</p>'+
+            '<div class="lg3-meta">'+
+              '<div><span>饮品</span><b id="lgmProd">—</b></div>'+
+              '<div><span>配料</span><b id="lgmIng">—</b></div>'+
+              '<div><span>会话时长</span><b>12h</b></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="lg3-card">'+
+            '<div class="lg-kicker">SIGN IN</div><h1>登录</h1>'+
+            '<div class="lgsub">输入商家账号进入后台</div>'+
+            loginFormHTML()+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }else{
+      html='<div class="lg"><div class="lgbox">'+
+        '<div class="lg-kicker">MERCHANT · 商家后台</div>'+
+        '<h1>店主登录</h1>'+
+        '<div class="lgsub">后台用于维护配料库、饮品配方与订单状态。前台访客无需登录。</div>'+
+        '<div class="lgruler"></div>'+
+        loginFormHTML()+
+      '</div></div>';
+    }
+    app.innerHTML=html;
+
+    if(v==="3"){
+      var mp=document.getElementById("lgmProd"), mi=document.getElementById("lgmIng");
+      if(mp) mp.textContent=db?db.products.length:0;
+      if(mi) mi.textContent=db?db.ings.length:0;
+    }
+
+    var f=document.getElementById("lgform");
+    var back=document.getElementById("lgBack");
+    if(back) back.addEventListener("click",function(){ state.view="landing"; render(); });
+    var fill=document.getElementById("lgFill");
+    if(fill) fill.addEventListener("click",function(){
+      document.getElementById("lgUser").value="merchant";
+      document.getElementById("lgPass").value="cafe-heat-2026";
+      document.getElementById("lgErr").textContent="";
+      document.getElementById("lgPass").focus();
+    });
+    if(f){
+      f.querySelectorAll(".lgfield input").forEach(function(i){
+        i.addEventListener("focus",function(){ i.parentNode.classList.add("on"); });
+        i.addEventListener("blur",function(){ if(!i.value) i.parentNode.classList.remove("on"); });
+      });
+      f.addEventListener("submit",function(e){
+        e.preventDefault();
+        var u=(document.getElementById("lgUser").value||"").trim();
+        var pw=(document.getElementById("lgPass").value||"").trim();
+        var err=document.getElementById("lgErr"), btn=document.getElementById("lgBtn");
+        if(!u||!pw){ err.textContent="请输入账号与密码"; return; }
+        if(authToken(u,pw)!==AUTH_HASH){
+          err.textContent="账号或密码不正确";
+          document.getElementById("lgPass").select();
+          return;
+        }
+        btn.disabled=true; btn.textContent="正在进入…";
+        setAuth(u);
+        setTimeout(function(){
+          state.view="admin"; state.selProduct=null;
+          render(); toast("已登录，欢迎回来");
+        },220);
+      });
+    }
+    setTimeout(function(){ var i=document.getElementById("lgUser"); if(i) i.focus(); },160);
+  }
+
   function defaultMilk(p){ return (state.milkSel[p.id]) || (p.milkOptions[0]) || ""; }
 
   /* ---------- 顶层渲染 ---------- */
   var app = document.getElementById("app");
   function render(){
     if(!db) return;
+    if(state.view==="admin" && !isAuthed()) state.view="login";
+    applyAuthUI();
     document.querySelectorAll("#viewSwitch button").forEach(function(b){
-      b.classList.toggle("active", b.dataset.view===state.view);
+      b.classList.toggle("active", b.dataset.view===state.view || (state.view==="login" && b.dataset.view==="admin"));
     });
-    if(state.view==="admin") renderAdmin();
+    if(state.view==="login") renderLogin();
+    else if(state.view==="admin") renderAdmin();
     else if(state.view==="landing") renderLanding();
     else renderShop();
     applyHeroSwitch();
@@ -1604,7 +1844,7 @@
         '<div class="landing-foot">饮品热量管理系统 · 数据来自本店配料库与配方</div>' +
       '</div>';
     app.innerHTML=html;
-    app.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ state.view=b.dataset.go; state.selProduct=null; render(); }); });
+    app.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ goView(b.dataset.go); }); });
     app.querySelectorAll(".landing-card").forEach(function(c){ c.addEventListener("click",function(){ state.view="shop"; state.selProduct=c.dataset.p; render(); }); });
   }
 
@@ -1714,7 +1954,19 @@
 
   /* ---------- 视图切换 ---------- */
   document.getElementById("viewSwitch").querySelectorAll("button").forEach(function(b){
-    b.addEventListener("click",function(){ state.view=b.dataset.view; state.selProduct=null; render(); });
+    b.addEventListener("click",function(){ goView(b.dataset.view); });
+  });
+  document.getElementById("logoutBtn").addEventListener("click",function(){
+    askConfirm({
+      title:"退出登录",
+      body:"退出后需要重新登录才能进入商家后台。<br>首页与顾客端的浏览不受影响。",
+      ok:"退出", danger:true
+    }).then(function(ok){
+      if(!ok) return;
+      clearAuth();
+      if(state.view==="admin"||state.view==="login") state.view="landing";
+      render(); toast("已退出登录");
+    });
   });
 
   app.innerHTML = '<div class="empty" style="padding:80px 0">加载中…</div>';
