@@ -462,6 +462,22 @@
   .lc-meta{display:flex!important;justify-content:space-between;align-items:baseline;gap:10px}
   .lc-meta .m{color:var(--ink-soft);font-size:11.5px}
 
+  .askmask{position:fixed;inset:0;background:rgba(20,20,16,.45);z-index:80;display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:opacity .18s;padding:20px}
+  .askmask.open{opacity:1}
+  .askbox{background:var(--paper);border:1px solid var(--line-2);border-radius:var(--radius-sm);width:min(420px,100%);
+    padding:26px 26px 22px;box-shadow:0 18px 60px rgba(0,0,0,.18);transform:translateY(6px);transition:transform .18s}
+  .askmask.open .askbox{transform:none}
+  .askbox .askh{font-size:14px;letter-spacing:.14em;font-weight:500;color:var(--ink)}
+  .askbox .askb{margin-top:12px;font-size:11.5px;line-height:1.9;color:var(--ink-soft);letter-spacing:.02em}
+  .askbox .askb b{color:var(--ink);font-weight:500}
+  .askbox .askf{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+  .askbox .askf .btn{padding:10px 18px;font-size:11.5px}
+  .askbox .askf .btn.ghost{background:none;border:1px solid var(--line-2);color:var(--ink-soft)}
+  .askbox .askf .btn.danger{background:var(--tag-high, #9C4A38);color:#fff}
+  .mini-toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:90;background:#181510;color:#F4F1E9;
+    font-size:11.5px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .mini-toast.on{opacity:1}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -555,6 +571,41 @@
   }
   function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }catch(e){} }
 
+  var toastTimer=null;
+  function toast(msg){
+    var el=document.getElementById("miniToast");
+    if(!el){ el=document.createElement("div"); el.id="miniToast"; el.className="mini-toast"; document.body.appendChild(el); }
+    el.textContent=msg; el.classList.add("on");
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){ el.classList.remove("on"); },2200);
+  }
+
+  /* 页面内二次确认，返回 Promise<boolean> */
+  function askConfirm(o){
+    return new Promise(function(resolve){
+      var m=document.createElement("div"); m.className="askmask";
+      m.innerHTML='<div class="askbox" role="dialog" aria-modal="true">'+
+        '<div class="askh">'+esc(o.title||"确认操作")+'</div>'+
+        '<div class="askb">'+(o.body||"")+'</div>'+
+        '<div class="askf"><button class="btn ghost" data-a="0">'+esc(o.cancel||"取消")+'</button>'+
+        '<button class="btn '+(o.danger?"danger":"")+'" data-a="1">'+esc(o.ok||"确定")+'</button></div></div>';
+      document.body.appendChild(m);
+      requestAnimationFrame(function(){ m.classList.add("open"); });
+      var closed=false;
+      function done(v){
+        if(closed) return; closed=true;
+        document.removeEventListener("keydown",onKey);
+        m.classList.remove("open");
+        setTimeout(function(){ if(m.parentNode) m.parentNode.removeChild(m); },180);
+        resolve(v);
+      }
+      function onKey(e){ if(e.key==="Escape") done(false); if(e.key==="Enter") done(true); }
+      document.addEventListener("keydown",onKey);
+      m.addEventListener("click",function(e){ if(e.target===m) done(false); });
+      m.querySelectorAll("[data-a]").forEach(function(b){ b.addEventListener("click",function(){ done(b.dataset.a==="1"); }); });
+      setTimeout(function(){ var f=m.querySelector('[data-a="1"]'); if(f) f.focus(); },60);
+    });
+  }
+
   /* ---------- 云端字段映射（前端字段名不变，仅在边界转换） ---------- */
   function ingToRow(i){
     return { lid:i.id, name:i.name, category:i.category, unit:i.unit,
@@ -634,7 +685,7 @@
 
   /* 全量对齐云端：本地优先，异步同步；失败仅提示，本地改动保留 */
   async function syncRemote(){
-    if(!supaReady()) return;
+    if(!supaReady()) return true;
     try{
       const old = await Promise.all([
         sb.from('ingredients').select('lid'),
@@ -649,12 +700,23 @@
       if(db.products.length) await sb.from('products').upsert(db.products.map(prodToRow),{onConflict:'lid'});
 
       const newIng = new Set(db.ings.map(function(x){return x.id;}));
-      oldIng.forEach(function(lid){ if(!newIng.has(lid)) sb.from('ingredients').delete().eq('lid',lid); });
       const newProd = new Set(db.products.map(function(x){return x.id;}));
-      oldProd.forEach(function(lid){ if(!newProd.has(lid)) sb.from('products').delete().eq('lid',lid); });
+      /* 注意：supabase-js 的请求是惰性的，必须 await / .then 才会真正发出 */
+      for(const lid of Array.from(oldIng)){
+        if(newIng.has(lid)) continue;
+        const r = await sb.from('ingredients').delete().eq('lid',lid);
+        if(r.error) throw r.error;
+      }
+      for(const lid of Array.from(oldProd)){
+        if(newProd.has(lid)) continue;
+        const r = await sb.from('products').delete().eq('lid',lid);
+        if(r.error) throw r.error;
+      }
+      return true;
     }catch(err){
       console.error('sync remote failed:', err);
       alert('保存到云端失败，本地改动已保留：' + ((err&&err.message)||err));
+      return false;
     }
   }
 
@@ -1046,15 +1108,20 @@
     document.getElementById("ingSearch").addEventListener("input",function(e){ state.ingQuery=e.target.value; renderIngs(); document.getElementById("ingSearch").focus(); var s=document.getElementById("ingSearch"); s.setSelectionRange(s.value.length,s.value.length); });
     document.getElementById("addIngBtn").addEventListener("click",function(){ openIngModal(null); });
     body.querySelectorAll("[data-edit-ing]").forEach(function(b){ b.addEventListener("click",function(){ openIngModal(b.dataset.editIng); }); });
-    body.querySelectorAll("[data-del-ing]").forEach(function(b){ b.addEventListener("click",function(){
-      var target=byId(db.ings,b.dataset.delIng);
-      var refs=refsOfIng(b.dataset.delIng);
-      var msg = refs.length ? "该配料被以下饮品引用："+refs.map(function(x){return x.name;}).join("、")+"。\n删除后这些饮品会跳过此项，确定删除？" : "删除该配料？";
-      if(confirm(msg)){
-        db.ings=db.ings.filter(function(x){return x.id!==b.dataset.delIng;});
-        save(); syncRemote(); render();
-        if(target && target.image) deleteProductImage(target.image);
-      }
+    body.querySelectorAll("[data-del-ing]").forEach(function(b){ b.addEventListener("click",async function(){
+      var id=b.dataset.delIng, target=byId(db.ings,id);
+      if(!target) return;
+      var refs=refsOfIng(id);
+      var body2 = refs.length
+        ? "该配料被以下饮品引用：<b>"+refs.map(function(x){return esc(x.name);}).join("、")+"</b>。<br>删除后这些饮品会跳过此项、热量重算，云端数据一并删除。"
+        : "确认删除「<b>"+esc(target.name)+"</b>」？云端数据一并删除，无法恢复。";
+      var ok=await askConfirm({ title:"删除配料", body:body2, ok:"删除", danger:true });
+      if(!ok) return;
+      db.ings=db.ings.filter(function(x){return x.id!==id;});
+      save(); render();
+      var synced = await syncRemote();
+      if(synced) toast("已删除「"+target.name+"」并同步云端");
+      if(target.image) deleteProductImage(target.image);
     }); });
   }
 
@@ -1195,13 +1262,20 @@
     document.getElementById("addProdBtn").addEventListener("click",function(){ openProductModal(null); });
     body.querySelectorAll("[data-edit-p]").forEach(function(b){ b.addEventListener("click",function(){ openProductModal(b.dataset.editP); }); });
     body.querySelectorAll("[data-copy-p]").forEach(function(b){ b.addEventListener("click",function(){ cloneProduct(byId(db.products,b.dataset.copyP)); }); });
-    body.querySelectorAll("[data-del-p]").forEach(function(b){ b.addEventListener("click",function(){
-      var target=byId(db.products,b.dataset.delP);
-      if(confirm("删除该饮品？")){
-        db.products=db.products.filter(function(x){return x.id!==b.dataset.delP;});
-        save(); syncRemote(); render();
-        if(target && target.image) deleteProductImage(target.image);
-      }
+    body.querySelectorAll("[data-del-p]").forEach(function(b){ b.addEventListener("click",async function(){
+      var id=b.dataset.delP, target=byId(db.products,id);
+      if(!target) return;
+      var ok=await askConfirm({
+        title:"删除饮品",
+        body:"确认删除「<b>"+esc(target.name)+"</b>」？<br>删除后该饮品会同时从菜单与顾客端点单页消失，云端数据一并删除，无法恢复。",
+        ok:"删除", danger:true
+      });
+      if(!ok) return;
+      db.products=db.products.filter(function(x){return x.id!==id;});
+      save(); render();
+      var synced = await syncRemote();
+      if(synced) toast("已删除「"+target.name+"」并同步云端");
+      if(target.image) deleteProductImage(target.image);
     }); });
   }
 
