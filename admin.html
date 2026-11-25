@@ -2097,8 +2097,8 @@
         var same=(+target.packQty||0)==c.net && (+target.packPrice||0)==c.price;
         if(same){ toast("「"+target.name+"」当前就是这个价，未改动"); return; }
         if(hasCost(target)){
-          var oldTxt="¥"+r2(target.packQty)+target.unit+" @ ¥"+r2(target.packPrice)+"（¥"+r2(unitCostOf(target))+" / "+target.unit+"）";
-          var newTxt="¥"+r2(c.net)+target.unit+" @ ¥"+r2(c.price)+"（¥"+r2(c.price/c.net)+" / "+target.unit+"）";
+          var oldTxt=r2(target.packQty)+target.unit+" @ ¥"+r2(target.packPrice)+"（¥"+r2(unitCostOf(target))+" / "+target.unit+"）";
+          var newTxt=r2(c.net)+target.unit+" @ ¥"+r2(c.price)+"（¥"+r2(c.price/c.net)+" / "+target.unit+"）";
           var ok=await askConfirm({
             title:"覆盖「"+target.name+"」的采购价",
             body:"当前：<b>"+oldTxt+"</b><br>改为：<b>"+newTxt+"</b>"+(label?"<br>豆：<b>"+esc(label)+"</b>":"")+
