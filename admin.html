@@ -886,6 +886,55 @@
     catch(e){ console.error('delete old image failed:', e); }
   }
 
+  /* 写库通道：优先走带口令的 RPC（收紧写权限后唯一可用路径）；
+     若云端还没建对应函数（function does not exist），自动退回 REST 直写，
+     保证「没跑 SQL」和「跑了 SQL」两种状态下后台都能正常保存 */
+  function rpcMissing(err){
+    var msg = String((err && (err.message || err.hint || err.details)) || "");
+    var code = String((err && err.code) || "");
+    return /Could not find the function|PGRST202|42883|does not exist/i.test(msg + " " + code);
+  }
+  async function writeRows(table, rows, fn){
+    if(!rows || !rows.length) return;
+    var pass = adminPass();
+    var first;
+    if(pass){
+      first = await sb.rpc(fn, {pass:pass, row:rows[0]});
+      if(first && first.error && rpcMissing(first.error)){
+        var q = await sb.from(table).upsert(rows, {onConflict:"lid"});
+        if(q.error) throw q.error;
+        return;
+      }
+    }else{
+      var q2 = await sb.from(table).upsert(rows, {onConflict:"lid"});
+      if(q2.error) throw q2.error;
+      return;
+    }
+    if(first && first.error) throw first.error;
+    await Promise.all(rows.slice(1).map(function(row){
+      return sb.rpc(fn, {pass:pass, row:row}).then(function(r){
+        if(r.error && !rpcMissing(r.error)) throw r.error;
+      });
+    }));
+  }
+  async function removeRow(table, lid, fn){
+    var pass = adminPass();
+    if(!pass){
+      var d0 = await sb.from(table).delete().eq("lid", lid);
+      if(d0.error) throw d0.error;
+      return;
+    }
+    var r = await sb.rpc(fn, {pass:pass, p_lid:lid});
+    if(r && r.error){
+      if(rpcMissing(r.error)){
+        var d = await sb.from(table).delete().eq("lid", lid);
+        if(d.error) throw d.error;
+        return;
+      }
+      throw r.error;
+    }
+  }
+
   /* 全量对齐云端：本地优先，异步同步；失败仅提示，本地改动保留 */
   async function syncRemote(){
     if(!supaReady()) return true;
@@ -899,21 +948,19 @@
       const oldIng = new Set((old[0].data||[]).map(function(r){return r.lid;}));
       const oldProd = new Set((old[1].data||[]).map(function(r){return r.lid;}));
 
-      if(db.ings.length) await sb.from('ingredients').upsert(db.ings.map(ingToRow),{onConflict:'lid'});
-      if(db.products.length) await sb.from('products').upsert(db.products.map(prodToRow),{onConflict:'lid'});
+      if(db.ings.length) await writeRows('ingredients', db.ings.map(ingToRow), 'admin_save_ingredient');
+      if(db.products.length) await writeRows('products', db.products.map(prodToRow), 'admin_save_product');
 
       const newIng = new Set(db.ings.map(function(x){return x.id;}));
       const newProd = new Set(db.products.map(function(x){return x.id;}));
       /* 注意：supabase-js 的请求是惰性的，必须 await / .then 才会真正发出 */
       for(const lid of Array.from(oldIng)){
         if(newIng.has(lid)) continue;
-        const r = await sb.from('ingredients').delete().eq('lid',lid);
-        if(r.error) throw r.error;
+        await removeRow('ingredients', lid, 'admin_delete_ingredient');
       }
       for(const lid of Array.from(oldProd)){
         if(newProd.has(lid)) continue;
-        const r = await sb.from('products').delete().eq('lid',lid);
-        if(r.error) throw r.error;
+        await removeRow('products', lid, 'admin_delete_product');
       }
       return true;
     }catch(err){
