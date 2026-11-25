@@ -1535,6 +1535,7 @@
       if(st==="制作中") ops='<button class="btn sm" data-no="'+esc(o.order_no)+'" data-st="已取餐">已取餐</button>';
       if(st==="已取餐"||st==="作废") ops='<button class="btn sm ghost" data-no="'+esc(o.order_no)+'" data-st="制作中">退回制作中</button>';
       if(st!=="作废") ops+='<button class="btn sm danger" data-no="'+esc(o.order_no)+'" data-st="作废">作废</button>';
+      if(st==="作废") ops+='<button class="btn sm danger" data-del-ord="'+esc(o.order_no)+'">删除</button>';
 
       return '<div class="ord '+(st==="待制作"?"wait":"")+'">'+
         '<div class="ord-top"><div><span class="ordno">'+esc(o.order_no)+'</span> <span class="st '+stCls(st)+'">'+esc(st)+'</span></div>'+
@@ -1568,6 +1569,15 @@
       });
     });
 
+    Array.prototype.forEach.call(body.querySelectorAll("[data-del-ord]"),function(b){
+      b.addEventListener("click",function(){
+        if(ordMock){ alert("示例数据，接入云端后即可改状态。"); return; }
+        var no=b.dataset.delOrd;
+        if(!confirm("删除订单 "+no+"？删了不可恢复（只有「作废」的单能删）。")) return;
+        deleteOrder(no);
+      });
+    });
+
     if(ordTimer) clearInterval(ordTimer);
     ordTimer=setInterval(function(){
       if(ordMock) return;
@@ -1591,6 +1601,19 @@
       if(o) o.status=st;
       renderOrders();
     }catch(e){ alert("改状态失败："+((e&&e.message)||e)); }
+  }
+
+  async function deleteOrder(no){
+    if(!supaReady()){ alert("本机模式删不了云端订单。"); return; }
+    try{
+      var pass=adminPass();
+      if(!pass){ alert("登录状态已失效，请重新登录后再删。"); return; }
+      var r=await sb.rpc("admin_delete_order",{pass:pass, p_order_no:no});
+      if(r.error) throw r.error;
+      adminOrders=adminOrders.filter(function(x){ return x.order_no!==no; });
+      renderOrders();
+      toast("已删除订单 "+no);
+    }catch(e){ alert("删除失败："+((e&&e.message)||e)); }
   }
 
   function r2(n){ return (Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,""); }
