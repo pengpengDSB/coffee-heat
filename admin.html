@@ -947,24 +947,31 @@
         return;
       }
       var map = {};
-      (r.data||[]).forEach(function(x){ map[x.lid] = {q:Number(x.pack_qty)||0, p:Number(x.pack_price)||0}; });
+      (r.data||[]).forEach(function(x){ map[x.lid] = {q:Number(x.pack_qty)||0, p:Number(x.pack_price)||0, l:x.bean_label||""}; });
       db.ings.forEach(function(i){
         var c = map[i.id];
         i.packQty = c ? c.q : 0;
         i.packPrice = c ? c.p : 0;
+        i.beanLabel = c ? c.l : "";
       });
     }catch(e){ console.warn("读取配料成本失败", e); }
   }
-  async function saveIngCost(lid, qty, price){
+  async function saveIngCost(lid, qty, price, label){
     if(!supaReady() || !sb) return {ok:true, local:true};
     var pass = adminPass();
     if(!pass) return {ok:false, msg:"登录状态已失效，重新登录后再保存价格"};
     try{
-      var r = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price});
-      if(r.error){
-        if(rpcMissing(r.error)) return {ok:false, msg:"云端还没建成本表，先把成本 SQL 跑一遍再保存"};
-        return {ok:false, msg:"保存失败："+((r.error&&r.error.message)||r.error)};
+      /* 先试带豆名的 5 参数版；云端还没升级时退回 4 参数版，保证不断档 */
+      var r = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price, p_label:(label||"")});
+      if(r.error && rpcMissing(r.error)){
+        var r2 = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price});
+        if(r2.error){
+          if(rpcMissing(r2.error)) return {ok:false, msg:"云端还没建成本表，先把成本 SQL 跑一遍再保存"};
+          return {ok:false, msg:"保存失败："+((r2.error&&r2.error.message)||r2.error)};
+        }
+        return {ok:true, noLabel:true};
       }
+      if(r.error) return {ok:false, msg:"保存失败："+((r.error&&r.error.message)||r.error)};
       return {ok:true};
     }catch(e){ return {ok:false, msg:"保存失败："+((e&&e.message)||e)}; }
   }
@@ -1751,7 +1758,8 @@
         '<div class="ing-top"><span class="ing-name">'+esc(i.name)+'<span class="ing-cat">'+esc(i.category)+' · '+esc(i.unit)+'</span></span></div>' +
         '<div class="ing-meta"><span>基准 每 '+esc(i.base)+esc(i.unit)+' · '+esc(i.kJ)+' 千焦</span>'+(i.note?'<span>'+esc(i.note)+'</span>':"")+'</div>' +
         '<div class="ing-meta"><span style="'+(hasCost(i)?"":"opacity:.55")+'">'+(hasCost(i)
-          ? ('单价 ¥'+(unitCostOf(i)<0.01?unitCostOf(i).toFixed(4):r2(unitCostOf(i)))+' / '+esc(i.unit)+'　（'+r2(i.packQty)+esc(i.unit)+' @ ¥'+r2(i.packPrice)+'）')
+          ? ('单价 ¥'+(unitCostOf(i)<0.01?unitCostOf(i).toFixed(4):r2(unitCostOf(i)))+' / '+esc(i.unit)+'　（'+r2(i.packQty)+esc(i.unit)+' @ ¥'+r2(i.packPrice)+'）'+
+             (String(i.beanLabel||"").trim()?'　·　豆：'+esc(i.beanLabel):""))
           : '未填采购价')+'</span></div>' +
         '<div class="ing-ops"><button class="btn sm ghost" data-edit-ing="'+i.id+'">编辑</button>' +
         '<button class="btn sm danger" data-del-ing="'+i.id+'">删除</button></div>' +
@@ -1808,6 +1816,7 @@
         '<div class="field"><label>采购净含量（'+esc(i.unit||"g")+' / 包·瓶）</label><input type="number" id="f_packQty" min="0" step="1" value="'+esc(i.packQty||"")+'" placeholder="例：1000"></div>' +
         '<div class="field"><label>采购价（元 / 包·瓶）</label><input type="number" id="f_packPrice" min="0" step="0.01" value="'+esc(i.packPrice||"")+'" placeholder="例：100"></div>' +
       '</div>' +
+      '<div class="field"><label>采购备注（豆名 / 渠道，可空）</label><input id="f_beanLabel" value="'+esc(i.beanLabel||"")+'" placeholder="例：巴西 SOE / 意式拼配"></div>' +
       '<div class="field-hint" id="f_unitCostHint">填「净含量 + 采购价」后自动折成单价：元 / '+esc(i.unit||"g")+'</div>' +
       '<div class="field"><label>配料图片</label>' +
         '<div class="img-uploader">' +
@@ -1898,11 +1907,12 @@
         note:document.getElementById("f_note").value.trim(),
         image:image,
         packQty:parseFloat(document.getElementById("f_packQty").value)||0,
-        packPrice:parseFloat(document.getElementById("f_packPrice").value)||0
+        packPrice:parseFloat(document.getElementById("f_packPrice").value)||0,
+        beanLabel:document.getElementById("f_beanLabel").value.trim()
       };
       if(id){ Object.assign(byId(db.ings,id),data); }
       else{ data.id=ingId; db.ings.push(data); }
-      var costRes = await saveIngCost(ingId, data.packQty, data.packPrice);
+      var costRes = await saveIngCost(ingId, data.packQty, data.packPrice, data.beanLabel);
       save(); syncRemote(); closeModal(); render();
       if(!costRes.ok){ alert(costRes.msg); }
       else if(costRes.local){ /* 本机模式，价格只留在浏览器 */ }
@@ -2107,9 +2117,9 @@
           });
           if(!ok) return;
         }
-        target.packQty=c.net; target.packPrice=c.price;
+        target.packQty=c.net; target.packPrice=c.price; target.beanLabel=label;
         save(); render();
-        var r=await saveIngCost(lid, c.net, c.price);
+        var r=await saveIngCost(lid, c.net, c.price, label);
         if(!r.ok){ alert(r.msg); return; }
         toast("已把 "+(label?label+" ":"")+r2(c.net)+"g @ ¥"+r2(c.price)+" 写进「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
         renderBeans();
