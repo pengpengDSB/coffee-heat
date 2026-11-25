@@ -1082,6 +1082,7 @@
         await syncRemote();
       }
       await loadIngCosts();   /* 已登录（口令还在 sessionStorage）就把采购价补回来 */
+      await loadBeansCloud(); /* 豆价表也从云端拉一次（表没建就静默跳过） */
       save();
     }catch(e){
       console.error('remote load failed, fallback to localStorage:', e);
@@ -1428,7 +1429,7 @@
         setTimeout(function(){
           state.view="admin"; state.selProduct=null;
           render();
-          loadIngCosts().then(function(){ if(state.view==="admin") render(); });
+          loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ if(state.view==="admin") render(); });
           toast("已登录，欢迎回来");
         },220);
       });
@@ -1924,7 +1925,9 @@
   var BEAN_KEY = "cafe_bean_calc_v1";
   function beanRows(){
     try{
-      var raw = localStorage.getItem(BEAN_KEY);
+      /* 注意：state.beans=beanRows() 在 BEAN_KEY 赋值之前执行，这里必须用字面量键名，
+         否则 getItem(undefined) 永远读不到 → 刷新后只剩默认 7 行（豆名/改过的克数全丢） */
+      var raw = localStorage.getItem("cafe_bean_calc_v1");
       var d = raw ? JSON.parse(raw) : null;
       if(Array.isArray(d) && d.length) return d;
     }catch(e){}
@@ -1947,8 +1950,68 @@
     var rest = dose>0 ? Math.max(0, net - cups*dose) : net;
     return {net:net, dose:dose, price:price, cups:cups, per:per, perFloor:perFloor, rest:rest, noPrice:price===""};
   }
-  function saveBeans(){
+  function saveBeans(push){
     try{ localStorage.setItem(BEAN_KEY, JSON.stringify(state.beans)); }catch(e){}
+    if(push!==false) scheduleBeanPush();
+  }
+
+  /* ---------- 豆价表上云（表 bean_calc，同样只走口令 RPC，anon 读不到） ---------- */
+  var beanSync = {state:"local", at:""};   /* local | ok | failed | pending */
+  var beanPushTimer=null, beanPushBusy=false, beanPushAgain=false;
+  function beanSyncText(){
+    if(beanSync.state==="ok") return "已存云端" + (beanSync.at? " · "+beanSync.at : "");
+    if(beanSync.state==="pending") return "正在存云端…";
+    if(beanSync.state==="failed") return "云端没存上（先留在本机，下次改动会重试）";
+    return "只在本机（未建豆价表或未登录）";
+  }
+  function paintBeanSync(){
+    var el=document.querySelector("[data-bsync]");
+    if(!el) return;
+    el.textContent = beanSyncText();
+    el.style.color = beanSync.state==="failed" ? "#A5533F" : "var(--ink-faint)";
+  }
+  function scheduleBeanPush(){
+    if(!supaReady() || !sb || !adminPass()){ beanSync.state="local"; paintBeanSync(); return; }
+    beanSync.state="pending"; paintBeanSync();
+    clearTimeout(beanPushTimer);
+    beanPushTimer=setTimeout(function(){ pushBeansCloud(); }, 900);
+  }
+  async function pushBeansCloud(){
+    if(!supaReady() || !sb || !adminPass()){ beanSync.state="local"; paintBeanSync(); return {ok:false,local:true}; }
+    if(beanPushBusy){ beanPushAgain=true; return {ok:false,busy:true}; }
+    beanPushBusy=true;
+    try{
+      var r=await sb.rpc("admin_save_beans", {pass:adminPass(), p_data: state.beans});
+      if(r.error){
+        if(rpcMissing(r.error)){ beanSync.state="local"; console.warn("豆价表 RPC 不存在，先存本机"); }
+        else { beanSync.state="failed"; console.warn("豆价表上云失败", r.error); }
+      }else{
+        var d=new Date();
+        beanSync.state="ok";
+        beanSync.at=(d.getMonth()+1)+"-"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+      }
+    }catch(e){ beanSync.state="failed"; console.warn("豆价表上云失败", e); }
+    finally{
+      beanPushBusy=false; paintBeanSync();
+      if(beanPushAgain){ beanPushAgain=false; pushBeansCloud(); }
+    }
+  }
+  async function loadBeansCloud(){
+    if(!supaReady() || !sb || !adminPass()) return;
+    try{
+      var r=await sb.rpc("admin_list_beans", {pass:adminPass()});
+      if(r.error){ if(!rpcMissing(r.error)) console.warn("读取豆价表失败", r.error); return; }
+      var d=r.data;
+      if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d=[]; } }
+      if(d && !Array.isArray(d) && Array.isArray(d.rows)) d=d.rows;
+      if(Array.isArray(d) && d.length){
+        state.beans = d.map(function(b){ return {id:String(b.id||("b"+Math.random().toString(36).slice(2,7))), grams:b.grams, dose:b.dose, price:(b.price==null?"":b.price), label:(b.label||"")}; });
+        try{ localStorage.setItem(BEAN_KEY, JSON.stringify(state.beans)); }catch(e){}
+        beanSync.state="ok"; beanSync.at="";
+      }else{
+        await pushBeansCloud();   /* 云端还空 → 把本机这份先传上去 */
+      }
+    }catch(e){ console.warn("读取豆价表失败", e); }
   }
   /* 罐重只做备忘，不参与任何计算 */
   var BEAN_NOTE_KEY = "cafe_bean_note_v1";
@@ -2025,7 +2088,8 @@
         '· <b>袋装克数</b>：包装上标的净豆重量，直接填（要扣罐就自己先减好，这里不扣）。<br>'+
         '· <b>单杯粉克数</b>：浓缩 18g、手冲 15g 这类，按你的配方填。<br>'+
         '· <b>写入配料</b>：这是比价表——一个配料只存一个采购价，写入＝把选定的那袋抄进去（覆盖前会弹确认，写着旧价→新价）。要几款豆同时上菜单，得先把它们分别建成配料。<br>'+
-        '· 本表只存这台浏览器（localStorage），不同步云端；换电脑要重新录。'+
+        '· 本表存在云端（表 bean_calc，同一个口令，anon 读不到），换电脑登录后自动带出；<b>豆名也一起存云端</b>。<br>'+
+        '· 数据状态：<span data-bsync>'+esc(beanSyncText())+'</span>'+
       '</div>';
 
     document.getElementById("canWeight").addEventListener("input",function(e){
@@ -2033,8 +2097,19 @@
     });
 
     document.getElementById("addBeanRow").addEventListener("click",function(){
-      state.beans.push({id:"b"+Date.now(), grams:250, dose:18, price:""});
+      var nb={id:"b"+Date.now(), grams:250, dose:18, price:"", label:""};
+      state.beans.push(nb);
       saveBeans(); renderBeans();
+      var tr=document.querySelector('[data-brow="'+nb.id+'"]');
+      if(tr){
+        tr.scrollIntoView({block:"center",behavior:"smooth"});
+        tr.style.transition="background .45s ease";
+        tr.style.background="rgba(198,148,72,.16)";
+        setTimeout(function(){ tr.style.background="transparent"; },1600);
+        var inp=tr.querySelector('[data-bf="label"]');
+        if(inp) setTimeout(function(){ inp.focus(); },300);
+      }
+      toast("已加一袋（第 "+state.beans.length+" 行），滚到表格底部了");
     });
 
     function refreshRow(id){
