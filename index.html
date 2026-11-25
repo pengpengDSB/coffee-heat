@@ -1167,42 +1167,38 @@
       total:Math.round(cartTotal()*100)/100, total_kcal:Math.round(cartKcal()*10)/10,
       pickup:"到店自取", note:note, status:"待制作", created_at:new Date().toISOString()};
 
-    var seq=1;
+    var saved=false, rpcMissing=false, seq=1;
     if(supaReady()){
+      /* 优先走服务端：单号、金额、热量都由数据库生成，前端不预读订单表 */
       try{
-        var r=await sb.from('orders').select('order_no').like('order_no',prefix+'%');
-        if(!r.error) seq=nextSeq(r.data,prefix);
-      }catch(e){}
-    }else{
-      seq=nextSeq(readLS(ORD_KEY,[]),prefix);
-    }
-
-    var saved=false, rpcMissing=false;
-    if(supaReady()){
-      for(var attempt=0; attempt<3; attempt++){
-        payload.order_no=prefix+pad3(seq);
+        var rpc0=await sb.rpc('create_order',{payload:payload});
+        if(!rpc0.error){
+          saved=true;
+          payload=Object.assign({},payload,rpc0.data||{});
+        }else{
+          var m0=String((rpc0.error&&(rpc0.error.message||rpc0.error.details))||"")+" "+String((rpc0.error&&rpc0.error.code)||"");
+          if(/Could not find the function|PGRST202|42883|does not exist/i.test(m0)){ rpcMissing=true; }
+          else{ console.error("create_order failed",rpc0.error); }
+        }
+      }catch(e){ rpcMissing=true; }
+      if(!saved && rpcMissing){
+        /* 云端还没有 create_order 的兜底：自己取号 + 直插 */
         try{
-          if(!rpcMissing){
-            /* 优先走服务端：金额与热量由数据库按菜单重算，不信前端传的值 */
-            var rpc=await sb.rpc('create_order',{payload:payload});
-            if(!rpc.error){
-              saved=true;
-              if(rpc.data && rpc.data.order_no){ payload=Object.assign({},payload,rpc.data); }
-              break;
-            }
-            var rmsg=String((rpc.error&&(rpc.error.message||rpc.error.details))||"")+" "+String((rpc.error&&rpc.error.code)||"");
-            if(/Could not find the function|PGRST202|42883|does not exist/i.test(rmsg)){ rpcMissing=true; }
-            else if(rpc.error.code==="23505"){ seq++; continue; }
-            else{ console.error("create_order failed",rpc.error); break; }
-          }
-          var ins=await sb.from('orders').insert(payload);
-          if(!ins.error){ saved=true; break; }
-          if(ins.error && ins.error.code==="23505"){ seq++; continue; }
-          console.error("insert order failed",ins.error); break;
-        }catch(e){ console.error("insert order failed",e); break; }
+          var rr=await sb.from('orders').select('order_no').like('order_no',prefix+'%');
+          if(!rr.error) seq=nextSeq(rr.data,prefix);
+        }catch(e){}
+        for(var attempt=0; attempt<3; attempt++){
+          payload.order_no=prefix+pad3(seq);
+          try{
+            var ins=await sb.from('orders').insert(payload);
+            if(!ins.error){ saved=true; break; }
+            if(ins.error && ins.error.code==="23505"){ seq++; continue; }
+            console.error("insert order failed",ins.error); break;
+          }catch(e){ console.error("insert order failed",e); break; }
+        }
       }
     }else{
-      payload.order_no=prefix+pad3(seq);
+      payload.order_no=prefix+pad3(nextSeq(readLS(ORD_KEY,[]),prefix));
     }
     if(!saved){
       var lo=readLS(ORD_KEY,[]); lo.unshift(payload); writeLS(ORD_KEY,lo);
@@ -1221,8 +1217,10 @@
     var vid=visitorId();
     if(supaReady()){
       try{
-        var r=await sb.from('orders').select('*').eq('visitor_id',vid).order('created_at',{ascending:false}).limit(20);
-        if(!r.error && r.data){ state.orders=r.data; return; }
+        var r=await sb.rpc('get_my_orders',{p_visitor:vid});
+        if(!r.error && r.data){ state.orders=(Array.isArray(r.data)?r.data:[]).slice(0,20); return; }
+        var q=await sb.from('orders').select('*').eq('visitor_id',vid).order('created_at',{ascending:false}).limit(20);
+        if(!q.error && q.data){ state.orders=q.data; return; }
       }catch(e){}
     }
     state.orders=readLS(ORD_KEY,[]).slice(0,20);
@@ -1268,9 +1266,15 @@
     await new Promise(function(r){ setTimeout(r,6000); });
     if(!state.viewOrder || state.viewOrder.order_no!==no) return;
     try{
-      var r=await sb.from("orders").select("status").eq("order_no",no).limit(1);
-      if(!r.error && r.data && r.data[0] && r.data[0].status && r.data[0].status!==state.viewOrder.status){
-        state.viewOrder.status=r.data[0].status; render();
+      var r=await sb.rpc('get_order',{p_order_no:no, p_visitor:visitorId()});
+      var st=(r.data && r.data.status) || (Array.isArray(r.data)&&r.data[0]&&r.data[0].status) || "";
+      if(!r.error && st){
+        if(st!==state.viewOrder.status){ state.viewOrder.status=st; render(); }
+        return;
+      }
+      var q=await sb.from("orders").select("status").eq("order_no",no).limit(1);
+      if(!q.error && q.data && q.data[0] && q.data[0].status && q.data[0].status!==state.viewOrder.status){
+        state.viewOrder.status=q.data[0].status; render();
       }
     }catch(e){}
   }

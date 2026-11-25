@@ -1428,9 +1428,18 @@
   async function loadAdminOrders(){
     if(!supaReady()){ adminOrders=[]; ordErr="本机模式预览，读不到云端订单。"; ordLoaded=true; return; }
     try{
-      const r=await sb.from("orders").select("*").order("created_at",{ascending:false}).limit(40);
-      if(r.error) throw r.error;
-      adminOrders=r.data||[]; ordErr="";
+      var pass=adminPass();
+      var r = pass ? await sb.rpc("admin_list_orders",{pass:pass}) : null;
+      if(!r || (r.error && rpcMissing(r.error))){
+        /* 云端还没有该函数：退回直读（订单表收回读权限后这条会失败） */
+        var q=await sb.from("orders").select("*").order("created_at",{ascending:false}).limit(40);
+        if(q.error) throw q.error;
+        adminOrders=q.data||[];
+      }else{
+        if(r.error) throw r.error;
+        adminOrders=Array.isArray(r.data)?r.data:[];
+      }
+      ordErr="";
     }catch(e){
       var msg=(e&&e.message)||"";
       adminOrders=[];
