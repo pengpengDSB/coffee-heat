@@ -901,7 +901,13 @@
         headers: Object.assign({"Content-Type":"application/json", "x-admin-pass":adminPass()}, supaHeaders()),
         body: JSON.stringify({prefixes:[path]})
       });
-      if(!r.ok) console.error('delete old image failed:', r.status);
+      if(!r.ok){ console.error('delete old image failed:', r.status); return; }
+      var del = null;
+      try{ del = await r.json(); }catch(e){}
+      /* 被 RLS 拦掉时接口返回 200 + 空数组，不是报错；这里要看条数才能发现没删成 */
+      if(!Array.isArray(del) || del.length === 0){
+        console.warn('旧图未删除（口令缺失或策略拦截）:', path);
+      }
     }catch(e){ console.error('delete old image failed:', e); }
   }
 
