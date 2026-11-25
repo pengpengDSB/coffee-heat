@@ -123,6 +123,8 @@
   .beam-per{color:var(--gold);font-weight:500;font-size:14px}
   .beam-per small{font-size:10px;font-weight:400;color:var(--ink-soft)}
   .beam-apply{display:flex;flex-direction:column;gap:5px;align-items:stretch}
+  .beam-admin input[type="text"]{width:120px;text-align:left}
+  .beam-cur{font-size:10.5px;color:var(--ink-faint);line-height:1.5;text-align:left}
   .beam-apply select{font:inherit;font-size:11px;padding:4px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2)}
   .beam-hint{font-size:11px;color:var(--ink-faint);text-align:left;margin-top:10px;line-height:1.9}
   .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
@@ -1959,11 +1961,11 @@
     var best=null, bestName="";
     rows.forEach(function(b){
       var c=beanCalc(b);
-      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=r2(b.grams)+"g @¥"+r2(c.price); }
+      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=(b.label?(b.label+" "):"")+r2(b.grams)+"g @¥"+r2(c.price); }
     });
 
     var thead='<tr>'+
-      '<th rowspan="2">#</th>'+
+      '<th rowspan="2">#</th><th rowspan="2">豆名 / 渠道</th>'+
       '<th colspan="2" class="grp">咖啡豆克数计算</th>'+
       '<th colspan="1" class="grp">价格</th>'+
       '<th colspan="4" class="grp">出杯与单杯豆价</th>'+
@@ -1979,6 +1981,7 @@
       var opts=targets.map(function(i){ return '<option value="'+i.id+'">'+esc(i.name)+'</option>'; }).join("");
       return '<tr data-brow="'+b.id+'">'+
         '<td class="beam-num">'+String(idx+1).padStart(2,"0")+'</td>'+
+        '<td><input type="text" data-bid="'+b.id+'" data-bf="label" class="beam-name" value="'+esc(b.label||"")+'" placeholder="例：巴西 SOE"></td>'+
         '<td><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams)+'"></td>'+
         '<td><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose)+'"></td>'+
         '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price)+'"></td>'+
@@ -1988,6 +1991,7 @@
         '<td class="beam-num" data-bc="floor">'+(c.perFloor>0?'¥'+r2(c.perFloor):"—")+'</td>'+
         '<td><div class="beam-apply">'+
           '<select data-btarget="'+b.id+'">'+(opts||'<option value="">无可用配料</option>')+'</select>'+
+          '<div class="beam-cur" data-bcur="'+b.id+'"></div>'+
           '<button class="btn sm ghost" data-bapply="'+b.id+'">写入</button>'+
         '</div></td>'+
         '<td><button class="btn sm danger" data-bdel="'+b.id+'">删</button></td>'+
@@ -2010,7 +2014,7 @@
       '<div class="beam-hint">'+
         '· <b>袋装克数</b>：包装上标的净豆重量，直接填（要扣罐就自己先减好，这里不扣）。<br>'+
         '· <b>单杯粉克数</b>：浓缩 18g、手冲 15g 这类，按你的配方填。<br>'+
-        '· <b>写入配料</b>：把这袋的「袋装克数 + 总价」写进咖啡类配料的采购信息，饮品卡片随之算出整杯原料成本与毛利。<br>'+
+        '· <b>写入配料</b>：这是比价表——一个配料只存一个采购价，写入＝把选定的那袋抄进去（覆盖前会弹确认，写着旧价→新价）。要几款豆同时上菜单，得先把它们分别建成配料。<br>'+
         '· 本表只存这台浏览器（localStorage），不同步云端；换电脑要重新录。'+
       '</div>';
 
@@ -2047,6 +2051,30 @@
       });
     });
 
+    /* 下拉选的目标配料，显示它当前的采购信息 */
+    function curOfLid(lid){
+      var i=ing(lid);
+      if(!i) return "";
+      if(!hasCost(i)) return "当前未填采购价";
+      return "当前 ¥"+(unitCostOf(i)<0.01?unitCostOf(i).toFixed(4):r2(unitCostOf(i)))+" / "+i.unit+
+        "（"+r2(i.packQty)+i.unit+" @ ¥"+r2(i.packPrice)+"）";
+    }
+    function refreshCur(rid){
+      var sel=body.querySelector('[data-btarget="'+rid+'"]');
+      var cell=body.querySelector('[data-bcur="'+rid+'"]');
+      if(!sel||!cell) return;
+      var row=state.beans.filter(function(x){ return x.id===rid; })[0];
+      var i=ing(sel.value);
+      var txt=curOfLid(sel.value);
+      var same = i && row && (+i.packQty||0)==(+row.grams||0) && (+i.packPrice||0)==(+row.price||0);
+      cell.textContent = same ? "✓ 这袋正在用" : txt;
+      cell.style.color = same ? "var(--low,#3F6B52)" : "var(--ink-faint)";
+    }
+    body.querySelectorAll("[data-btarget]").forEach(function(sel){
+      sel.addEventListener("change",function(){ refreshCur(sel.dataset.btarget); });
+      refreshCur(sel.dataset.btarget);
+    });
+
     body.querySelectorAll("[data-bdel]").forEach(function(b){
       b.addEventListener("click",function(){
         state.beans=state.beans.filter(function(x){ return x.id!==b.dataset.bdel; });
@@ -2065,11 +2093,25 @@
         if(!(c.net>0) || c.price===""){ alert("这袋先填「袋装克数」和「总价」再写入"); return; }
         var target=ing(lid);
         if(!target) return;
+        var label=(row.label||"").trim();
+        var same=(+target.packQty||0)==c.net && (+target.packPrice||0)==c.price;
+        if(same){ toast("「"+target.name+"」当前就是这个价，未改动"); return; }
+        if(hasCost(target)){
+          var oldTxt="¥"+r2(target.packQty)+target.unit+" @ ¥"+r2(target.packPrice)+"（¥"+r2(unitCostOf(target))+" / "+target.unit+"）";
+          var newTxt="¥"+r2(c.net)+target.unit+" @ ¥"+r2(c.price)+"（¥"+r2(c.price/c.net)+" / "+target.unit+"）";
+          var ok=await askConfirm({
+            title:"覆盖「"+target.name+"」的采购价",
+            body:"当前：<b>"+oldTxt+"</b><br>改为：<b>"+newTxt+"</b>"+(label?"<br>豆：<b>"+esc(label)+"</b>":"")+
+                 "<br>一个配料只能有一个采购价，换豆就是覆盖；改完饮品成本会跟着变。",
+            ok:"覆盖"
+          });
+          if(!ok) return;
+        }
         target.packQty=c.net; target.packPrice=c.price;
         save(); render();
         var r=await saveIngCost(lid, c.net, c.price);
         if(!r.ok){ alert(r.msg); return; }
-        toast("已把 "+r2(c.net)+"g @ ¥"+r2(c.price)+" 写入「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
+        toast("已把 "+(label?label+" ":"")+r2(c.net)+"g @ ¥"+r2(c.price)+" 写进「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
         renderBeans();
       });
     });
