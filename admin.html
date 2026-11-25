@@ -1918,26 +1918,38 @@
     }catch(e){}
     /* 初始值取自参考表格（227g 那袋没填价，留空而不是算成 0 元） */
     return [
-      {id:"b1", grams:1000,  can:0, dose:18, price:118},
-      {id:"b2", grams:454,   can:0, dose:18, price:168},
-      {id:"b3", grams:227,   can:0, dose:18, price:""},
-      {id:"b4", grams:500,   can:0, dose:18, price:73},
-      {id:"b5", grams:504,   can:0, dose:18, price:98},
-      {id:"b6", grams:602,   can:0, dose:18, price:75.75},
-      {id:"b7", grams:150,   can:0, dose:15, price:57}
+      {id:"b1", grams:1000,  dose:18, price:118},
+      {id:"b2", grams:454,   dose:18, price:168},
+      {id:"b3", grams:227,   dose:18, price:""},
+      {id:"b4", grams:500,   dose:18, price:73},
+      {id:"b5", grams:504,   dose:18, price:98},
+      {id:"b6", grams:602,   dose:18, price:75.75},
+      {id:"b7", grams:150,   dose:15, price:57}
     ];
   }
   function beanCalc(b){
-    var gross=+b.grams||0, can=+b.can||0, net=Math.max(0, gross-can);
-    var dose=+b.dose||0, price=(b.price===""||b.price==null)?"":(+b.price||0);
+    var net=+b.grams||0, dose=+b.dose||0, price=(b.price===""||b.price==null)?"":(+b.price||0);
     var cups = dose>0 ? Math.floor(net/dose) : 0;
     var per = (net>0 && dose>0 && price!=="") ? (price*dose/net) : 0;
     var perFloor = (cups>0 && price!=="") ? price/cups : 0;
     var rest = dose>0 ? Math.max(0, net - cups*dose) : net;
-    return {gross:gross, can:can, net:net, dose:dose, price:price, cups:cups, per:per, perFloor:perFloor, rest:rest, noPrice:price===""};
+    return {net:net, dose:dose, price:price, cups:cups, per:per, perFloor:perFloor, rest:rest, noPrice:price===""};
   }
   function saveBeans(){
     try{ localStorage.setItem(BEAN_KEY, JSON.stringify(state.beans)); }catch(e){}
+  }
+  /* 罐重只做备忘，不参与任何计算 */
+  var BEAN_NOTE_KEY = "cafe_bean_note_v1";
+  function beanNote(){
+    try{
+      var raw = localStorage.getItem(BEAN_NOTE_KEY);
+      var d = raw ? JSON.parse(raw) : null;
+      if(d && typeof d.can !== "undefined") return d;
+    }catch(e){}
+    return {can:360};
+  }
+  function saveBeanNote(n){
+    try{ localStorage.setItem(BEAN_NOTE_KEY, JSON.stringify(n)); }catch(e){}
   }
 
   function renderBeans(){
@@ -1947,19 +1959,19 @@
     var best=null, bestName="";
     rows.forEach(function(b){
       var c=beanCalc(b);
-      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=r2(c.gross)+"g @¥"+r2(c.price); }
+      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=r2(b.grams)+"g @¥"+r2(c.price); }
     });
 
     var thead='<tr>'+
       '<th rowspan="2">#</th>'+
-      '<th colspan="3" class="grp">咖啡豆克数计算</th>'+
+      '<th colspan="2" class="grp">咖啡豆克数计算</th>'+
+      '<th colspan="1" class="grp">价格</th>'+
       '<th colspan="4" class="grp">出杯与单杯豆价</th>'+
-      '<th colspan="2" class="grp">价格</th>'+
       '<th rowspan="2">应用到配料</th><th rowspan="2"></th>'+
       '</tr><tr>'+
-      '<th>毛重 / 袋</th><th>罐重（去皮）</th><th>单杯粉克数</th>'+
-      '<th>净豆重</th><th>可做杯量</th><th>余粉</th><th>单杯豆价</th>'+
-      '<th>咖啡豆总价</th><th>按整杯算</th>'+
+      '<th>袋装克数</th><th>单杯粉克数</th>'+
+      '<th>咖啡豆总价</th>'+
+      '<th>可做杯量</th><th>余粉</th><th>单杯豆价</th><th>按整杯算</th>'+
       '</tr>';
 
     var tbody=rows.map(function(b,idx){
@@ -1968,13 +1980,11 @@
       return '<tr data-brow="'+b.id+'">'+
         '<td class="beam-num">'+String(idx+1).padStart(2,"0")+'</td>'+
         '<td><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams)+'"></td>'+
-        '<td><input type="number" data-bid="'+b.id+'" data-bf="can" min="0" step="1" value="'+esc(b.can||"")+'" placeholder="0"></td>'+
         '<td><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose)+'"></td>'+
-        '<td class="beam-num" data-bc="net">'+r2(c.net)+' g</td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price)+'"></td>'+
         '<td class="beam-num" data-bc="cups"><b>'+c.cups+'</b> 杯</td>'+
         '<td class="beam-num" data-bc="rest">'+(c.dose>0?r2(c.rest)+' g':"—")+'</td>'+
         '<td data-bc="per">'+(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>')+'</td>'+
-        '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price)+'"></td>'+
         '<td class="beam-num" data-bc="floor">'+(c.perFloor>0?'¥'+r2(c.perFloor):"—")+'</td>'+
         '<td><div class="beam-apply">'+
           '<select data-btarget="'+b.id+'">'+(opts||'<option value="">无可用配料</option>')+'</select>'+
@@ -1987,21 +1997,29 @@
     body.innerHTML =
       '<div class="toolbar">'+
         '<div style="font-size:12px;color:var(--ink-soft);letter-spacing:.02em">'+
-          '单杯豆价 = 总价 × 单杯粉克数 ÷ 净豆重（精确值）；可做杯量取整，只用来估「这袋还能做几杯」。'+
+          '单杯豆价 = 总价 × 单杯粉克数 ÷ 袋装克数（精确值）；可做杯量取整，只用来估「这袋还能做几杯」。'+
           (best!==null?'　当前最低 <b>¥'+r2(best)+'/杯</b>（'+esc(bestName)+'）':'')+
         '</div>'+
         '<button class="btn" id="addBeanRow">＋ 加一袋</button>'+
       '</div>'+
+      '<div style="font-size:11.5px;color:var(--ink-faint);margin:0 0 10px">备忘 · 密封罐重 '+
+        '<input type="number" id="canWeight" min="0" step="1" value="'+esc(beanNote().can)+'" '+
+        'style="width:62px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card-2);font:inherit;font-size:11.5px;text-align:center"> g'+
+        '　（只记在这台浏览器里，不参与计算）</div>'+
       '<div class="beam-admin-wrap"><table class="beam-admin"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'+
       '<div class="beam-hint">'+
-        '· <b>罐重（去皮）</b>：填了就把「毛重 − 罐重」当净豆重，称整罐时用；直接称豆就留空。<br>'+
+        '· <b>袋装克数</b>：包装上标的净豆重量，直接填（要扣罐就自己先减好，这里不扣）。<br>'+
         '· <b>单杯粉克数</b>：浓缩 18g、手冲 15g 这类，按你的配方填。<br>'+
-        '· <b>写入配料</b>：把这袋的「净豆重 + 总价」写进咖啡类配料的采购信息，饮品卡片随之算出整杯原料成本与毛利。<br>'+
+        '· <b>写入配料</b>：把这袋的「袋装克数 + 总价」写进咖啡类配料的采购信息，饮品卡片随之算出整杯原料成本与毛利。<br>'+
         '· 本表只存这台浏览器（localStorage），不同步云端；换电脑要重新录。'+
       '</div>';
 
+    document.getElementById("canWeight").addEventListener("input",function(e){
+      var n=beanNote(); n.can=e.target.value; saveBeanNote(n);
+    });
+
     document.getElementById("addBeanRow").addEventListener("click",function(){
-      state.beans.push({id:"b"+Date.now(), grams:250, can:0, dose:18, price:""});
+      state.beans.push({id:"b"+Date.now(), grams:250, dose:18, price:""});
       saveBeans(); renderBeans();
     });
 
@@ -2011,7 +2029,7 @@
       var c=beanCalc(b);
       var tr=document.querySelector('[data-brow="'+id+'"]');
       if(!tr) return;
-      var map={net:r2(c.net)+' g', cups:'<b>'+c.cups+'</b> 杯', rest:(c.dose>0?r2(c.rest)+' g':"—"),
+      var map={cups:'<b>'+c.cups+'</b> 杯', rest:(c.dose>0?r2(c.rest)+' g':"—"),
         per:(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>'),
         floor:(c.perFloor>0?'¥'+r2(c.perFloor):"—")};
       Object.keys(map).forEach(function(k){
@@ -2044,7 +2062,7 @@
         var lid=sel?sel.value:"";
         if(!row||!lid){ alert("先选要写入的配料"); return; }
         var c=beanCalc(row);
-        if(!(c.net>0) || c.price===""){ alert("这袋先填「毛重（或净重）」和「总价」再写入"); return; }
+        if(!(c.net>0) || c.price===""){ alert("这袋先填「袋装克数」和「总价」再写入"); return; }
         var target=ing(lid);
         if(!target) return;
         target.packQty=c.net; target.packPrice=c.price;
