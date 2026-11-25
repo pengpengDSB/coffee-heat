@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>饮品热量管理系统</title>
+<title>杯记 · 一杯的配方、热量与成本</title>
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&display=swap">
 <style>
   :root{
@@ -34,6 +34,7 @@
   .topbar-in{display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:13px 0}
   .brand{font-weight:500;color:var(--cream);font-size:13px;letter-spacing:.22em;display:flex;align-items:center;gap:10px}
   .brand::before{content:"";width:3px;height:15px;background:#8C6A4E;display:inline-block;flex:none}
+  .brand-sub{font-size:10.5px;letter-spacing:.1em;opacity:.62;font-weight:400}
   .view-switch{display:flex;gap:20px;background:none;padding:0;margin-left:auto}
   .view-switch button{
     border:none;background:none;color:rgba(244,241,233,.55);font:inherit;font-size:11.5px;letter-spacing:.14em;
@@ -617,7 +618,7 @@
 
 <div class="topbar">
   <div class="wrap topbar-in">
-    <div class="brand">饮品热量管理</div>
+    <div class="brand">杯记<span class="brand-sub">一杯的配方、热量与成本</span></div>
     <div class="view-switch" id="viewSwitch">
       <button data-view="landing">首页</button>
       <button data-view="shop">顾客端</button>
@@ -1093,7 +1094,7 @@
   function exportJSON(){
     var blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
     var a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download="饮品热量数据.json";
+    a.href=URL.createObjectURL(blob); a.download="杯记数据.json";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(a.href);
   }
@@ -1103,7 +1104,7 @@
     var now=new Date();
     var stamp=now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+" "+pad(now.getHours())+":"+pad(now.getMinutes());
     var L=[];
-    L.push("# 饮品热量清单","");
+    L.push("# 杯记 · 饮品清单","");
     L.push("> 导出时间："+stamp+"　热量单位：大卡（kcal）","");
 
     L.push("## 一、配料库","");
@@ -1138,7 +1139,7 @@
 
     var blob=new Blob([L.join("\n")],{type:"text/markdown;charset=utf-8"});
     var a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download="饮品热量清单.md";
+    a.href=URL.createObjectURL(blob); a.download="杯记清单.md";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(a.href);
   }
@@ -2632,7 +2633,7 @@
           '<div class="feat"><div class="feat-ic">'+ic('list')+'</div><b>配方可溯</b><span>每款饮品的配料、基准量与档位一目了然。</span></div>' +
           '<div class="feat"><div class="feat-ic">'+ic('drop')+'</div><b>牛奶可换</b><span>咖啡支持切换牛奶版本，热量随之更新。</span></div>' +
         '</div></section>' +
-        '<div class="landing-foot">饮品热量管理系统 · 数据来自本店配料库与配方</div>' +
+        '<div class="landing-foot">杯记 · 一杯的配方、热量与成本 —— 数据来自本店配料库与配方</div>' +
       '</div>';
     app.innerHTML=html;
     app.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ goView(b.dataset.go); }); });
