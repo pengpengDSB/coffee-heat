@@ -918,7 +918,7 @@
     var pass = adminPass();
     var first;
     if(pass){
-      first = await sb.rpc(fn, {pass:pass, row:rows[0]});
+      first = await sb.rpc(fn, {pass:pass, p_row:rows[0]});
       if(first && first.error && rpcMissing(first.error)){
         var q = await sb.from(table).upsert(rows, {onConflict:"lid"});
         if(q.error) throw q.error;
@@ -931,7 +931,7 @@
     }
     if(first && first.error) throw first.error;
     await Promise.all(rows.slice(1).map(function(row){
-      return sb.rpc(fn, {pass:pass, row:row}).then(function(r){
+      return sb.rpc(fn, {pass:pass, p_row:row}).then(function(r){
         if(r.error && !rpcMissing(r.error)) throw r.error;
       });
     }));
