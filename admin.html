@@ -111,6 +111,20 @@
   .ing-name{font-weight:400;font-size:14px;color:var(--ink);letter-spacing:.04em}
   .ing-cat{font-size:10.5px;color:var(--ink-faint);margin-left:9px;font-weight:400;letter-spacing:.06em}
   .ing-meta{margin-top:7px;font-size:11.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 16px;letter-spacing:.02em}
+  /* 豆价计算 */
+  .beam-admin-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .beam-admin{width:100%;min-width:1020px;border-collapse:collapse;font-size:12px;letter-spacing:.02em}
+  .beam-admin th{font-weight:500;color:var(--ink-soft);text-align:center;padding:10px 8px;border-bottom:1px solid var(--line-strong);font-size:11px;letter-spacing:.08em;white-space:nowrap}
+  .beam-admin th.grp{color:var(--ink);letter-spacing:.12em}
+  .beam-admin td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+  .beam-admin input{width:88px;padding:7px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2);font:inherit;font-size:12px;text-align:center}
+  .beam-admin input:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
+  .beam-num{font-variant-numeric:tabular-nums}
+  .beam-per{color:var(--gold);font-weight:500;font-size:14px}
+  .beam-per small{font-size:10px;font-weight:400;color:var(--ink-soft)}
+  .beam-apply{display:flex;flex-direction:column;gap:5px;align-items:stretch}
+  .beam-apply select{font:inherit;font-size:11px;padding:4px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2)}
+  .beam-hint{font-size:11px;color:var(--ink-faint);text-align:left;margin-top:10px;line-height:1.9}
   .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
   .ing-ops{display:flex;gap:4px;margin-top:10px}
   .ing-ops .btn{background:none;border:none;padding:5px 8px;font-size:10.5px;color:var(--ink-soft);letter-spacing:.1em}
@@ -919,6 +933,40 @@
     var code = String((err && err.code) || "");
     return /Could not find the function|PGRST202|42883|does not exist/i.test(msg + " " + code);
   }
+  /* ---------- 配料成本（独立表 ingredient_costs，不向 anon 公开，只走口令 RPC） ---------- */
+  async function loadIngCosts(){
+    if(!supaReady() || !sb) return;
+    var pass = adminPass();
+    if(!pass){ return; }
+    try{
+      var r = await sb.rpc("admin_list_costs", {pass:pass});
+      if(r.error){
+        if(!rpcMissing(r.error)) console.warn("读取配料成本失败", r.error);
+        return;
+      }
+      var map = {};
+      (r.data||[]).forEach(function(x){ map[x.lid] = {q:Number(x.pack_qty)||0, p:Number(x.pack_price)||0}; });
+      db.ings.forEach(function(i){
+        var c = map[i.id];
+        i.packQty = c ? c.q : 0;
+        i.packPrice = c ? c.p : 0;
+      });
+    }catch(e){ console.warn("读取配料成本失败", e); }
+  }
+  async function saveIngCost(lid, qty, price){
+    if(!supaReady() || !sb) return {ok:true, local:true};
+    var pass = adminPass();
+    if(!pass) return {ok:false, msg:"登录状态已失效，重新登录后再保存价格"};
+    try{
+      var r = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price});
+      if(r.error){
+        if(rpcMissing(r.error)) return {ok:false, msg:"云端还没建成本表，先把成本 SQL 跑一遍再保存"};
+        return {ok:false, msg:"保存失败："+((r.error&&r.error.message)||r.error)};
+      }
+      return {ok:true};
+    }catch(e){ return {ok:false, msg:"保存失败："+((e&&e.message)||e)}; }
+  }
+
   async function writeRows(table, rows, fn){
     if(!rows || !rows.length) return;
     var pass = adminPass();
@@ -1024,6 +1072,7 @@
         db = defaultData();
         await syncRemote();
       }
+      await loadIngCosts();   /* 已登录（口令还在 sessionStorage）就把采购价补回来 */
       save();
     }catch(e){
       console.error('remote load failed, fallback to localStorage:', e);
@@ -1104,8 +1153,10 @@
     selProduct:null, milkSel:{},
     ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"",
     modal:null, // {type:'ing'|'product', id:null}
+    beans:[],
     heroStyle:(function(){ try{ return localStorage.getItem("heat_hero_style")||"A"; }catch(e){ return "A"; } })()
   };
+  state.beans = beanRows();
 
   /* ---------- 工具 ---------- */
   function fmtTime(iso){
@@ -1126,6 +1177,51 @@
     return (p.milkOptions||[]).some(function(mid){ return !!ing(mid); });
   }
   function kcalPerUnit(i){ if(!i) return 0; return (+i.kJ||0)/KJ/(+i.base||100); }
+
+  /* ---------- 原料成本：单价 = 采购价 / 净含量（元 / 每 g·ml） ---------- */
+  function unitCostOf(i){
+    if(!i) return 0;
+    var q=+(i.packQty||0), p=+(i.packPrice||0);
+    if(!(q>0) || !(p>0)) return 0;
+    return p/q;
+  }
+  function hasCost(i){ return unitCostOf(i)>0; }
+
+  function costOfProduct(p, milkId){
+    var total=0, known=0, rows=[];
+    p.items.forEach(function(it){
+      var iid = it.role==="milk" ? (milkId||it.ingId) : it.ingId;
+      var i = ing(iid), qty=+it.qty||0, c=unitCostOf(i)*qty;
+      if(hasCost(i)) known++;
+      total += c;
+      rows.push({ing:i, qty:qty, cost:c, priced:hasCost(i)});
+    });
+    return { total:total, rows:rows, known:known, all:p.items.length };
+  }
+  function costRangeOf(p){
+    var list = milkAvail(p) ? (p.milkOptions||[]).filter(function(m){ return !!ing(m); }) : [defaultMilk(p)];
+    if(!list.length) return {min:null,max:null,minMilk:"",maxMilk:""};
+    var min=null,max=null,minMilk="",maxMilk="";
+    list.forEach(function(mid){
+      var c=costOfProduct(p, mid);
+      if(!c.known) return;
+      if(min===null||c.total<min){ min=c.total; minMilk=mid; }
+      if(max===null||c.total>max){ max=c.total; maxMilk=mid; }
+    });
+    return {min:min, max:max, minMilk:minMilk, maxMilk:maxMilk};
+  }
+  /* 按订单行找菜谱还原成本（仅「原料」口径，未含杯材与人工） */
+  function costOfOrder(o){
+    var total=0, complete=true, any=false;
+    (o.items||[]).forEach(function(x){
+      var p=db.products.filter(function(q){ return q.name===x.name; })[0];
+      if(!p){ complete=false; return; }
+      var c=costOfProduct(p, x.milk||defaultMilk(p));
+      if(!c.known){ complete=false; } else { any=true; }
+      total += c.total*(+x.qty||1);
+    });
+    return { total:total, complete:complete, any:any };
+  }
 
   /* ---------- 内联线稿图标（纯代码兜底，无外部素材） ---------- */
   var IC = {
@@ -1322,7 +1418,9 @@
         setAuth(u); setAdminPass(pw);
         setTimeout(function(){
           state.view="admin"; state.selProduct=null;
-          render(); toast("已登录，欢迎回来");
+          render();
+          loadIngCosts().then(function(){ if(state.view==="admin") render(); });
+          toast("已登录，欢迎回来");
         },220);
       });
     }
@@ -1355,6 +1453,7 @@
       '<button data-tab="ings" class="'+(state.tab==="ings"?"active":"")+'">配料库</button>' +
       '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
       '<button data-tab="orders" class="'+(state.tab==="orders"?"active":"")+'">订单看板</button>' +
+      '<button data-tab="beans" class="'+(state.tab==="beans"?"active":"")+'">豆价计算</button>' +
       '<button data-tab="settings" class="'+(state.tab==="settings"?"active":"")+'">前台设置</button>' +
       '<span style="margin-left:auto;display:flex;gap:6px">' +
       '<button class="ghost-btn" id="exportBtn">导出 JSON</button>' +
@@ -1383,6 +1482,7 @@
 
     if(state.tab==="ings") renderIngs();
     else if(state.tab==="products") renderProducts();
+    else if(state.tab==="beans") renderBeans();
     else if(state.tab==="settings") renderSettings();
     else renderOrders();
   }
@@ -1530,6 +1630,10 @@
         return '<div><b>'+esc(x.name)+' × '+x.qty+'</b>　'+esc(bits)+'</div>';
       }).join("");
       var st=o.status||"待制作";
+      var oc=costOfOrder(o);
+      var costBit = oc.any
+        ? ('　·　原料 ¥'+r2(oc.total)+(oc.complete?"":"（部分未定价）")+(oc.any&&o.total!=null?('　毛利 ¥'+r2((+o.total||0)-oc.total)):""))
+        : "";
       var ops="";
       if(st==="待制作") ops='<button class="btn sm" data-no="'+esc(o.order_no)+'" data-st="制作中">开始制作</button>';
       if(st==="制作中") ops='<button class="btn sm" data-no="'+esc(o.order_no)+'" data-st="已取餐">已取餐</button>';
@@ -1542,7 +1646,7 @@
           '<div class="ord-time">'+hm(o.created_at)+' · 到店自取</div></div>'+
         '<div class="ord-items">'+items+'</div>'+
         (o.note?'<div class="ord-note">备注：'+esc(o.note)+'</div>':"")+
-        '<div class="ord-foot"><div class="ord-sum">'+(o.total!=null?('¥<b>'+r2(o.total)+'</b>'):"—")+'　·　'+(o.total_kcal||0)+' 大卡</div>'+
+        '<div class="ord-foot"><div class="ord-sum">'+(o.total!=null?('¥<b>'+r2(o.total)+'</b>'):"—")+'　·　'+(o.total_kcal||0)+' 大卡'+costBit+'</div>'+
           '<div class="ord-ops">'+ops+'</div></div>'+
         '</div>';
     }).join("");
@@ -1644,6 +1748,9 @@
         '<div class="ing-body">' +
         '<div class="ing-top"><span class="ing-name">'+esc(i.name)+'<span class="ing-cat">'+esc(i.category)+' · '+esc(i.unit)+'</span></span></div>' +
         '<div class="ing-meta"><span>基准 每 '+esc(i.base)+esc(i.unit)+' · '+esc(i.kJ)+' 千焦</span>'+(i.note?'<span>'+esc(i.note)+'</span>':"")+'</div>' +
+        '<div class="ing-meta"><span style="'+(hasCost(i)?"":"opacity:.55")+'">'+(hasCost(i)
+          ? ('单价 ¥'+(unitCostOf(i)<0.01?unitCostOf(i).toFixed(4):r2(unitCostOf(i)))+' / '+esc(i.unit)+'　（'+r2(i.packQty)+esc(i.unit)+' @ ¥'+r2(i.packPrice)+'）')
+          : '未填采购价')+'</span></div>' +
         '<div class="ing-ops"><button class="btn sm ghost" data-edit-ing="'+i.id+'">编辑</button>' +
         '<button class="btn sm danger" data-del-ing="'+i.id+'">删除</button></div>' +
         '</div>' +
@@ -1695,6 +1802,11 @@
         '<div class="field"><label>基准量（默认 100）</label><input type="number" id="f_base" min="1" step="1" value="'+esc(i.base)+'"></div>' +
         '<div class="field"><label>基准能量（千焦 / 基准量）</label><input type="number" id="f_kj" min="0" step="1" value="'+esc(i.kJ)+'"></div>' +
       '</div>' +
+      '<div class="row2">' +
+        '<div class="field"><label>采购净含量（'+esc(i.unit||"g")+' / 包·瓶）</label><input type="number" id="f_packQty" min="0" step="1" value="'+esc(i.packQty||"")+'" placeholder="例：1000"></div>' +
+        '<div class="field"><label>采购价（元 / 包·瓶）</label><input type="number" id="f_packPrice" min="0" step="0.01" value="'+esc(i.packPrice||"")+'" placeholder="例：100"></div>' +
+      '</div>' +
+      '<div class="field-hint" id="f_unitCostHint">填「净含量 + 采购价」后自动折成单价：元 / '+esc(i.unit||"g")+'</div>' +
       '<div class="field"><label>配料图片</label>' +
         '<div class="img-uploader">' +
           '<img class="img-preview" id="f_imgPreview" src="'+esc(i.image||"")+'" style="'+(i.image?"":"display:none")+'">' +
@@ -1737,6 +1849,23 @@
       ingImg.blob=null; ingImg.dataUrl=""; ingImg.removed=true; renderIngImg();
     });
     renderIngImg();
+    /* 采购价 → 单价 实时换算提示 */
+    var hintEl = document.getElementById("f_unitCostHint");
+    function refreshCostHint(){
+      var q = parseFloat(document.getElementById("f_packQty").value)||0;
+      var p = parseFloat(document.getElementById("f_packPrice").value)||0;
+      var u = document.getElementById("f_unit").value;
+      if(q>0 && p>0){
+        var unit = p/q;
+        hintEl.innerHTML = '单价 = '+r2(p)+' ÷ '+r2(q)+' = <b>¥'+(unit<0.01?unit.toFixed(4):r2(unit))+' / '+esc(u)+'</b>' +
+          '　（一杯用 10'+esc(u)+' 约 ¥'+r2(unit*10)+'，用 280'+esc(u)+' 约 ¥'+r2(unit*280)+'）';
+      }else{
+        hintEl.textContent = '填「净含量 + 采购价」后自动折成单价：元 / '+u;
+      }
+    }
+    ["f_packQty","f_packPrice"].forEach(function(id){ document.getElementById(id).addEventListener("input", refreshCostHint); });
+    document.getElementById("f_unit").addEventListener("change", refreshCostHint);
+    refreshCostHint();
     var saveIngBtn=document.getElementById("saveIng");
     function setIngSaving(on){ saveIngBtn.disabled=on; saveIngBtn.textContent=on?"上传中…":"保存"; }
     saveIngBtn.addEventListener("click",async function(){
@@ -1765,11 +1894,166 @@
         base:parseFloat(document.getElementById("f_base").value)||100,
         kJ:parseFloat(document.getElementById("f_kj").value)||0,
         note:document.getElementById("f_note").value.trim(),
-        image:image
+        image:image,
+        packQty:parseFloat(document.getElementById("f_packQty").value)||0,
+        packPrice:parseFloat(document.getElementById("f_packPrice").value)||0
       };
       if(id){ Object.assign(byId(db.ings,id),data); }
       else{ data.id=ingId; db.ings.push(data); }
+      var costRes = await saveIngCost(ingId, data.packQty, data.packPrice);
       save(); syncRemote(); closeModal(); render();
+      if(!costRes.ok){ alert(costRes.msg); }
+      else if(costRes.local){ /* 本机模式，价格只留在浏览器 */ }
+      else { toast("已保存「"+name+"」的采购价"); }
+    });
+  }
+
+  /* ----- 豆价计算：单杯咖啡豆成本 ----- */
+  var BEAN_KEY = "cafe_bean_calc_v1";
+  function beanRows(){
+    try{
+      var raw = localStorage.getItem(BEAN_KEY);
+      var d = raw ? JSON.parse(raw) : null;
+      if(Array.isArray(d) && d.length) return d;
+    }catch(e){}
+    /* 初始值取自参考表格（227g 那袋没填价，留空而不是算成 0 元） */
+    return [
+      {id:"b1", grams:1000,  can:0, dose:18, price:118},
+      {id:"b2", grams:454,   can:0, dose:18, price:168},
+      {id:"b3", grams:227,   can:0, dose:18, price:""},
+      {id:"b4", grams:500,   can:0, dose:18, price:73},
+      {id:"b5", grams:504,   can:0, dose:18, price:98},
+      {id:"b6", grams:602,   can:0, dose:18, price:75.75},
+      {id:"b7", grams:150,   can:0, dose:15, price:57}
+    ];
+  }
+  function beanCalc(b){
+    var gross=+b.grams||0, can=+b.can||0, net=Math.max(0, gross-can);
+    var dose=+b.dose||0, price=(b.price===""||b.price==null)?"":(+b.price||0);
+    var cups = dose>0 ? Math.floor(net/dose) : 0;
+    var per = (net>0 && dose>0 && price!=="") ? (price*dose/net) : 0;
+    var perFloor = (cups>0 && price!=="") ? price/cups : 0;
+    var rest = dose>0 ? Math.max(0, net - cups*dose) : net;
+    return {gross:gross, can:can, net:net, dose:dose, price:price, cups:cups, per:per, perFloor:perFloor, rest:rest, noPrice:price===""};
+  }
+  function saveBeans(){
+    try{ localStorage.setItem(BEAN_KEY, JSON.stringify(state.beans)); }catch(e){}
+  }
+
+  function renderBeans(){
+    var body=document.getElementById("adminBody");
+    var rows=state.beans;
+    var targets=db.ings.filter(function(i){ return i.category==="基底" && i.unit==="g"; });
+    var best=null, bestName="";
+    rows.forEach(function(b){
+      var c=beanCalc(b);
+      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=r2(c.gross)+"g @¥"+r2(c.price); }
+    });
+
+    var thead='<tr>'+
+      '<th rowspan="2">#</th>'+
+      '<th colspan="3" class="grp">咖啡豆克数计算</th>'+
+      '<th colspan="4" class="grp">出杯与单杯豆价</th>'+
+      '<th colspan="2" class="grp">价格</th>'+
+      '<th rowspan="2">应用到配料</th><th rowspan="2"></th>'+
+      '</tr><tr>'+
+      '<th>毛重 / 袋</th><th>罐重（去皮）</th><th>单杯粉克数</th>'+
+      '<th>净豆重</th><th>可做杯量</th><th>余粉</th><th>单杯豆价</th>'+
+      '<th>咖啡豆总价</th><th>按整杯算</th>'+
+      '</tr>';
+
+    var tbody=rows.map(function(b,idx){
+      var c=beanCalc(b);
+      var opts=targets.map(function(i){ return '<option value="'+i.id+'">'+esc(i.name)+'</option>'; }).join("");
+      return '<tr data-brow="'+b.id+'">'+
+        '<td class="beam-num">'+String(idx+1).padStart(2,"0")+'</td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams)+'"></td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="can" min="0" step="1" value="'+esc(b.can||"")+'" placeholder="0"></td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose)+'"></td>'+
+        '<td class="beam-num" data-bc="net">'+r2(c.net)+' g</td>'+
+        '<td class="beam-num" data-bc="cups"><b>'+c.cups+'</b> 杯</td>'+
+        '<td class="beam-num" data-bc="rest">'+(c.dose>0?r2(c.rest)+' g':"—")+'</td>'+
+        '<td data-bc="per">'+(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>')+'</td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price)+'"></td>'+
+        '<td class="beam-num" data-bc="floor">'+(c.perFloor>0?'¥'+r2(c.perFloor):"—")+'</td>'+
+        '<td><div class="beam-apply">'+
+          '<select data-btarget="'+b.id+'">'+(opts||'<option value="">无可用配料</option>')+'</select>'+
+          '<button class="btn sm ghost" data-bapply="'+b.id+'">写入</button>'+
+        '</div></td>'+
+        '<td><button class="btn sm danger" data-bdel="'+b.id+'">删</button></td>'+
+        '</tr>';
+    }).join("");
+
+    body.innerHTML =
+      '<div class="toolbar">'+
+        '<div style="font-size:12px;color:var(--ink-soft);letter-spacing:.02em">'+
+          '单杯豆价 = 总价 × 单杯粉克数 ÷ 净豆重（精确值）；可做杯量取整，只用来估「这袋还能做几杯」。'+
+          (best!==null?'　当前最低 <b>¥'+r2(best)+'/杯</b>（'+esc(bestName)+'）':'')+
+        '</div>'+
+        '<button class="btn" id="addBeanRow">＋ 加一袋</button>'+
+      '</div>'+
+      '<div class="beam-admin-wrap"><table class="beam-admin"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'+
+      '<div class="beam-hint">'+
+        '· <b>罐重（去皮）</b>：填了就把「毛重 − 罐重」当净豆重，称整罐时用；直接称豆就留空。<br>'+
+        '· <b>单杯粉克数</b>：浓缩 18g、手冲 15g 这类，按你的配方填。<br>'+
+        '· <b>写入配料</b>：把这袋的「净豆重 + 总价」写进咖啡类配料的采购信息，饮品卡片随之算出整杯原料成本与毛利。<br>'+
+        '· 本表只存这台浏览器（localStorage），不同步云端；换电脑要重新录。'+
+      '</div>';
+
+    document.getElementById("addBeanRow").addEventListener("click",function(){
+      state.beans.push({id:"b"+Date.now(), grams:250, can:0, dose:18, price:""});
+      saveBeans(); renderBeans();
+    });
+
+    function refreshRow(id){
+      var b=state.beans.filter(function(x){ return x.id===id; })[0];
+      if(!b) return;
+      var c=beanCalc(b);
+      var tr=document.querySelector('[data-brow="'+id+'"]');
+      if(!tr) return;
+      var map={net:r2(c.net)+' g', cups:'<b>'+c.cups+'</b> 杯', rest:(c.dose>0?r2(c.rest)+' g':"—"),
+        per:(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>'),
+        floor:(c.perFloor>0?'¥'+r2(c.perFloor):"—")};
+      Object.keys(map).forEach(function(k){
+        var cell=tr.querySelector('[data-bc="'+k+'"]');
+        if(cell) cell.innerHTML=map[k];
+      });
+    }
+
+    body.querySelectorAll("[data-bf]").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var b=state.beans.filter(function(x){ return x.id===inp.dataset.bid; })[0];
+        if(!b) return;
+        b[inp.dataset.bf]=inp.value;
+        saveBeans(); refreshRow(inp.dataset.bid);
+      });
+    });
+
+    body.querySelectorAll("[data-bdel]").forEach(function(b){
+      b.addEventListener("click",function(){
+        state.beans=state.beans.filter(function(x){ return x.id!==b.dataset.bdel; });
+        saveBeans(); renderBeans();
+      });
+    });
+
+    body.querySelectorAll("[data-bapply]").forEach(function(btn){
+      btn.addEventListener("click",async function(){
+        var rid=btn.dataset.bapply;
+        var row=state.beans.filter(function(x){ return x.id===rid; })[0];
+        var sel=body.querySelector('[data-btarget="'+rid+'"]');
+        var lid=sel?sel.value:"";
+        if(!row||!lid){ alert("先选要写入的配料"); return; }
+        var c=beanCalc(row);
+        if(!(c.net>0) || c.price===""){ alert("这袋先填「毛重（或净重）」和「总价」再写入"); return; }
+        var target=ing(lid);
+        if(!target) return;
+        target.packQty=c.net; target.packPrice=c.price;
+        save(); render();
+        var r=await saveIngCost(lid, c.net, c.price);
+        if(!r.ok){ alert(r.msg); return; }
+        toast("已把 "+r2(c.net)+"g @ ¥"+r2(c.price)+" 写入「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
+        renderBeans();
+      });
     });
   }
 
@@ -1791,12 +2075,34 @@
       var c = productKcal(p, defaultMilk(p));
       var t = tier(c.total, p.big);
       var milkLabel = milkAvail(p) ? "可换牛奶" : "无牛奶位";
+      var cost = costOfProduct(p, defaultMilk(p));
+      var rng = costRangeOf(p);
+      var price = (p.price!=null && p.price!=="") ? (+p.price||0) : null;
+      var costHtml;
+      if(!cost.known){
+        costHtml = '<span style="opacity:.55">原料成本未齐（'+(cost.all-cost.known)+' 项没填采购价）</span>';
+      }else{
+        var costTxt = '原料成本 <b>¥'+r2(cost.total)+'</b>';
+        if(price!==null){
+          var profit = price - cost.total;
+          var rate = price>0 ? (profit/price*100) : 0;
+          costTxt += '　毛利 <b>¥'+r2(profit)+'</b>（'+Math.round(rate)+'%）';
+        }
+        if(rng.min!==null && rng.max!==null && Math.abs(rng.max-rng.min)>0.009){
+          costTxt += '　·　换奶后 ¥'+r2(rng.min)+'–'+r2(rng.max);
+          if(price!==null && price>0){
+            costTxt += '（毛利 '+Math.round((price-rng.max)/price*100)+'–'+Math.round((price-rng.min)/price*100)+'%）';
+          }
+        }
+        costHtml = costTxt;
+      }
       return '<div class="prod">' +
         '<div class="idx">'+String(idx+1).padStart(2,"0")+'</div>' +
         (p.image?'<img class="prod-thumb" src="'+esc(p.image)+'" alt="">':'<div class="prod-thumb thumb-ic">'+ic(catIcon(p.big))+'</div>') +
         '<div class="prod-body">' +
         '<div class="prod-top"><span class="prod-name">'+esc(p.name)+'<span class="prod-cat">'+esc(p.big)+' · '+milkLabel+(p.size?' · '+esc(p.size):"")+'</span></span></div>' +
         '<div class="prod-meta">'+p.items.length+' 项配料'+(p.milkOptions.length?' · 牛奶候选 '+p.milkOptions.length+' 款':"")+'</div>' +
+        '<div class="prod-meta" style="font-size:11px;letter-spacing:.02em">'+costHtml+'</div>' +
         '<div class="ing-ops"><button class="btn sm ghost" data-edit-p="'+p.id+'">编辑</button>' +
         '<button class="btn sm ghost" data-copy-p="'+p.id+'">复制</button>' +
         '<button class="btn sm danger" data-del-p="'+p.id+'">删除</button></div>' +
