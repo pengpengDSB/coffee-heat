@@ -1177,11 +1177,24 @@
       seq=nextSeq(readLS(ORD_KEY,[]),prefix);
     }
 
-    var saved=false;
+    var saved=false, rpcMissing=false;
     if(supaReady()){
       for(var attempt=0; attempt<3; attempt++){
         payload.order_no=prefix+pad3(seq);
         try{
+          if(!rpcMissing){
+            /* 优先走服务端：金额与热量由数据库按菜单重算，不信前端传的值 */
+            var rpc=await sb.rpc('create_order',{payload:payload});
+            if(!rpc.error){
+              saved=true;
+              if(rpc.data && rpc.data.order_no){ payload=Object.assign({},payload,rpc.data); }
+              break;
+            }
+            var rmsg=String((rpc.error&&(rpc.error.message||rpc.error.details))||"")+" "+String((rpc.error&&rpc.error.code)||"");
+            if(/Could not find the function|PGRST202|42883|does not exist/i.test(rmsg)){ rpcMissing=true; }
+            else if(rpc.error.code==="23505"){ seq++; continue; }
+            else{ console.error("create_order failed",rpc.error); break; }
+          }
           var ins=await sb.from('orders').insert(payload);
           if(!ins.error){ saved=true; break; }
           if(ins.error && ins.error.code==="23505"){ seq++; continue; }

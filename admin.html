@@ -1563,8 +1563,15 @@
   async function setOrderStatus(no,st){
     if(!supaReady()){ alert("本机模式改不了云端订单状态。"); return; }
     try{
-      const r=await sb.from("orders").update({status:st,updated_at:new Date().toISOString()}).eq("order_no",no);
-      if(r.error) throw r.error;
+      var pass = adminPass();
+      var r = pass ? await sb.rpc("admin_set_order_status",{pass:pass, p_order_no:no, p_status:st}) : null;
+      if(!r || (r.error && rpcMissing(r.error))){
+        /* 云端还没建该函数：退回旧写法，保证未跑 SQL 时后台照常可用 */
+        var u = await sb.from("orders").update({status:st,updated_at:new Date().toISOString()}).eq("order_no",no);
+        if(u.error) throw u.error;
+      }else if(r.error){
+        throw r.error;
+      }
       var o=adminOrders.filter(function(x){ return x.order_no===no; })[0];
       if(o) o.status=st;
       renderOrders();
