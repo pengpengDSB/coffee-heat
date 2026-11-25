@@ -862,10 +862,23 @@
 
   async function uploadImage(blob, prefix, objId){
     var path = prefix + "-" + objId + "-" + Date.now() + ".jpg";
-    var up = await sb.storage.from(IMG_BUCKET).upload(path, blob, {contentType:"image/jpeg", upsert:true});
-    if(up.error) throw up.error;
-    var pub = sb.storage.from(IMG_BUCKET).getPublicUrl(path);
-    return (pub.data && pub.data.publicUrl) || "";
+    var pass = adminPass();
+    /* 走原始 fetch：桶加了「认口令」策略后，必须带 x-admin-pass 头；
+       没跑策略时这多一个头也无害，后台照常上传 */
+    var r = await fetch(SUPA_CONFIG.url + "/storage/v1/object/" + IMG_BUCKET + "/" + path, {
+      method: "POST",
+      headers: Object.assign({"Content-Type":"image/jpeg", "x-upsert":"true", "x-admin-pass":pass}, supaHeaders()),
+      body: blob
+    });
+    if(!r.ok){
+      var msg = "";
+      try{ var j = await r.json(); msg = (j && (j.message || j.error)) || ""; }catch(e){}
+      if((r.status === 400 || r.status === 401 || r.status === 403) && !pass){
+        throw new Error("未登录或登录已过期，请重新登录后再上传图片");
+      }
+      throw new Error(msg || ("图片上传失败（HTTP " + r.status + "）"));
+    }
+    return SUPA_CONFIG.url + "/storage/v1/object/public/" + IMG_BUCKET + "/" + path;
   }
 
   /* 从 public URL 反推桶内路径；dataURL / 非本桶地址返回 null */
@@ -882,8 +895,14 @@
     if(!supaReady() || !imageUrl) return;
     var path = storagePathFromUrl(imageUrl);
     if(!path) return;
-    try{ await sb.storage.from(IMG_BUCKET).remove([path]); }
-    catch(e){ console.error('delete old image failed:', e); }
+    try{
+      var r = await fetch(SUPA_CONFIG.url + "/storage/v1/object/" + IMG_BUCKET, {
+        method: "DELETE",
+        headers: Object.assign({"Content-Type":"application/json", "x-admin-pass":adminPass()}, supaHeaders()),
+        body: JSON.stringify({prefixes:[path]})
+      });
+      if(!r.ok) console.error('delete old image failed:', r.status);
+    }catch(e){ console.error('delete old image failed:', e); }
   }
 
   /* 写库通道：优先走带口令的 RPC（收紧写权限后唯一可用路径）；
