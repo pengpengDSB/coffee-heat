@@ -2083,6 +2083,9 @@
         costHtml = '<span style="opacity:.55">原料成本未齐（'+(cost.all-cost.known)+' 项没填采购价）</span>';
       }else{
         var costTxt = '原料成本 <b>¥'+r2(cost.total)+'</b>';
+        if(cost.known < cost.all){
+          costTxt += '　<span style="opacity:.6">（仅 '+cost.known+'/'+cost.all+' 项有价）</span>';
+        }
         if(price!==null){
           var profit = price - cost.total;
           var rate = price>0 ? (profit/price*100) : 0;
