@@ -623,37 +623,64 @@
     font-size:11.5px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s;pointer-events:none}
   .mini-toast.on{opacity:1}
   /* ---------- 平台运营（跨店层，独立视图，样式全部 pf- 前缀，不污染后台） ---------- */
-  .pf{max-width:1040px;margin:0 auto;padding:4px 0 40px}
-  .pf .pfHead{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line-2);padding-bottom:14px;margin-bottom:18px}
-  .pf .pfHead h1{font-size:20px;letter-spacing:.04em;margin:0}
-  .pf .pfHead .s{font-size:11.5px;color:var(--ink-soft)}
-  .pf .pfStats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-  .pf .pfStat{border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;background:#fff}
-  .pf .pfStat b{display:block;font-size:21px}
-  .pf .pfStat span{font-size:11px;color:var(--ink-soft)}
-  .pf .pfPanel{border:1px solid var(--line-2);border-radius:12px;padding:16px;margin-bottom:16px;background:#fff}
-  .pf .pfPanel h3{font-size:13px;letter-spacing:.06em;margin:0 0 12px}
-  .pf .pfRow{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:end}
-  .pf .pfMini label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px}
-  .pf .pfMini input,.pf .pfMini select{width:100%;padding:9px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:12.5px;background:#fff}
-  .pf .pfMini .h{font-size:10.5px;color:var(--ink-soft);margin-top:4px}
-  .pf .pfGo{background:var(--ink);color:#f6e7cf;border:0;border-radius:8px;padding:10px 16px;font-size:12.5px;cursor:pointer;white-space:nowrap}
-  .pf .pfGo:disabled{opacity:.6;cursor:default}
+  .pf{max-width:1080px;margin:0 auto;padding:6px 0 56px}
+  .pf .pfHead{display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+  .pf .pfHead h1{font-size:22px;letter-spacing:.04em;margin:0;line-height:1.25}
+  .pf .pfHead .s{font-size:11.5px;color:var(--ink-soft);padding-bottom:3px}
+  .pf .pfHead .pfBack{margin-left:auto}
+  .pf .pfStats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .pf .pfStat{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .pf .pfStat b{display:block;font-size:23px;line-height:1.15}
+  .pf .pfStat span{display:block;font-size:11px;color:var(--ink-soft);margin-top:7px;letter-spacing:.05em}
+  .pf .pfStat.warn b{color:#b24a3f}
+  .pf .pfPanel{border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px;background:#fff}
+  .pf .pfPanel>h3{font-size:13px;letter-spacing:.08em;margin:0 0 16px;font-weight:600}
+  .pf .pfSec{font-size:10.5px;color:var(--ink-soft);letter-spacing:.1em;margin:0 0 12px}
+  .pf .pfGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;align-items:start}
+  .pf .pfField{min-width:0}
+  .pf .pfField label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.04em}
+  .pf .pfField input,.pf .pfField select{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
+  .pf .pfField input:focus,.pf .pfField select:focus{outline:none;border-color:#c9b79a;box-shadow:0 0 0 3px rgba(201,183,154,.16)}
+  .pf .pfHint{font-size:11px;color:var(--ink-soft);line-height:1.6;margin-top:6px}
+  .pf .pfExp{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .pf .pfChips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .pf .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s;line-height:1.4}
+  .pf .chip:hover{border-color:#cfc4b2;color:var(--ink)}
+  .pf .chip.on{background:#181510;border-color:#181510;color:#f6e7cf}
+  .pf .pfDateInput{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit;color:var(--ink);background:#fff}
+  .pf .pfEcho{font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-top:12px}
+  .pf .pfEcho b{color:var(--ink);font-weight:600}
+  .pf .pfActions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+  .pf .pfGo{background:var(--ink);color:#f6e7cf;border:0;border-radius:8px;padding:11px 22px;font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap}
+  .pf .pfGo:disabled{opacity:.55;cursor:default}
+  .pf .pfGhost{background:#fff;border:1px solid var(--line);border-radius:8px;padding:11px 18px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit}
+  .pf .pfGhost:hover{color:var(--ink);border-color:#cfc4b2}
   .pf table{width:100%;border-collapse:collapse;font-size:12.5px}
-  .pf th,.pf td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line-2)}
-  .pf th{font-size:11px;color:var(--ink-soft);font-weight:500}
-  .pf td.pfcode{font-family:ui-monospace,Menlo,monospace;font-weight:600}
-  .pf .pill{display:inline-block;font-size:10.5px;padding:3px 8px;border-radius:999px}
+  .pf th{text-align:left;font-size:10.5px;color:var(--ink-soft);font-weight:500;letter-spacing:.08em;padding:0 10px 11px;border-bottom:1px solid var(--line)}
+  .pf td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .pf tr:last-child td{border-bottom:0}
+  .pf td.pfcode{font-family:ui-monospace,Menlo,monospace;font-weight:600;letter-spacing:.02em}
+  .pf td.pfscale{font-size:11.5px;color:var(--ink-soft);white-space:nowrap}
+  .pf .pill{display:inline-block;font-size:10.5px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
   .pf .pill.active{background:#e7f2ea;color:#2f7d54}
   .pf .pill.suspended{background:#f7e6e3;color:#b24a3f}
   .pf .pill.pending{background:#f6efdd;color:#a98526}
-  .pf .tiny{border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;margin-right:5px;color:var(--ink-soft)}
+  .pf .pfDue{font-size:12.5px;white-space:nowrap}
+  .pf .pfDue small{display:block;font-size:10.5px;color:var(--ink-soft);margin-top:3px;letter-spacing:.02em;font-family:ui-monospace,Menlo,monospace}
+  .pf .pfDue.warn{color:#b24a3f}
+  .pf .pfDue.warn small{color:#c4726a}
+  .pf .pfOps{display:flex;gap:6px;justify-content:flex-end}
+  .pf .tiny{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 11px;font-size:11.5px;cursor:pointer;color:var(--ink-soft);font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
   .pf .tiny:hover{color:var(--ink);border-color:#cfc4b2}
   .pf .tiny.danger:hover{color:#b24a3f;border-color:#dfb9b3}
-  .pf .empty{font-size:12px;color:var(--ink-soft);padding:14px 0}
-  .pf .pfFoot{font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-top:8px}
-  .pf .pfGate{border:1px solid var(--line-2);border-radius:12px;background:#fff;padding:24px;max-width:420px;margin:40px auto;text-align:center}
-  .pf .pfGate p{font-size:12px;color:var(--ink-soft);line-height:1.8;margin:8px 0 16px}
+  .pf .tiny.on{border-color:#181510;color:var(--ink);background:#181510;color:#f6e7cf}
+  .pf tr.pfEditRow td{background:#faf7f0;padding:16px 14px 18px;border-bottom:1px solid #e8dfd0}
+  .pf .pfEditBox{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;align-items:start}
+  .pf .pfEditBox .full{grid-column:1/-1}
+  .pf .empty{font-size:12px;color:var(--ink-soft);padding:16px 0}
+  .pf .pfFoot{font-size:11.5px;color:var(--ink-soft);line-height:1.8;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .pf .pfGate{border:1px solid var(--line);border-radius:12px;background:#fff;padding:26px 24px;max-width:420px;margin:40px auto;text-align:center}
+  .pf .pfGate p{font-size:12px;color:var(--ink-soft);line-height:1.9;margin:8px 0 18px}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -1538,23 +1565,92 @@
     if(!s) return "未设置"; var d=new Date(s); if(isNaN(d)) return "未设置";
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   }
+  /* 到期日统一落在当天 23:59:59，当天仍然可用 */
+  function pfEod(y,m,d){
+    var x = new Date(y, m, d, 23, 59, 59, 999);
+    return isNaN(x) ? null : x;
+  }
+  function pfYmd(s){
+    var p = String(s||"").split("-");
+    if(p.length!==3) return null;
+    return pfEod(+p[0], +p[1]-1, +p[2]);
+  }
+  function pfPlusDays(n, base){
+    var b = base ? new Date(base) : new Date();
+    if(isNaN(b)) b = new Date();
+    b.setDate(b.getDate()+n);
+    return pfEod(b.getFullYear(), b.getMonth(), b.getDate());
+  }
+  function pfDaysLeft(exp){
+    var ms = new Date(exp) - new Date();
+    return Math.ceil(ms/86400000);
+  }
+  function pfDueHtml(t){
+    if(!t.expire_at) return '<span class="pfDue">永久<small>不设到期</small></span>';
+    var d = pfDaysLeft(t.expire_at);
+    if(d < 0) return '<span class="pfDue warn">已过期 '+(-d)+' 天<small>'+pfDay(t.expire_at)+'</small></span>';
+    return '<span class="pfDue'+(d<=7?' warn':'')+'">剩 '+d+' 天<small>'+pfDay(t.expire_at)+'</small></span>';
+  }
+  /* 到期选择器：4 个快捷档位 + 自定义日期，两边（开号 / 行内编辑）共用同一套视觉 */
+  function pfChipsHtml(prefix, mode){
+    function chip(v,txt){ return '<button type="button" class="chip'+(mode===v?' on':'')+'" data-pfexp="'+prefix+'" data-mode="'+v+'">'+txt+'</button>'; }
+    return chip("30","30 天")+chip("90","90 天")+chip("365","一年")+chip("forever","永久")+chip("custom","自定义日期");
+  }
+  function pfEchoText(mode, dateStr){
+    if(mode==="forever") return '到期：<b>永久</b> — 只要状态是在用，顾客端就一直开着。';
+    if(mode==="custom"){
+      var d = pfYmd(dateStr);
+      if(!d) return '到期：<b>请选择日期</b> — 当天 23:59 之前仍可用。';
+      return '到期：<b>'+pfDay(d.toISOString())+' 23:59</b> — 当天仍可用，次日起顾客端关闭。';
+    }
+    var n = +mode || 30;
+    var d2 = pfPlusDays(n);
+    return '到期：<b>'+pfDay(d2.toISOString())+' 23:59</b>（自今天起 '+n+' 天）— 次日起关闭。';
+  }
+  function pfExpireValue(mode, dateStr){
+    if(mode==="forever") return null;
+    if(mode==="custom"){ var d = pfYmd(dateStr); return d; }
+    return pfPlusDays(+mode || 30);
+  }
   function pfListHtml(){
     if(!pfTenants.length) return '<div class="empty">'+(state.pfLoaded?'还没有商户，上面开第一个。':'正在读取…')+'</div>';
     var rows = pfTenants.map(function(t){
       var pill = '<span class="pill '+t.status+'">'+(t.status==="active"?"在用":t.status==="suspended"?"已停用":"待审")+'</span>';
-      var overdue = t.expire_at && new Date(t.expire_at) < new Date();
-      return '<tr data-id="'+esc(t.id)+'">'+
+      var editing = state.pfEditId === t.id;
+      var confirmOff = state.pfConfirmId === t.id;
+      var html = '<tr data-id="'+esc(t.id)+'">'+
         '<td class="pfcode">'+esc(t.id)+'</td>'+
         '<td>'+esc(t.name||"")+'</td>'+
         '<td>'+pill+'</td>'+
-        '<td>'+(t.products||0)+' 品 / '+(t.orders||0)+' 单 / '+(t.customers||0)+' 客</td>'+
-        '<td'+(overdue?' style="color:#b24a3f"':'')+'>'+pfDay(t.expire_at)+'</td>'+
-        '<td><button class="tiny" data-pf="toggle">'+(t.status==="active"?"停用":"启用")+'</button>'+
-          '<button class="tiny" data-pf="expire">+30天</button>'+
-          '<button class="tiny" data-pf="rename">改名</button>'+
-          '<button class="tiny danger" data-pf="pass">改口令</button></td></tr>';
+        '<td class="pfscale">'+(t.products||0)+' 品 · '+(t.orders||0)+' 单 · '+(t.customers||0)+' 客</td>'+
+        '<td>'+pfDueHtml(t)+'</td>'+
+        '<td><div class="pfOps">'+
+          '<button class="tiny'+(editing?' on':'')+'" data-pf="edit" data-id="'+esc(t.id)+'">'+(editing?'收起':'编辑')+'</button>'+
+          '<button class="tiny danger'+(confirmOff?' on':'')+'" data-pf="toggle" data-id="'+esc(t.id)+'">'+
+            (confirmOff ? '确认停用？' : (t.status==="active"?"停用":"启用"))+'</button>'+
+        '</div></td></tr>';
+      if(editing) html += pfEditRowHtml(t);
+      return html;
     }).join("");
-    return '<table><thead><tr><th>编码</th><th>店名</th><th>状态</th><th>规模</th><th>到期</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return '<table><thead><tr><th>编码</th><th>店名</th><th>状态</th><th>规模</th><th>到期</th><th style="text-align:right">操作</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  /* 行内编辑：改名 / 改口令 / 改到期，全在这一条里完成，不弹浏览器对话框 */
+  function pfEditRowHtml(t){
+    var mode = state.pfEditMode || (t.expire_at ? "custom" : "forever");
+    var dateStr = state.pfEditDate || (t.expire_at ? pfDay(t.expire_at) : pfDay(pfPlusDays(30).toISOString()));
+    return '<tr class="pfEditRow"><td colspan="6"><div class="pfEditBox">'+
+      '<div class="pfField"><label>店名</label><input id="pfEName" value="'+esc(t.name||"")+'" maxlength="24"></div>'+
+      '<div class="pfField"><label>登录口令</label><input id="pfEPass" placeholder="不改就别填（至少 6 位）" autocomplete="off"></div>'+
+      '<div class="pfField full"><label>到期</label>'+
+        '<div class="pfChips" id="pfEChips">'+pfChipsHtml("edit", mode)+
+          '<input type="date" class="pfDateInput" id="pfEDate" value="'+esc(dateStr)+'" style="'+(mode==="custom"?"":"display:none")+'"></div>'+
+        '<div class="pfEcho" id="pfEEcho">'+pfEchoText(mode, dateStr)+'</div>'+
+      '</div>'+
+      '<div class="full pfActions" style="margin-top:4px">'+
+        '<button class="pfGhost" data-pf="editCancel" data-id="'+esc(t.id)+'">取消</button>'+
+        '<button class="pfGo" data-pf="editSave" data-id="'+esc(t.id)+'" style="padding:9px 18px">保存</button>'+
+      '</div>'+
+      '</div></td></tr>';
   }
   /* 超管口令门禁：只问口令，不认商户口令 */
   function renderPfGate(){
@@ -1593,39 +1689,108 @@
     if(!isAuthed()){ state.view="login"; renderLogin(); return; }
     document.querySelectorAll("#viewSwitch button").forEach(function(b){ b.classList.remove("active"); });
     if(!pfPass()){ renderPfGate(); return; }
+    var total = pfTenants.length;
     var act = pfTenants.filter(function(t){ return t.status==="active"; }).length;
     var orders = pfTenants.reduce(function(a,t){ return a+(+t.orders||0); },0);
-    var prods  = pfTenants.reduce(function(a,t){ return a+(+t.products||0); },0);
+    var soon = pfTenants.filter(function(t){
+      if(!t.expire_at) return false;
+      return pfDaysLeft(t.expire_at) <= 7;
+    }).length;
     var tpl = pfTenants.map(function(t){
       return '<option value="'+esc(t.id)+'">从 '+esc(t.id)+'（'+esc(t.name||"")+'）复制</option>';
     }).join("") + '<option value="">空白后台</option>';
+    var newMode = state.pfNewMode || "30";
+    var newDate = state.pfNewDate || pfDay(pfPlusDays(30).toISOString());
+    function stat(n,label,warn){
+      return '<div class="pfStat'+(warn?' warn':'')+'"><b>'+(state.pfLoaded?n:"–")+'</b><span>'+label+'</span></div>';
+    }
     app.innerHTML = '<div class="pf">'+
-      '<div class="pfHead"><h1>平台运营</h1><span class="s">开号、停用、到期，一处管</span>'+
-        '<button class="tiny" id="pfBack" style="margin-left:auto">← 返回商家后台</button></div>'+
+      '<div class="pfHead"><h1>平台运营</h1><span class="s">开号 · 停用 · 到期，一处管</span>'+
+        '<button class="tiny pfBack" id="pfBack">← 返回商家后台</button></div>'+
       '<div class="pfStats">'+
-        '<div class="pfStat"><b>'+(state.pfLoaded?pfTenants.length:"–")+'</b><span>商户总数</span></div>'+
-        '<div class="pfStat"><b>'+(state.pfLoaded?act:"–")+'</b><span>在用</span></div>'+
-        '<div class="pfStat"><b>'+(state.pfLoaded?orders:"–")+'</b><span>累计订单</span></div>'+
-        '<div class="pfStat"><b>'+(state.pfLoaded?prods:"–")+'</b><span>在售饮品</span></div>'+
+        stat(total,"商户总数")+stat(act,"在用")+
+        stat(soon,"7 天内到期",soon>0)+stat(orders,"累计订单")+
       '</div>'+
-      '<div class="pfPanel"><h3>开一个新商户</h3><div class="pfRow">'+
-        '<div class="pfMini"><label>商户编码</label><input id="pfNewId" placeholder="bj02" maxlength="12">'+
-          '<div class="h">小写字母/数字，2–12 位，会进顾客链接 ?t=</div></div>'+
-        '<div class="pfMini"><label>店名</label><input id="pfNewName" placeholder="杯记 · 新店"></div>'+
-        '<div class="pfMini"><label>登录口令</label><input id="pfNewPass" placeholder="至少 6 位"></div>'+
-        '<div class="pfMini"><label>菜单模板</label><select id="pfNewTpl">'+tpl+'</select></div>'+
-        '<button class="pfGo" id="pfNewBtn">开号</button>'+
-      '</div><div class="pfFoot">开号后对方登录：商户后台 → 商户编码 + 口令；顾客端链接：<b>index.html?t=编码</b>。模板会连同配方、配料、成本、豆价一起复制。</div></div>'+
+      '<div class="pfPanel">'+
+        '<h3>开一个新商户</h3>'+
+        '<div class="pfSec">01 · 基本信息</div>'+
+        '<div class="pfGrid">'+
+          '<div class="pfField"><label>商户编码</label><input id="pfNewId" placeholder="bj02" maxlength="12" autocomplete="off">'+
+            '<div class="pfHint">小写字母 / 数字，2–12 位，会进顾客链接 <b>?t=编码</b></div></div>'+
+          '<div class="pfField"><label>店名</label><input id="pfNewName" placeholder="杯记 · 新店" maxlength="24">'+
+            '<div class="pfHint">顾客端顶部与后台标题都会用它</div></div>'+
+          '<div class="pfField"><label>登录口令</label><input id="pfNewPass" placeholder="至少 6 位" autocomplete="new-password">'+
+            '<div class="pfHint">商户用它登录后台，之后可在列表里改</div></div>'+
+          '<div class="pfField"><label>菜单模板</label><select id="pfNewTpl">'+tpl+'</select>'+
+            '<div class="pfHint">连同配料、成本、豆价复制一份独立数据</div></div>'+
+        '</div>'+
+        '<div class="pfExp">'+
+          '<div class="pfSec">02 · 到期设置</div>'+
+          '<div class="pfChips" id="pfNewChips">'+pfChipsHtml("new", newMode)+
+            '<input type="date" class="pfDateInput" id="pfNewDate" value="'+esc(newDate)+'" style="'+(newMode==="custom"?"":"display:none")+'"></div>'+
+          '<div class="pfEcho" id="pfNewEcho">'+pfEchoText(newMode, newDate)+'</div>'+
+        '</div>'+
+        '<div class="pfActions"><button class="pfGhost" id="pfNewReset">清空</button>'+
+          '<button class="pfGo" id="pfNewBtn">开号</button></div>'+
+        '<div class="pfFoot">开号后对方登录：商户后台 → 商户编码 + 口令；顾客端链接：<b>index.html?t=编码</b>。'+
+          '到期当天 23:59 前顾客端仍可用，次日起自动关闭；<b>永久</b>表示不设期限。到期后要恢复，在列表里点「编辑」改到期即可。</div>'+
+      '</div>'+
       '<div class="pfPanel"><h3>商户列表</h3><div id="pfList">'+pfListHtml()+'</div></div>'+
       '</div>';
+
     var tplSel = document.getElementById("pfNewTpl");
     if(tplSel && pfTenants.filter(function(t){return t.id==="bj01";}).length) tplSel.value="bj01";
     document.getElementById("pfNewBtn").addEventListener("click", pfCreate);
-    document.getElementById("pfBack").addEventListener("click", function(){ state.view="admin"; render(); });
+    document.getElementById("pfNewReset").addEventListener("click", function(){
+      ["pfNewId","pfNewName","pfNewPass"].forEach(function(k){ var e=document.getElementById(k); if(e) e.value=""; });
+      state.pfNewMode="30"; state.pfNewDate=null;
+      renderPlatform();
+      var i=document.getElementById("pfNewId"); if(i) i.focus();
+    });
+    document.getElementById("pfBack").addEventListener("click", function(){ state.pfEditId=null; state.pfConfirmId=null; state.view="admin"; render(); });
+
+    /* 到期档位切换（开号 / 行内编辑共用一套事件） */
+    function bindChips(scope, prefix, onPick){
+      Array.prototype.forEach.call(scope.querySelectorAll('[data-pfexp="'+prefix+'"]'), function(btn){
+        btn.addEventListener("click", function(){
+          var mode = btn.getAttribute("data-mode");
+          Array.prototype.forEach.call(scope.querySelectorAll('[data-pfexp="'+prefix+'"]'), function(x){
+            x.classList.toggle("on", x===btn);
+          });
+          var dEl = document.getElementById(prefix==="new" ? "pfNewDate" : "pfEDate");
+          var echoEl = document.getElementById(prefix==="new" ? "pfNewEcho" : "pfEEcho");
+          if(dEl) dEl.style.display = (mode==="custom" ? "" : "none");
+          onPick(mode, dEl ? dEl.value : "", echoEl);
+        });
+      });
+    }
+    bindChips(document.getElementById("pfNewChips"), "new", function(mode, dv, echoEl){
+      state.pfNewMode = mode;
+      if(mode==="custom" && dv) state.pfNewDate = dv;
+      if(echoEl) echoEl.innerHTML = pfEchoText(mode, state.pfNewDate || newDate);
+    });
+    var nd = document.getElementById("pfNewDate");
+    if(nd) nd.addEventListener("change", function(){
+      state.pfNewDate = nd.value;
+      var e = document.getElementById("pfNewEcho");
+      if(e) e.innerHTML = pfEchoText(state.pfNewMode||"custom", nd.value);
+    });
+    var ec = document.getElementById("pfEChips");
+    if(ec) bindChips(ec, "edit", function(mode, dv, echoEl){
+      state.pfEditMode = mode;
+      if(mode==="custom" && dv) state.pfEditDate = dv;
+      if(echoEl) echoEl.innerHTML = pfEchoText(mode, state.pfEditDate || dv);
+    });
+    var ed = document.getElementById("pfEDate");
+    if(ed) ed.addEventListener("change", function(){
+      state.pfEditDate = ed.value;
+      var e = document.getElementById("pfEEcho");
+      if(e) e.innerHTML = pfEchoText(state.pfEditMode||"custom", ed.value);
+    });
+
     Array.prototype.forEach.call(app.querySelectorAll("[data-pf]"), function(b){
       b.addEventListener("click", function(){
-        var tr=b.parentNode.parentNode;
-        pfAct(tr.getAttribute("data-id"), b.getAttribute("data-pf"));
+        pfAct(b.getAttribute("data-id"), b.getAttribute("data-pf"));
       });
     });
     applyHeroSwitch();
@@ -1646,47 +1811,100 @@
     }
     if(state.view==="platform") renderPlatform();
   }
-  async function pfAct(id, what){
-    var t = pfTenants.filter(function(x){ return x.id===id; })[0]; if(!t) return;
+  /* 改到期：优先用 t_platform_set_expire（能传 null 清空）；未执行那段 SQL 时降级到 update_tenant */
+  async function pfSetExpire(id, iso){
     try{
+      await pfRpc("t_platform_set_expire", {p_master:pfPass(), p_id:id, p_expire: iso});
+    }catch(e){
+      if(iso){
+        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_expire: iso});
+      }else{
+        throw new Error("改回永久需要先在 SQL Editor 执行 平台到期_可置空.sql");
+      }
+    }
+  }
+  async function pfAct(id, what){
+    var t = pfTenants.filter(function(x){ return x.id===id; })[0];
+    try{
+      if(what==="edit"){
+        if(state.pfEditId === id){ state.pfEditId=null; }
+        else { state.pfEditId=id; state.pfEditMode=null; state.pfEditDate=null; }
+        state.pfConfirmId=null;
+        renderPlatform(); return;
+      }
+      if(what==="editCancel"){
+        state.pfEditId=null; state.pfEditMode=null; state.pfEditDate=null;
+        renderPlatform(); return;
+      }
+      if(what==="editSave"){
+        if(!t) return;
+        var nmEl=document.getElementById("pfEName"), npEl=document.getElementById("pfEPass");
+        var nm=(nmEl?nmEl.value:"").trim();
+        var np=(npEl?npEl.value:"").trim();
+        if(!nm){ toast("店名不能空"); return; }
+        if(np && np.length<6){ toast("口令至少 6 位"); return; }
+        var mode = state.pfEditMode || (t.expire_at ? "custom" : "forever");
+        var dstr = state.pfEditDate || pfDay(t.expire_at || pfPlusDays(30).toISOString());
+        var exp = pfExpireValue(mode, dstr);
+        if(mode==="custom" && !exp){ toast("请选一个到期日期"); return; }
+        var saveBtn = app.querySelector('[data-pf="editSave"]');
+        if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent="保存中…"; }
+        if(nm !== (t.name||"")) await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_name:nm});
+        if(np) await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_pass:np});
+        await pfSetExpire(id, exp ? exp.toISOString() : null);
+        toast("已保存 "+id+"：到期 "+(exp?pfDay(exp.toISOString()):"永久")+(np?"，口令已更新":""));
+        if(np && id===adminTenant()) setAdminPass(np);
+        state.pfEditId=null; state.pfEditMode=null; state.pfEditDate=null;
+        await pfLoad(); return;
+      }
+      if(!t) return;
       if(what==="toggle"){
+        /* 停用是"关整店"，要二次点击确认，但确认态也在页面里，不弹浏览器对话框 */
+        if(t.status==="active" && state.pfConfirmId !== id){
+          state.pfConfirmId=id; renderPlatform(); return;
+        }
+        state.pfConfirmId=null;
         await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_status: t.status==="active"?"suspended":"active"});
-        toast(t.status==="active" ? ("已停用 "+id+"，顾客端随后会关闭") : ("已启用 "+id));
-      }else if(what==="expire"){
-        var base = t.expire_at && new Date(t.expire_at) > new Date() ? new Date(t.expire_at) : new Date();
-        base.setDate(base.getDate()+30);
-        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_expire: base.toISOString()});
-        toast("已续 30 天："+pfDay(base.toISOString()));
-      }else if(what==="rename"){
-        var n = prompt("新的店名：", t.name||""); if(!n) return;
-        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_name:n});
-        toast("店名已改");
-      }else if(what==="pass"){
-        var p = prompt("给 "+id+" 设新口令（至少 6 位）：",""); if(!p) return;
-        if(String(p).length < 6){ toast("太短了，至少 6 位"); return; }
-        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_pass:p});
-        toast("口令已更新，记得告诉对方");
-        if(id===adminTenant()) setAdminPass(p);
+        toast(t.status==="active" ? ("已停用 "+id+"，顾客端随即关闭") : ("已启用 "+id));
       }
       await pfLoad();
     }catch(e){ toast("失败："+(e.message||e)); }
   }
   async function pfCreate(){
-    var id=(document.getElementById("pfNewId").value||"").trim().toLowerCase();
-    var name=(document.getElementById("pfNewName").value||"").trim();
-    var pass=(document.getElementById("pfNewPass").value||"").trim();
-    var tpl=document.getElementById("pfNewTpl").value;
+    var idEl=document.getElementById("pfNewId"), nmEl=document.getElementById("pfNewName"),
+        psEl=document.getElementById("pfNewPass"), tpEl=document.getElementById("pfNewTpl");
+    if(!idEl||!nmEl||!psEl||!tpEl) return;
+    var id=(idEl.value||"").trim().toLowerCase();
+    var name=(nmEl.value||"").trim();
+    var pass=(psEl.value||"").trim();
+    var tpl=tpEl.value;
     if(!/^[a-z0-9][a-z0-9_-]{1,11}$/.test(id)){ toast("商户编码格式不对：小写字母/数字/下划线/中划线，2–12 位"); return; }
     if(!name){ toast("给个店名"); return; }
     if(pass.length<6){ toast("口令至少 6 位"); return; }
     if(/^(platform|admin|master|root)$/.test(id)){ toast("这个编码是保留字，换一个"); return; }
-    var btn=document.getElementById("pfNewBtn"); btn.disabled=true;
+    var mode = state.pfNewMode || "30";
+    var dstr = state.pfNewDate || pfDay(pfPlusDays(30).toISOString());
+    var exp = pfExpireValue(mode, dstr);
+    if(mode==="custom"){
+      if(!exp){ toast("请先选一个到期日期"); return; }
+      if(exp <= new Date()){ toast("自定义日期要晚于今天"); return; }
+    }
+    var btn=document.getElementById("pfNewBtn");
+    btn.disabled=true; btn.textContent="开号中…";
     try{
       var r = await pfRpc("t_platform_create_tenant", {p_master:pfPass(), p_id:id, p_name:name, p_pass:pass, p_template: tpl||null});
-      toast("已开号 "+id+"，菜单 "+(r&&r.products||0)+" 款；顾客链接 index.html?t="+id);
+      var expNote = "永久";
+      if(exp){
+        try{ await pfSetExpire(id, exp.toISOString()); expNote = pfDay(exp.toISOString()); }
+        catch(e){ expNote = "未写入（"+(e.message||e)+"）"; }
+      }
+      toast("已开号 "+id+"，菜单 "+(r&&r.products||0)+" 款，到期 "+expNote);
+      state.pfNewMode="30"; state.pfNewDate=null;
       await pfLoad();
-    }catch(e){ toast("开号失败："+(e.message||e)); }
-    if(document.getElementById("pfNewBtn")) document.getElementById("pfNewBtn").disabled=false;
+    }catch(e){
+      toast("开号失败："+(e.message||e));
+      if(document.getElementById("pfNewBtn")){ document.getElementById("pfNewBtn").disabled=false; document.getElementById("pfNewBtn").textContent="开号"; }
+    }
   }
 
 
