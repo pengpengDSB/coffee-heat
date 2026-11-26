@@ -1084,6 +1084,8 @@
       const cat = await sb.rpc('t_catalog',{p_tenant:adminTenant()});
       if(cat.error) throw cat.error;
       const pack = cat.data || {};
+      /* 商户被停用/到期：只读本机缓存，绝不回写云端，也不给进后台 */
+      if(pack.status==="off"){ state.suspended=true; db=load(); return; }
       const ings = (pack.ingredients||[]).map(rowToIng);
       const prods = (pack.products||[]).map(rowToProduct);
       if(ings.length || prods.length){
@@ -1176,6 +1178,7 @@
     modal:null, // {type:'ing'|'product', id:null}
     beans:[],
     loginMode:"lazy",
+    suspended:false,
     heroStyle:(function(){ try{ return localStorage.getItem("heat_hero_style")||"A"; }catch(e){ return "A"; } })()
   };
   state.beans = beanRows();
@@ -1476,6 +1479,18 @@
   var app = document.getElementById("app");
   function render(){
     if(!db) return;
+    if(state.suspended){
+      document.querySelectorAll("#viewSwitch button").forEach(function(b){ b.classList.remove("active"); });
+      app.innerHTML='<div class="wrap" style="padding:80px 0;text-align:center">'+
+        '<div class="lg-kicker">MERCHANT SUSPENDED</div>'+
+        '<h1 class="page-title" style="margin-top:10px">这个商户已被停用</h1>'+
+        '<p class="page-sub">平台已关闭 merchant 的登录与数据读写。续期或恢复后刷新本页即可。</p>'+
+        '<button class="ghost-btn" id="suspendLogout" style="margin-top:16px">清除本机登录态</button></div>';
+      var b=document.getElementById("suspendLogout");
+      if(b) b.addEventListener("click",function(){ clearAuth(); clearAdminPass(); location.reload(); });
+      applyHeroSwitch();
+      return;
+    }
     if(state.view==="admin" && !isAuthed()) state.view="login";
     applyAuthUI();
     document.querySelectorAll("#viewSwitch button").forEach(function(b){

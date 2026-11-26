@@ -409,7 +409,7 @@
   }
   var TENANT = detectTenant();
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
-    sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[] };
+    sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[], closed:false };
 
   /* ---------- 本机存储：购物车 / 匿名访客 / 订单 / 顾客身份，全部按商户分键 ---------- */
   var CART_KEY="cafe_cart_v1_"+TENANT, VIS_KEY="cafe_visitor_v1_"+TENANT, ORD_KEY="cafe_orders_v1_"+TENANT;
@@ -1416,7 +1416,16 @@
   }
 
   var app=document.getElementById("app");
+  /* 商户被平台停用或到期时：顾客端只剩一张「暂停营业」页，菜单与下单都不再露出 */
+  function renderClosed(){
+    app.innerHTML='<div class="page" style="padding-top:64px">'+
+      '<div class="card" style="padding:34px 22px;text-align:center">'+'<div class="kicker" style="letter-spacing:2px;color:#8a6b4f">CLOSED</div>'+
+      '<h2 style="margin:10px 0 8px;font-size:22px">本店暂停营业</h2>'+
+      '<div class="foot" style="margin-top:6px">菜单与下单已关闭，等店主恢复后刷新本页即可。</div>'+
+      '</div></div>';
+  }
   function render(){
+    if(state.closed){ renderClosed(); return; }
     renderTab();
     if(state.viewOrder){ renderOrder(); return; }
     if(state.selProduct){ renderDetail(); return; }
@@ -1436,6 +1445,7 @@
       const cat = await sb.rpc('t_catalog',{p_tenant:TENANT});
       if(cat.error) throw cat.error;
       const pack = cat.data || {};
+      if(pack.status==="off"){ state.closed=true; db={ings:[],products:[]}; render(); return; }
       var ings=(pack.ingredients||[]).map(rowToIng), prods=(pack.products||[]).map(rowToProduct);
       db=(ings.length||prods.length)?{ings:ings,products:prods}:defaultData();
     }catch(e){
