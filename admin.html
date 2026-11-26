@@ -1607,7 +1607,8 @@
       (state.siteUpdated? '<div class="set-sync">'+
           (state.siteSource==="table" ? "settings 表" : "存储桶 JSON（旧）")+
           ' · 更新于 '+esc(fmtTime(state.siteUpdated))+'</div>'
-                       : '<div class="set-sync">尚未读到线上版本，当前显示本机缓存</div>')+
+        : (state.siteSource==="table" ? '<div class="set-sync">settings 表 · 已读到本商户的线上设置</div>'
+                       : '<div class="set-sync">尚未读到线上版本，当前显示本机缓存</div>'))+
       '</div>'+
       '<div class="set-list">';
     presets().forEach(function(t,i){
