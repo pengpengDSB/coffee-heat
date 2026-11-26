@@ -622,6 +622,38 @@
   .mini-toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:90;background:#181510;color:#F4F1E9;
     font-size:11.5px;letter-spacing:.06em;padding:10px 16px;opacity:0;transition:opacity .2s;pointer-events:none}
   .mini-toast.on{opacity:1}
+  /* ---------- 平台运营（跨店层，独立视图，样式全部 pf- 前缀，不污染后台） ---------- */
+  .pf{max-width:1040px;margin:0 auto;padding:4px 0 40px}
+  .pf .pfHead{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line-2);padding-bottom:14px;margin-bottom:18px}
+  .pf .pfHead h1{font-size:20px;letter-spacing:.04em;margin:0}
+  .pf .pfHead .s{font-size:11.5px;color:var(--ink-soft)}
+  .pf .pfStats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .pf .pfStat{border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;background:#fff}
+  .pf .pfStat b{display:block;font-size:21px}
+  .pf .pfStat span{font-size:11px;color:var(--ink-soft)}
+  .pf .pfPanel{border:1px solid var(--line-2);border-radius:12px;padding:16px;margin-bottom:16px;background:#fff}
+  .pf .pfPanel h3{font-size:13px;letter-spacing:.06em;margin:0 0 12px}
+  .pf .pfRow{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:end}
+  .pf .pfMini label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px}
+  .pf .pfMini input,.pf .pfMini select{width:100%;padding:9px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:12.5px;background:#fff}
+  .pf .pfMini .h{font-size:10.5px;color:var(--ink-soft);margin-top:4px}
+  .pf .pfGo{background:var(--ink);color:#f6e7cf;border:0;border-radius:8px;padding:10px 16px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .pf .pfGo:disabled{opacity:.6;cursor:default}
+  .pf table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .pf th,.pf td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line-2)}
+  .pf th{font-size:11px;color:var(--ink-soft);font-weight:500}
+  .pf td.pfcode{font-family:ui-monospace,Menlo,monospace;font-weight:600}
+  .pf .pill{display:inline-block;font-size:10.5px;padding:3px 8px;border-radius:999px}
+  .pf .pill.active{background:#e7f2ea;color:#2f7d54}
+  .pf .pill.suspended{background:#f7e6e3;color:#b24a3f}
+  .pf .pill.pending{background:#f6efdd;color:#a98526}
+  .pf .tiny{border:1px solid var(--line-2);background:#fff;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;margin-right:5px;color:var(--ink-soft)}
+  .pf .tiny:hover{color:var(--ink);border-color:#cfc4b2}
+  .pf .tiny.danger:hover{color:#b24a3f;border-color:#dfb9b3}
+  .pf .empty{font-size:12px;color:var(--ink-soft);padding:14px 0}
+  .pf .pfFoot{font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-top:8px}
+  .pf .pfGate{border:1px solid var(--line-2);border-radius:12px;background:#fff;padding:24px;max-width:420px;margin:40px auto;text-align:center}
+  .pf .pfGate p{font-size:12px;color:var(--ink-soft);line-height:1.8;margin:8px 0 16px}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -637,6 +669,7 @@
     </div>
     <div class="acct" id="acct">
       <span class="who" id="acctWho">merchant</span>
+      <button class="out" id="pfBtn" style="display:none">平台运营</button>
       <button class="out" id="logoutBtn">登出</button>
     </div>
   </div>
@@ -1178,7 +1211,7 @@
     modal:null, // {type:'ing'|'product', id:null}
     beans:[],
     loginMode:"lazy",
-    suspended:false,
+    suspended:false, pfLoaded:false, pfErr:"",
     heroStyle:(function(){ try{ return localStorage.getItem("heat_hero_style")||"A"; }catch(e){ return "A"; } })()
   };
   state.beans = beanRows();
@@ -1340,7 +1373,13 @@
     var el=document.getElementById("acct"); if(!el) return;
     var a=readAuth();
     el.classList.toggle("on", !!a);
-    if(a){ var w=document.getElementById("acctWho"); if(w) w.textContent=a.u; }
+    if(a){
+      var w=document.getElementById("acctWho");
+      if(w) w.textContent=a.u;
+    }
+    /* 平台运营入口：任何已登录商户都能看到这一格，进不进得去由超管口令决定 */
+    var pf=document.getElementById("pfBtn");
+    if(pf) pf.style.display = a ? "" : "none";
   }
 
   /* 进入某视图：后台需登录，未登录先询问是否去登录 */
@@ -1475,6 +1514,182 @@
 
   function defaultMilk(p){ return (state.milkSel[p.id]) || (p.milkOptions[0]) || ""; }
 
+  /* ================= 平台运营（跨店层）================= */
+  /* 入口对所有已登录商户可见，真正的门禁是超管口令本身：不认商户口令，只认 platform_auth 那一条 */
+  var pfTenants = [];
+  var MP_KEY = "cafe_master_v1";
+  function pfPass(){ try{ return sessionStorage.getItem(MP_KEY)||""; }catch(e){ return ""; } }
+  function setPfPass(v){ try{ if(v) sessionStorage.setItem(MP_KEY,v); else sessionStorage.removeItem(MP_KEY); }catch(e){} }
+  async function pfRpc(fn, body){
+    var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/" + fn, {
+      method:"POST", cache:"no-store",
+      headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+      body: JSON.stringify(body||{})
+    });
+    var txt = await r.text();
+    var data = null; try{ data = txt ? JSON.parse(txt) : null; }catch(e){}
+    if(!r.ok){
+      var msg = (data && (data.message||data.hint)) || txt || ("HTTP "+r.status);
+      var err = new Error(msg); err.status = r.status; throw err;
+    }
+    return data;
+  }
+  function pfDay(s){
+    if(!s) return "未设置"; var d=new Date(s); if(isNaN(d)) return "未设置";
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function pfListHtml(){
+    if(!pfTenants.length) return '<div class="empty">'+(state.pfLoaded?'还没有商户，上面开第一个。':'正在读取…')+'</div>';
+    var rows = pfTenants.map(function(t){
+      var pill = '<span class="pill '+t.status+'">'+(t.status==="active"?"在用":t.status==="suspended"?"已停用":"待审")+'</span>';
+      var overdue = t.expire_at && new Date(t.expire_at) < new Date();
+      return '<tr data-id="'+esc(t.id)+'">'+
+        '<td class="pfcode">'+esc(t.id)+'</td>'+
+        '<td>'+esc(t.name||"")+'</td>'+
+        '<td>'+pill+'</td>'+
+        '<td>'+(t.products||0)+' 品 / '+(t.orders||0)+' 单 / '+(t.customers||0)+' 客</td>'+
+        '<td'+(overdue?' style="color:#b24a3f"':'')+'>'+pfDay(t.expire_at)+'</td>'+
+        '<td><button class="tiny" data-pf="toggle">'+(t.status==="active"?"停用":"启用")+'</button>'+
+          '<button class="tiny" data-pf="expire">+30天</button>'+
+          '<button class="tiny" data-pf="rename">改名</button>'+
+          '<button class="tiny danger" data-pf="pass">改口令</button></td></tr>';
+    }).join("");
+    return '<table><thead><tr><th>编码</th><th>店名</th><th>状态</th><th>规模</th><th>到期</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  /* 超管口令门禁：只问口令，不认商户口令 */
+  function renderPfGate(){
+    app.innerHTML = '<div class="pf"><div class="pfGate">'+
+      '<h2 style="font-size:17px;margin:0 0 4px">平台运营</h2>'+
+      '<p>这一层管的是所有商户的开号、停用与到期，与店铺后台分开验证。<br>输入超管口令后进入，本会话内有效。</p>'+
+      '<input id="pfGatePass" type="password" placeholder="超管口令" autocomplete="off" '+
+        'style="width:100%;padding:11px 12px;border:1px solid var(--line-2);border-radius:9px;font-size:13.5px">'+
+      '<div id="pfGateErr" style="color:#b24a3f;font-size:12px;min-height:18px;margin:8px 0 6px">'+(state.pfErr||"")+'</div>'+
+      '<button class="pfGo" id="pfGateBtn" style="width:100%;padding:12px">进入平台运营</button>'+
+      '<div style="margin-top:14px"><button class="tiny" id="pfGateBack">← 返回商家后台</button></div>'+
+      '</div></div>';
+    var inp=document.getElementById("pfGatePass");
+    var btn=document.getElementById("pfGateBtn");
+    function go(){
+      var v=(inp.value||"").trim();
+      var err=document.getElementById("pfGateErr");
+      if(!v){ err.textContent="请输入超管口令"; return; }
+      btn.disabled=true; btn.textContent="正在验证…";
+      pfRpc("t_platform_list_tenants", {p_master:v}).then(function(data){
+        setPfPass(v); pfTenants=data||[]; state.pfLoaded=true; state.pfErr="";
+        renderPlatform();
+      }).catch(function(e){
+        setPfPass("");
+        err.textContent = (e.status===401 || /42501|口令|permission/i.test(e.message||""))
+          ? "超管口令不对" : ("校验失败："+(e.message||e));
+        btn.disabled=false; btn.textContent="进入平台运营";
+      });
+    }
+    btn.addEventListener("click", go);
+    inp.addEventListener("keydown", function(e){ if(e.key==="Enter") go(); });
+    document.getElementById("pfGateBack").addEventListener("click", function(){ state.view="admin"; render(); });
+    setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 120);
+  }
+  function renderPlatform(){
+    if(!isAuthed()){ state.view="login"; renderLogin(); return; }
+    document.querySelectorAll("#viewSwitch button").forEach(function(b){ b.classList.remove("active"); });
+    if(!pfPass()){ renderPfGate(); return; }
+    var act = pfTenants.filter(function(t){ return t.status==="active"; }).length;
+    var orders = pfTenants.reduce(function(a,t){ return a+(+t.orders||0); },0);
+    var prods  = pfTenants.reduce(function(a,t){ return a+(+t.products||0); },0);
+    var tpl = pfTenants.map(function(t){
+      return '<option value="'+esc(t.id)+'">从 '+esc(t.id)+'（'+esc(t.name||"")+'）复制</option>';
+    }).join("") + '<option value="">空白后台</option>';
+    app.innerHTML = '<div class="pf">'+
+      '<div class="pfHead"><h1>平台运营</h1><span class="s">开号、停用、到期，一处管</span>'+
+        '<button class="tiny" id="pfBack" style="margin-left:auto">← 返回商家后台</button></div>'+
+      '<div class="pfStats">'+
+        '<div class="pfStat"><b>'+(state.pfLoaded?pfTenants.length:"–")+'</b><span>商户总数</span></div>'+
+        '<div class="pfStat"><b>'+(state.pfLoaded?act:"–")+'</b><span>在用</span></div>'+
+        '<div class="pfStat"><b>'+(state.pfLoaded?orders:"–")+'</b><span>累计订单</span></div>'+
+        '<div class="pfStat"><b>'+(state.pfLoaded?prods:"–")+'</b><span>在售饮品</span></div>'+
+      '</div>'+
+      '<div class="pfPanel"><h3>开一个新商户</h3><div class="pfRow">'+
+        '<div class="pfMini"><label>商户编码</label><input id="pfNewId" placeholder="bj02" maxlength="12">'+
+          '<div class="h">小写字母/数字，2–12 位，会进顾客链接 ?t=</div></div>'+
+        '<div class="pfMini"><label>店名</label><input id="pfNewName" placeholder="杯记 · 新店"></div>'+
+        '<div class="pfMini"><label>登录口令</label><input id="pfNewPass" placeholder="至少 6 位"></div>'+
+        '<div class="pfMini"><label>菜单模板</label><select id="pfNewTpl">'+tpl+'</select></div>'+
+        '<button class="pfGo" id="pfNewBtn">开号</button>'+
+      '</div><div class="pfFoot">开号后对方登录：商户后台 → 商户编码 + 口令；顾客端链接：<b>index.html?t=编码</b>。模板会连同配方、配料、成本、豆价一起复制。</div></div>'+
+      '<div class="pfPanel"><h3>商户列表</h3><div id="pfList">'+pfListHtml()+'</div></div>'+
+      '</div>';
+    var tplSel = document.getElementById("pfNewTpl");
+    if(tplSel && pfTenants.filter(function(t){return t.id==="bj01";}).length) tplSel.value="bj01";
+    document.getElementById("pfNewBtn").addEventListener("click", pfCreate);
+    document.getElementById("pfBack").addEventListener("click", function(){ state.view="admin"; render(); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-pf]"), function(b){
+      b.addEventListener("click", function(){
+        var tr=b.parentNode.parentNode;
+        pfAct(tr.getAttribute("data-id"), b.getAttribute("data-pf"));
+      });
+    });
+    applyHeroSwitch();
+    if(!state.pfLoaded) pfLoad();
+  }
+  async function pfLoad(){
+    try{
+      pfTenants = (await pfRpc("t_platform_list_tenants", {p_master:pfPass()})) || [];
+      state.pfLoaded = true;
+    }catch(e){
+      if(e.status===401 || /42501|口令|permission/i.test(e.message||"")){
+        setPfPass(""); state.pfErr="超管口令已失效，请重新输入";
+      }else{
+        toast("读取商户失败："+(e.message||e));
+      }
+      if(state.view==="platform") renderPlatform();
+      return;
+    }
+    if(state.view==="platform") renderPlatform();
+  }
+  async function pfAct(id, what){
+    var t = pfTenants.filter(function(x){ return x.id===id; })[0]; if(!t) return;
+    try{
+      if(what==="toggle"){
+        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_status: t.status==="active"?"suspended":"active"});
+        toast(t.status==="active" ? ("已停用 "+id+"，顾客端随后会关闭") : ("已启用 "+id));
+      }else if(what==="expire"){
+        var base = t.expire_at && new Date(t.expire_at) > new Date() ? new Date(t.expire_at) : new Date();
+        base.setDate(base.getDate()+30);
+        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_expire: base.toISOString()});
+        toast("已续 30 天："+pfDay(base.toISOString()));
+      }else if(what==="rename"){
+        var n = prompt("新的店名：", t.name||""); if(!n) return;
+        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_name:n});
+        toast("店名已改");
+      }else if(what==="pass"){
+        var p = prompt("给 "+id+" 设新口令（至少 6 位）：",""); if(!p) return;
+        if(String(p).length < 6){ toast("太短了，至少 6 位"); return; }
+        await pfRpc("t_platform_update_tenant", {p_master:pfPass(), p_id:id, p_pass:p});
+        toast("口令已更新，记得告诉对方");
+        if(id===adminTenant()) setAdminPass(p);
+      }
+      await pfLoad();
+    }catch(e){ toast("失败："+(e.message||e)); }
+  }
+  async function pfCreate(){
+    var id=(document.getElementById("pfNewId").value||"").trim().toLowerCase();
+    var name=(document.getElementById("pfNewName").value||"").trim();
+    var pass=(document.getElementById("pfNewPass").value||"").trim();
+    var tpl=document.getElementById("pfNewTpl").value;
+    if(!/^[a-z0-9][a-z0-9_-]{1,11}$/.test(id)){ toast("商户编码格式不对：小写字母/数字/下划线/中划线，2–12 位"); return; }
+    if(!name){ toast("给个店名"); return; }
+    if(pass.length<6){ toast("口令至少 6 位"); return; }
+    if(/^(platform|admin|master|root)$/.test(id)){ toast("这个编码是保留字，换一个"); return; }
+    var btn=document.getElementById("pfNewBtn"); btn.disabled=true;
+    try{
+      var r = await pfRpc("t_platform_create_tenant", {p_master:pfPass(), p_id:id, p_name:name, p_pass:pass, p_template: tpl||null});
+      toast("已开号 "+id+"，菜单 "+(r&&r.products||0)+" 款；顾客链接 index.html?t="+id);
+      await pfLoad();
+    }catch(e){ toast("开号失败："+(e.message||e)); }
+    if(document.getElementById("pfNewBtn")) document.getElementById("pfNewBtn").disabled=false;
+  }
+
+
   /* ---------- 顶层渲染 ---------- */
   var app = document.getElementById("app");
   function render(){
@@ -1497,6 +1712,7 @@
       b.classList.toggle("active", b.dataset.view===state.view || (state.view==="login" && b.dataset.view==="admin"));
     });
     if(state.view==="login") renderLogin();
+    else if(state.view==="platform") renderPlatform();
     else if(state.view==="admin") renderAdmin();
     else if(state.view==="landing") renderLanding();
     else renderShop();
@@ -2832,10 +3048,17 @@
       ok:"退出", danger:true
     }).then(function(ok){
       if(!ok) return;
-      clearAuth(); clearAdminPass();
-      if(state.view==="admin"||state.view==="login") state.view="landing";
+      clearAuth(); clearAdminPass(); setPfPass("");
+      state.pfLoaded=false; pfTenants=[]; state.pfErr="";
+      if(state.view==="admin"||state.view==="login"||state.view==="platform") state.view="landing";
       render(); toast("已退出登录");
     });
+  });
+
+  /* 平台运营入口：右上角身份区那一格，任何已登录商户都能点，进去先验超管口令 */
+  document.getElementById("pfBtn").addEventListener("click",function(){
+    state.view="platform"; state.pfLoaded=false; pfTenants=[]; state.pfErr="";
+    render();
   });
 
   /* 链接里的 ?t= 优先：进到别的商户时，把上一个商户的登录态与令牌一并清掉 */
