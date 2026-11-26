@@ -112,22 +112,54 @@
   .ing-name{font-weight:400;font-size:14px;color:var(--ink);letter-spacing:.04em}
   .ing-cat{font-size:10.5px;color:var(--ink-faint);margin-left:9px;font-weight:400;letter-spacing:.06em}
   .ing-meta{margin-top:7px;font-size:11.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 16px;letter-spacing:.02em}
-  /* 豆价计算 */
-  .beam-admin-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .beam-admin{width:100%;min-width:1020px;border-collapse:collapse;font-size:12px;letter-spacing:.02em}
-  .beam-admin th{font-weight:500;color:var(--ink-soft);text-align:center;padding:10px 8px;border-bottom:1px solid var(--line-strong);font-size:11px;letter-spacing:.08em;white-space:nowrap}
-  .beam-admin th.grp{color:var(--ink);letter-spacing:.12em}
-  .beam-admin td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
-  .beam-admin input{width:88px;padding:7px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2);font:inherit;font-size:12px;text-align:center}
-  .beam-admin input:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
-  .beam-num{font-variant-numeric:tabular-nums}
-  .beam-per{color:var(--gold);font-weight:500;font-size:14px}
-  .beam-per small{font-size:10px;font-weight:400;color:var(--ink-soft)}
-  .beam-apply{display:flex;flex-direction:column;gap:5px;align-items:stretch}
-  .beam-admin input[type="text"]{width:120px;text-align:left}
-  .beam-cur{font-size:10.5px;color:var(--ink-faint);line-height:1.5;text-align:left}
-  .beam-apply select{font:inherit;font-size:11px;padding:4px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card-2)}
-  .beam-hint{font-size:11px;color:var(--ink-faint);text-align:left;margin-top:10px;line-height:1.9}
+  /* 豆价计算 · 询比价 */
+  .bean-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .bkpi{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:var(--card)}
+  .bkpi .k{font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint)}
+  .bkpi .v{font-size:21px;line-height:1.25;margin-top:7px;font-variant-numeric:tabular-nums}
+  .bkpi .v small{font-size:11px;color:var(--ink-soft);font-weight:400;margin-left:2px}
+  .bkpi .m{font-size:10.5px;color:var(--ink-faint);margin-top:6px;line-height:1.45;min-height:15px}
+  .bkpi.low .v{color:#3F6B52}
+  .bkpi.high .v{color:#9C4A38}
+  .bkpi.spread .v{color:var(--ink)}
+  .bkpi.na .v{color:var(--ink-faint)}
+  .bean-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);margin-bottom:14px}
+  .bean-chips{display:flex;gap:6px;flex-wrap:wrap}
+  .bean-chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font:inherit;font-size:11.5px;color:var(--ink-soft);cursor:pointer;letter-spacing:.02em;transition:background .15s,color .15s,border-color .15s}
+  .bean-chip:hover{color:var(--ink);border-color:var(--line-strong)}
+  .bean-chip.on{background:var(--ink);color:#f6e7cf;border-color:var(--ink)}
+  .bean-chip .n{opacity:.6;margin-left:5px;font-variant-numeric:tabular-nums}
+  .bean-spacer{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .bean-sort{font:inherit;font-size:11.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink-soft)}
+  .bean-chan{display:flex;gap:8px 26px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:14px}
+  .bean-chan span b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  .bean-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .bean-tbl{width:100%;min-width:1110px;border-collapse:collapse;font-size:12px;letter-spacing:.01em}
+  .bean-tbl th{font-size:10.5px;font-weight:500;color:var(--ink-faint);letter-spacing:.08em;text-align:center;padding:0 6px 9px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+  .bean-tbl td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+  .bean-tbl input,.bean-tbl select{width:100%;box-sizing:border-box;padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12px;text-align:center;color:var(--ink)}
+  .bean-tbl input[type="text"]{text-align:left}
+  .bean-tbl input:focus,.bean-tbl select:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
+  .bean-tbl td.rk{width:34px;font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-faint)}
+  .bean-tbl td.kg{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .bean-tbl td.kg b{font-size:14.5px;color:var(--gold);font-weight:500}
+  .bean-tbl td.kg i{font-size:9.5px;color:var(--ink-faint);font-style:normal;margin-left:1px}
+  .bean-tbl td.cup{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+  .bean-tbl td.cup b{color:var(--ink);font-weight:500}
+  .bean-wr{display:grid;grid-template-columns:1fr auto;gap:5px 6px;align-items:center;min-width:188px}
+  .bean-wr select{font:inherit;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);text-align:left;width:100%;box-sizing:border-box}
+  .bean-wr .btn{padding:5px 9px;font-size:11px;white-space:nowrap}
+  .beam-cur{grid-column:1/-1;font-size:10px;color:var(--ink-faint);text-align:left;line-height:1.45;font-variant-numeric:tabular-nums}
+  .bean-tbl td.cups{font-variant-numeric:tabular-nums;color:var(--ink-soft);white-space:nowrap}
+  .bean-tbl tr.best td{background:rgba(198,148,72,.09)}
+  .bean-tbl tr.best td.kg b{color:#8a5a1f}
+  .bean-tbl td.kg em{font-style:normal;font-size:9.5px;color:#9C4A38;opacity:.85;margin-left:4px}
+  .bean-best{display:inline-block;font-size:9px;padding:2px 5px;border-radius:4px;background:var(--gold);color:#fff;margin-left:5px;letter-spacing:.06em;vertical-align:1px}
+  .bean-tbl tr.pending td.kg,.bean-tbl tr.pending td.cup,.bean-tbl tr.pending td.cups{color:var(--ink-faint)}
+  .bean-tbl .pend{font-size:10.5px;color:var(--ink-faint)}
+  .bean-hint{font-size:11px;color:var(--ink-faint);text-align:left;margin-top:12px;line-height:1.9}
+  .bean-empty{border:1px dashed var(--line);border-radius:10px;padding:26px 20px;text-align:center;font-size:12px;color:var(--ink-faint)}
+  .bean-note{font-size:11.5px;color:var(--ink-faint);margin-bottom:12px}
   .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
   .ing-ops{display:flex;gap:4px;margin-top:10px}
   .ing-ops .btn{background:none;border:none;padding:5px 8px;font-size:10.5px;color:var(--ink-soft);letter-spacing:.1em}
@@ -2510,7 +2542,7 @@
       if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d=[]; } }
       if(d && !Array.isArray(d) && Array.isArray(d.rows)) d=d.rows;
       if(Array.isArray(d) && d.length){
-        state.beans = d.map(function(b){ return {id:String(b.id||("b"+Math.random().toString(36).slice(2,7))), grams:b.grams, dose:b.dose, price:(b.price==null?"":b.price), label:(b.label||"")}; });
+        state.beans = d.map(function(b){ return {id:String(b.id||("b"+Math.random().toString(36).slice(2,7))), grams:b.grams, dose:b.dose, price:(b.price==null?"":b.price), label:(b.label||""), shop:(b.shop||""), ctype:(b.ctype==="电商"||b.ctype==="线下")?b.ctype:""}; });
         try{ localStorage.setItem(BEAN_KEY, JSON.stringify(state.beans)); }catch(e){}
         beanSync.state="ok"; beanSync.at="";
       }else{
@@ -2532,77 +2564,226 @@
     try{ localStorage.setItem(BEAN_NOTE_KEY, JSON.stringify(n)); }catch(e){}
   }
 
+  /* ===== 豆价计算 · 询比价：全表按 ¥/kg 排榜 ===== */
+  var BEAN_TYPES = ["电商","线下"];
+  function beanKg(b){
+    var net = +b.grams>0 ? +b.grams : 0;
+    var p = (b.price===""||b.price==null) ? null : +b.price;
+    if(!(net>0) || p===null || !(p>0)) return 0;
+    return p/net*1000;
+  }
+  function beanTypeOf(b){ return (b.ctype==="电商"||b.ctype==="线下") ? b.ctype : ""; }
+
   function renderBeans(){
     var body=document.getElementById("adminBody");
     var rows=state.beans;
     var targets=db.ings.filter(function(i){ return i.category==="基底" && i.unit==="g"; });
-    var best=null, bestName="";
-    rows.forEach(function(b){
-      var c=beanCalc(b);
-      if(c.per>0 && (best===null||c.per<best)){ best=c.per; bestName=(b.label?(b.label+" "):"")+r2(b.grams)+"g @¥"+r2(c.price); }
+    state.beanFilter = state.beanFilter || "all";
+    state.beanSort = state.beanSort || "kg";
+    var filter=state.beanFilter, sort=state.beanSort;
+
+    var cnt={all:rows.length,ds:0,xx:0,none:0};
+    rows.forEach(function(b){ var t=beanTypeOf(b); if(t==="电商")cnt.ds++; else if(t==="线下")cnt.xx++; else cnt.none++; });
+
+    var list=rows.filter(function(b){
+      if(filter==="all") return true;
+      if(filter==="none") return !beanTypeOf(b);
+      return beanTypeOf(b)===filter;
     });
 
-    var thead='<tr>'+
-      '<th rowspan="2">#</th><th rowspan="2">豆名 / 渠道</th>'+
-      '<th colspan="2" class="grp">咖啡豆克数计算</th>'+
-      '<th colspan="1" class="grp">价格</th>'+
-      '<th colspan="4" class="grp">出杯与单杯豆价</th>'+
-      '<th rowspan="2">应用到配料</th><th rowspan="2"></th>'+
-      '</tr><tr>'+
-      '<th>袋装克数</th><th>单杯粉克数</th>'+
-      '<th>咖啡豆总价</th>'+
-      '<th>可做杯量</th><th>余粉</th><th>单杯豆价</th><th>按整杯算</th>'+
-      '</tr>';
+    function pricedOf(arr){ return arr.filter(function(d){ return d.kg>0; }).sort(function(a,b){ return a.kg-b.kg; }); }
+    function kpiOf(priced){
+      if(!priced.length) return null;
+      var n=priced.length, min=priced[0].kg, max=priced[n-1].kg;
+      var mid = n%2 ? priced[(n-1)/2].kg : (priced[n/2-1].kg+priced[n/2].kg)/2;
+      return {n:n,min:min,max:max,mid:mid,gap:max-min,spread:min>0?(max-min)/min*100:0,minRow:priced[0].b,maxRow:priced[n-1].b};
+    }
+    function kpiHtml(k){
+      var v=function(x){ return x? '¥'+r2(x) : '—'; };
+      var m=function(b){ return b ? esc(b.shop||b.label||"未填货源") : "还没有有效报价"; };
+      if(!k){
+        return '<div class="bkpi na"><div class="k">全表最低 · ¥/kg</div><div class="v">—</div><div class="m">先把每袋的克数和总价填上</div></div>'+
+          '<div class="bkpi na"><div class="k">全表中位 · ¥/kg</div><div class="v">—</div><div class="m">—</div></div>'+
+          '<div class="bkpi na"><div class="k">全表最高 · ¥/kg</div><div class="v">—</div><div class="m">—</div></div>'+
+          '<div class="bkpi na"><div class="k">全表价差</div><div class="v">—</div><div class="m">—</div></div>';
+      }
+      return '<div class="bkpi low"><div class="k">全表最低 · ¥/kg</div><div class="v">'+v(k.min)+'</div><div class="m">'+m(k.minRow)+'</div></div>'+
+        '<div class="bkpi mid"><div class="k">全表中位 · ¥/kg</div><div class="v">'+v(k.mid)+'</div><div class="m">'+k.n+' 份有效报价取中位</div></div>'+
+        '<div class="bkpi high"><div class="k">全表最高 · ¥/kg</div><div class="v">'+v(k.max)+'</div><div class="m">'+m(k.maxRow)+'</div></div>'+
+        '<div class="bkpi spread"><div class="k">全表价差</div><div class="v">'+Math.round(k.spread)+'<small>%</small></div><div class="m">最贵比最省每公斤贵 ¥'+r2(k.gap)+'</div></div>';
+    }
+    function chanStat(t){
+      var arr=rows.filter(function(b){ return beanTypeOf(b)===t && beanKg(b)>0; });
+      if(!arr.length) return null;
+      var kgs=arr.map(beanKg).sort(function(a,b){ return a-b; });
+      var avg=kgs.reduce(function(s,x){ return s+x; },0)/kgs.length;
+      return {n:kgs.length,avg:avg,min:kgs[0],max:kgs[kgs.length-1]};
+    }
+    function chanHtml(){
+      var parts=[], s1=chanStat("电商"), s2=chanStat("线下");
+      parts.push(s1 ? '<span>电商 · '+s1.n+' 份　均价 <b>¥'+r2(s1.avg)+'</b>　¥'+r2(s1.min)+'–¥'+r2(s1.max)+'</span>'
+                    : '<span>电商 · <b>暂无有效报价</b></span>');
+      parts.push(s2 ? '<span>线下 · '+s2.n+' 份　均价 <b>¥'+r2(s2.avg)+'</b>　¥'+r2(s2.min)+'–¥'+r2(s2.max)+'</span>'
+                    : '<span>线下 · <b>暂无有效报价</b></span>');
+      if(s1 && s2){
+        var hi=Math.max(s1.avg,s2.avg), lo=Math.min(s1.avg,s2.avg);
+        var gap=(hi-lo)/hi*100;
+        var cheaper = s1.avg<=s2.avg ? '电商' : '线下';
+        var txt = gap<1 ? '两边均价基本持平' : cheaper+'均价便宜 '+Math.round(gap)+'%';
+        parts.push('<span>结论 · <b>'+txt+'</b></span>');
+      }
+      return parts.join('');
+    }
 
-    var tbody=rows.map(function(b,idx){
-      var c=beanCalc(b);
-      var opts=targets.map(function(i){ return '<option value="'+i.id+'">'+esc(i.name)+'</option>'; }).join("");
-      return '<tr data-brow="'+b.id+'">'+
-        '<td class="beam-num">'+String(idx+1).padStart(2,"0")+'</td>'+
-        '<td><input type="text" data-bid="'+b.id+'" data-bf="label" class="beam-name" value="'+esc(b.label||"")+'" placeholder="例：巴西 SOE"></td>'+
-        '<td><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams)+'"></td>'+
-        '<td><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose)+'"></td>'+
-        '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price)+'"></td>'+
-        '<td class="beam-num" data-bc="cups"><b>'+c.cups+'</b> 杯</td>'+
-        '<td class="beam-num" data-bc="rest">'+(c.dose>0?r2(c.rest)+' g':"—")+'</td>'+
-        '<td data-bc="per">'+(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>')+'</td>'+
-        '<td class="beam-num" data-bc="floor">'+(c.perFloor>0?'¥'+r2(c.perFloor):"—")+'</td>'+
-        '<td><div class="beam-apply">'+
+    var derived=rows.map(function(b,i){ var c=beanCalc(b); return {b:b,c:c,kg:beanKg(b),ord:i}; });
+    var view=derived.filter(function(d){
+      if(filter==="all") return true;
+      if(filter==="none") return !beanTypeOf(d.b);
+      return beanTypeOf(d.b)===filter;
+    });
+    if(sort==="kg"){
+      view.sort(function(x,y){
+        if(x.kg>0 && y.kg>0) return x.kg-y.kg;
+        if(x.kg>0) return -1;
+        if(y.kg>0) return 1;
+        return x.ord-y.ord;
+      });
+    }else if(sort==="cup"){
+      view.sort(function(x,y){
+        var px=x.c.per>0?x.c.per:9e9, py=y.c.per>0?y.c.per:9e9;
+        return px-py;
+      });
+    }else{
+      view.sort(function(x,y){ return y.ord-x.ord; });
+    }
+    var allPriced=pricedOf(derived);
+    var kpi=kpiOf(allPriced);
+    var rankMap={}; allPriced.forEach(function(d,i){ rankMap[d.b.id]=i+1; });
+    var bestId=allPriced.length?allPriced[0].b.id:null;
+
+    var opts=targets.map(function(i){ return '<option value="'+i.id+'">'+esc(i.name)+'</option>'; }).join("");
+
+    function kgCell(d,minKg,isBest){
+      if(!(d.kg>0)) return '<span class="pend">待填</span>';
+      var tag='';
+      if(isBest){ tag='<span class="bean-best">最省</span>'; }
+      else if(minKg>0){
+        var over=(d.kg-minKg)/minKg*100;
+        if(over>=1) tag='<em class="bean-over">+'+Math.round(over)+'%</em>';
+      }
+      return '<b>¥'+r2(d.kg)+'</b><i>/kg</i>'+tag;
+    }
+    function perCell(d){
+      return d.c.per>0 ? '<b>¥'+r2(d.c.per)+'</b>' : '<span class="pend">—</span>';
+    }
+    function cupsCell(d){ return d.c.cups>0 ? d.c.cups+' 杯' : '<span class="pend">—</span>'; }
+
+    var tbody=view.map(function(d){
+      var b=d.b, c=d.c;
+      var cls=[]; if(d.kg>0 && b.id===bestId) cls.push("best"); if(!(d.kg>0)) cls.push("pending");
+      return '<tr data-brow="'+b.id+'"'+(cls.length?' class="'+cls.join(" ")+'"':'')+'>'+
+        '<td class="rk" data-brank>'+((rankMap[b.id]||"—"))+'</td>'+
+        '<td><input type="text" data-bid="'+b.id+'" data-bf="label" value="'+esc(b.label||"")+'" placeholder="豆名，例：巴西 SOE" style="min-width:122px"></td>'+
+        '<td><select data-bid="'+b.id+'" data-bf="ctype" style="width:76px">'+
+          '<option value=""'+(!beanTypeOf(b)?' selected':'')+'>未选</option>'+
+          BEAN_TYPES.map(function(t){ return '<option value="'+t+'"'+(b.ctype===t?' selected':'')+'>'+t+'</option>'; }).join("")+
+        '</select></td>'+
+        '<td><input type="text" data-bid="'+b.id+'" data-bf="shop" value="'+esc(b.shop||"")+'" placeholder="淘宝·店名 / 展会名" style="min-width:126px"></td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams==null?"":b.grams)+'" style="width:70px"></td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose==null?"":b.dose)+'" style="width:70px"></td>'+
+        '<td><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price==null?"":b.price)+'" style="width:78px"></td>'+
+        '<td class="kg" data-bc="kg">'+kgCell(d, allPriced.length?allPriced[0].kg:0, b.id===bestId)+'</td>'+
+        '<td class="cup" data-bc="per">'+perCell(d)+'</td>'+
+        '<td class="cups" data-bc="cups">'+cupsCell(d)+'</td>'+
+        '<td><div class="bean-wr">'+
           '<select data-btarget="'+b.id+'">'+(opts||'<option value="">无可用配料</option>')+'</select>'+
-          '<div class="beam-cur" data-bcur="'+b.id+'"></div>'+
           '<button class="btn sm ghost" data-bapply="'+b.id+'">写入</button>'+
+          '<div class="beam-cur" data-bcur="'+b.id+'"></div>'+
         '</div></td>'+
         '<td><button class="btn sm danger" data-bdel="'+b.id+'">删</button></td>'+
         '</tr>';
     }).join("");
 
+    var thead='<tr>'+
+      '<th>#</th><th>豆名</th><th>渠道</th><th>货源 / 商家</th>'+
+      '<th>袋装 g</th><th>单杯 g</th><th>总价 ¥</th>'+
+      '<th>单价 ¥/kg</th><th>单杯豆价</th><th>可做</th><th>写入配料</th><th></th>'+
+      '</tr>';
+
+    var chipsHtml='<button class="bean-chip'+ (filter==="all"?' on':'') +'" data-bchip="all">全部<span class="n">'+cnt.all+'</span></button>'+
+      '<button class="bean-chip'+ (filter==="电商"?' on':'') +'" data-bchip="电商">电商<span class="n">'+cnt.ds+'</span></button>'+
+      '<button class="bean-chip'+ (filter==="线下"?' on':'') +'" data-bchip="线下">线下<span class="n">'+cnt.xx+'</span></button>'+
+      (cnt.none>0 ? '<button class="bean-chip'+ (filter==="none"?' on':'') +'" data-bchip="none">未选渠道<span class="n">'+cnt.none+'</span></button>' : '');
+
+    var tableHtml = view.length
+      ? '<div class="bean-table-wrap"><table class="bean-tbl"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'
+      : '<div class="bean-empty">'+(rows.length? '当前筛选下没有报价，换个渠道筛选看看。'
+          : '还没有报价。点右上「＋ 加一袋」，把每袋的克数、总价、货源填进来，就能按 ¥/kg 排榜比价。')+'</div>';
+
     body.innerHTML =
-      '<div class="toolbar">'+
-        '<div style="font-size:12px;color:var(--ink-soft);letter-spacing:.02em">'+
-          '单杯豆价 = 总价 × 单杯粉克数 ÷ 袋装克数（精确值）；可做杯量取整，只用来估「这袋还能做几杯」。'+
-          (best!==null?'　当前最低 <b>¥'+r2(best)+'/杯</b>（'+esc(bestName)+'）':'')+
+      '<div id="beanKpis" class="bean-kpis">'+kpiHtml(kpi)+'</div>'+
+      '<div class="bean-bar">'+
+        '<div class="bean-chips">'+chipsHtml+'</div>'+
+        '<div class="bean-spacer">'+
+          '<select class="bean-sort" id="beanSort">'+
+            '<option value="kg"'+(sort==="kg"?' selected':'')+'>按 ¥/kg 低→高</option>'+
+            '<option value="cup"'+(sort==="cup"?' selected':'')+'>按单杯豆价低→高</option>'+
+            '<option value="new"'+(sort==="new"?' selected':'')+'>按录入顺序（新的在上）</option>'+
+          '</select>'+
+          '<button class="btn" id="addBeanRow">＋ 加一袋</button>'+
         '</div>'+
-        '<button class="btn" id="addBeanRow">＋ 加一袋</button>'+
       '</div>'+
-      '<div style="font-size:11.5px;color:var(--ink-faint);margin:0 0 10px">备忘 · 密封罐重 '+
+      '<div class="bean-chan" id="beanChan">'+chanHtml()+'</div>'+
+      tableHtml+
+      '<div class="bean-note">备忘 · 密封罐重 '+
         '<input type="number" id="canWeight" min="0" step="1" value="'+esc(beanNote().can)+'" '+
         'style="width:62px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card-2);font:inherit;font-size:11.5px;text-align:center"> g'+
         '　（只记在这台浏览器里，不参与计算）</div>'+
-      '<div class="beam-admin-wrap"><table class="beam-admin"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'+
-      '<div class="beam-hint">'+
-        '· <b>袋装克数</b>：包装上标的净豆重量，直接填（要扣罐就自己先减好，这里不扣）。<br>'+
-        '· <b>单杯粉克数</b>：浓缩 18g、手冲 15g 这类，按你的配方填。<br>'+
-        '· <b>写入配料</b>：这是比价表——一个配料只存一个采购价，写入＝把选定的那袋抄进去（覆盖前会弹确认，写着旧价→新价）。要几款豆同时上菜单，得先把它们分别建成配料。<br>'+
-        '· 本表存在云端（表 bean_calc，同一个口令，anon 读不到），换电脑登录后自动带出；<b>豆名也一起存云端</b>。<br>'+
-        '· 数据状态：<span data-bsync>'+esc(beanSyncText())+'</span>'+
+      '<div class="bean-hint">'+
+        '· <b>单价 ¥/kg 是主口径</b>：总价 ÷ 袋装克数 × 1000，不受粉量和杯数影响，不同袋重、不同粉量能直接横比。<br>'+
+        '· <b>单杯豆价</b> = 总价 × 单杯粉克数 ÷ 袋装克数，只在这个配方下成立；粉量一改就会变，所以别拿它跨豆比。<br>'+
+        '· <b>渠道 / 货源</b>：渠道只分「电商」「线下」两类做横向对照（电商＝淘宝/抖音/1688 这类，线下＝展会/批发商/门店）；货源填具体店名或展位，方便回头复购。<br>'+
+        '· <b>排名与结论</b>：只统计「克数 + 总价」都填全的行；缺价的排在最后、不进最低/中位/最高。<br>'+
+        '· <b>写入配料</b>：一个配料只存一个采购价，写入＝把这一袋抄进去（会先弹旧价→新价确认）。几款豆要同时上菜单，得分别建成配料。<br>'+
+        '· 存云端（表 bean_calc，anon 读不到），换电脑登录后自动带出。数据状态：<span data-bsync>'+esc(beanSyncText())+'</span>'+
       '</div>';
+
+    /* ---- 局部刷新：只重写派生数值与高亮，不重排、不丢焦点 ---- */
+    function refreshNumbers(){
+      var arr=rows.map(function(b,i){ var c=beanCalc(b); return {b:b,c:c,kg:beanKg(b),ord:i}; });
+      var priced=pricedOf(arr);
+      var k=kpiOf(priced);
+      var best=priced.length?priced[0].b.id:null;
+      var rk={}; priced.forEach(function(d,i){ rk[d.b.id]=i+1; });
+      var kb=document.getElementById("beanKpis"); if(kb) kb.innerHTML=kpiHtml(k);
+      var cb=document.getElementById("beanChan"); if(cb) cb.innerHTML=chanHtml();
+      arr.forEach(function(d){
+        var tr=body.querySelector('[data-brow="'+d.b.id+'"]');
+        if(!tr) return;
+        var kgc=tr.querySelector('[data-bc="kg"]'), perc=tr.querySelector('[data-bc="per"]'), cupc=tr.querySelector('[data-bc="cups"]'), rkc=tr.querySelector('[data-brank]');
+        if(kgc) kgc.innerHTML=kgCell(d, priced.length?priced[0].kg:0, d.b.id===best);
+        if(perc) perc.innerHTML=perCell(d);
+        if(cupc) cupc.innerHTML=cupsCell(d);
+        if(rkc) rkc.textContent=(rk[d.b.id]||"—");
+        tr.classList.toggle("best", d.kg>0 && d.b.id===best);
+        tr.classList.toggle("pending", !(d.kg>0));
+      });
+    }
 
     document.getElementById("canWeight").addEventListener("input",function(e){
       var n=beanNote(); n.can=e.target.value; saveBeanNote(n);
     });
 
+    var sortSel=document.getElementById("beanSort");
+    if(sortSel) sortSel.addEventListener("change",function(){ state.beanSort=sortSel.value; renderBeans(); });
+
+    body.querySelectorAll("[data-bchip]").forEach(function(btn){
+      btn.addEventListener("click",function(){ state.beanFilter=btn.dataset.bchip; renderBeans(); });
+    });
+
     document.getElementById("addBeanRow").addEventListener("click",function(){
-      var nb={id:"b"+Date.now(), grams:250, dose:18, price:"", label:""};
+      var nb={id:"b"+Date.now(), grams:250, dose:18, price:"", label:"", shop:"",
+        ctype:(filter==="电商"||filter==="线下")?filter:""};
       state.beans.push(nb);
       saveBeans(); renderBeans();
       var tr=document.querySelector('[data-brow="'+nb.id+'"]');
@@ -2614,30 +2795,23 @@
         var inp=tr.querySelector('[data-bf="label"]');
         if(inp) setTimeout(function(){ inp.focus(); },300);
       }
-      toast("已加一袋（第 "+state.beans.length+" 行），滚到表格底部了");
+      toast("已加一袋（第 "+state.beans.length+" 行），填完豆名和货源就能进榜");
     });
-
-    function refreshRow(id){
-      var b=state.beans.filter(function(x){ return x.id===id; })[0];
-      if(!b) return;
-      var c=beanCalc(b);
-      var tr=document.querySelector('[data-brow="'+id+'"]');
-      if(!tr) return;
-      var map={cups:'<b>'+c.cups+'</b> 杯', rest:(c.dose>0?r2(c.rest)+' g':"—"),
-        per:(c.per>0?'<span class="beam-per">¥'+r2(c.per)+'</span>':'<span style="opacity:.5">未填价</span>'),
-        floor:(c.perFloor>0?'¥'+r2(c.perFloor):"—")};
-      Object.keys(map).forEach(function(k){
-        var cell=tr.querySelector('[data-bc="'+k+'"]');
-        if(cell) cell.innerHTML=map[k];
-      });
-    }
 
     body.querySelectorAll("[data-bf]").forEach(function(inp){
       inp.addEventListener("input",function(){
         var b=state.beans.filter(function(x){ return x.id===inp.dataset.bid; })[0];
         if(!b) return;
         b[inp.dataset.bf]=inp.value;
-        saveBeans(); refreshRow(inp.dataset.bid);
+        saveBeans(); refreshNumbers();
+      });
+      /* 改完一格才重排：焦点还在表里就等它离开，避免抢焦点；焦点已到外面则稍等，让这次点击先落地 */
+      inp.addEventListener("change",function(){
+        var ae=document.activeElement;
+        if(ae && ae.closest && ae.closest(".bean-tbl")) return;
+        setTimeout(function(){
+          if(state.view==="admin" && state.tab==="beans") renderBeans();
+        },180);
       });
     });
 
@@ -2684,6 +2858,8 @@
         var target=ing(lid);
         if(!target) return;
         var label=(row.label||"").trim();
+        var shop=(row.shop||"").trim();
+        var full=label && shop ? (label+" · "+shop) : (label||shop);
         var same=(+target.packQty||0)==c.net && (+target.packPrice||0)==c.price;
         if(same){ toast("「"+target.name+"」当前就是这个价，未改动"); return; }
         if(hasCost(target)){
@@ -2691,17 +2867,17 @@
           var newTxt=r2(c.net)+target.unit+" @ ¥"+r2(c.price)+"（¥"+r2(c.price/c.net)+" / "+target.unit+"）";
           var ok=await askConfirm({
             title:"覆盖「"+target.name+"」的采购价",
-            body:"当前：<b>"+oldTxt+"</b><br>改为：<b>"+newTxt+"</b>"+(label?"<br>豆：<b>"+esc(label)+"</b>":"")+
+            body:"当前：<b>"+oldTxt+"</b><br>改为：<b>"+newTxt+"</b>"+(full?"<br>豆：<b>"+esc(full)+"</b>":"")+
                  "<br>一个配料只能有一个采购价，换豆就是覆盖；改完饮品成本会跟着变。",
             ok:"覆盖"
           });
           if(!ok) return;
         }
-        target.packQty=c.net; target.packPrice=c.price; target.beanLabel=label;
+        target.packQty=c.net; target.packPrice=c.price; target.beanLabel=full;
         save(); render();
-        var r=await saveIngCost(lid, c.net, c.price, label);
+        var r=await saveIngCost(lid, c.net, c.price, full);
         if(!r.ok){ alert(r.msg); return; }
-        toast("已把 "+(label?label+" ":"")+r2(c.net)+"g @ ¥"+r2(c.price)+" 写进「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
+        toast("已把 "+(full?full+" ":"")+r2(c.net)+"g @ ¥"+r2(c.price)+" 写进「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
         renderBeans();
       });
     });
