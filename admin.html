@@ -1323,11 +1323,14 @@
     try{
       var j=JSON.parse(localStorage.getItem(AUTH_KEY)||"null");
       if(!j||!j.exp||j.exp<Date.now()){ localStorage.removeItem(AUTH_KEY); return null; }
+      /* 令牌必须绑定当前商户；旧版无租户令牌、或切到别的商户链接，一律失效 */
+      if(!j.t || j.t!==adminTenant()){ localStorage.removeItem(AUTH_KEY); return null; }
       return j;
     }catch(e){ return null; }
   }
-  function isAuthed(){ return !!readAuth(); }
-  function setAuth(u){ try{ localStorage.setItem(AUTH_KEY, JSON.stringify({u:u, exp:Date.now()+AUTH_HOURS*3600*1000, at:Date.now()})); }catch(e){} }
+  /* 除了令牌，还必须握着口令：多租户下每次读写都要带口令，令牌单独存在没有意义 */
+  function isAuthed(){ return !!readAuth() && !!adminPass(); }
+  function setAuth(u){ try{ localStorage.setItem(AUTH_KEY, JSON.stringify({u:u, t:adminTenant(), exp:Date.now()+AUTH_HOURS*3600*1000, at:Date.now()})); }catch(e){} }
   function clearAuth(){ try{ localStorage.removeItem(AUTH_KEY); }catch(e){} }
 
   function applyAuthUI(){
@@ -2818,6 +2821,18 @@
       render(); toast("已退出登录");
     });
   });
+
+  /* 链接里的 ?t= 优先：进到别的商户时，把上一个商户的登录态与令牌一并清掉 */
+  (function(){
+    try{
+      var q=new URLSearchParams(location.search).get("t");
+      if(!q || !/^[a-z0-9][a-z0-9_-]{1,11}$/.test(q)) return;
+      var cur="";
+      try{ cur=sessionStorage.getItem("cafe_admin_tenant")||""; }catch(e){}
+      if(cur && cur!==q){ clearAuth(); clearAdminPass(); }
+      setAdminTenant(q);
+    }catch(e){}
+  })();
 
   app.innerHTML = '<div class="empty" style="padding:80px 0">加载中…</div>';
   boot().then(function(){ render(); }).catch(function(){ render(); });

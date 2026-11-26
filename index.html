@@ -411,9 +411,19 @@
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
     sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[] };
 
-  /* ---------- 本机存储：购物车 / 匿名访客 / 订单 ---------- */
-  var CART_KEY="cafe_cart_v1", VIS_KEY="cafe_visitor_v1", ORD_KEY="cafe_orders_v1";
-  var BUYER_KEY="cafe_buyer_v1";
+  /* ---------- 本机存储：购物车 / 匿名访客 / 订单 / 顾客身份，全部按商户分键 ---------- */
+  var CART_KEY="cafe_cart_v1_"+TENANT, VIS_KEY="cafe_visitor_v1_"+TENANT, ORD_KEY="cafe_orders_v1_"+TENANT;
+  var BUYER_KEY="cafe_buyer_v1_"+TENANT;
+  /* 老版本没有租户后缀：默认店 bj01 首次访问时把旧键搬过来，避免购物车/身份丢失 */
+  (function migrateLegacy(){
+    if(TENANT!=="bj01") return;
+    [["cafe_cart_v1",CART_KEY],["cafe_visitor_v1",VIS_KEY],["cafe_orders_v1",ORD_KEY],["cafe_buyer_v1",BUYER_KEY]].forEach(function(p){
+      try{
+        var old=localStorage.getItem(p[0]);
+        if(old && !localStorage.getItem(p[1])){ localStorage.setItem(p[1], old); }
+      }catch(e){}
+    });
+  })();
   var loginMode="lazy";   /* off=完全不问 / lazy=只在查订单时问 / strict=下单前必须填 */
   function readLS(k,d){ try{ var r=JSON.parse(localStorage.getItem(k)); return r==null?d:r; }catch(e){ return d; } }
   function writeLS(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
