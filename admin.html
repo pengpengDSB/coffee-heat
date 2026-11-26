@@ -1645,7 +1645,7 @@
           setAuth(u); setAdminPass(pw);
           state.view="admin"; state.selProduct=null;
           render();
-          loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ return loadQuotesCloud(); }).then(function(){ if(state.view==="admin") render(); });
+          loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ return loadQuotesCloud(); }).then(function(){ return loadHistCloud(); }).then(function(){ if(state.view==="admin") render(); });
           toast("已登录 "+u+"，欢迎回来");
         })();
       });
@@ -3053,6 +3053,41 @@
     var h=qHist(); h.unshift(rec);
     try{ localStorage.setItem(Q_HIST_KEY, JSON.stringify(h.slice(0,300))); }catch(e){}
   }
+  function qHistMerge(local, cloud){
+    var seen={}, out=[];
+    (cloud||[]).forEach(function(r){ if(r && r.t && !seen[r.t]){ seen[r.t]=1; out.push(r); } });
+    (local||[]).forEach(function(r){ if(r && r.t && !seen[r.t]){ seen[r.t]=1; out.push(r); } });
+    out.sort(function(a,b){ return b.t-a.t; });
+    return out.slice(0,300);
+  }
+  function qHistSaveLocal(arr){
+    try{ localStorage.setItem(Q_HIST_KEY, JSON.stringify(arr.slice(0,300))); }catch(e){}
+  }
+  async function loadHistCloud(){
+    if(!supaReady() || !sb || !adminPass()) return;
+    try{
+      var r=await sb.rpc("t_admin_list_hist", {p_tenant:adminTenant(), p_pass:adminPass()});
+      if(r.error){ if(!rpcMissing(r.error)) console.warn("读取价格历史失败", r.error); return; }
+      var d=r.data;
+      if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d=[]; } }
+      if(d && !Array.isArray(d) && Array.isArray(d.rows)) d=d.rows;
+      var cloud=Array.isArray(d)?d:[];
+      var local=qHist();
+      if(cloud.length) qHistSaveLocal(qHistMerge(local, cloud));
+      else if(local.length){
+        /* 云端还空、本机已有历史 → 一次性迁上去 */
+        await sb.rpc("t_admin_save_hist", {p_tenant:adminTenant(), p_pass:adminPass(), p_data: local.slice(0,100)});
+      }
+    }catch(e){ console.warn("读取价格历史失败", e); }
+  }
+  async function pushHistCloud(rec){
+    if(!supaReady() || !sb || !adminPass()) return;
+    try{
+      var r=await sb.rpc("t_admin_add_hist", {p_tenant:adminTenant(), p_pass:adminPass(), p_rec: rec});
+      if(r.error && !rpcMissing(r.error)) console.warn("价格历史上云失败", r.error);
+    }catch(e){}
+  }
+
   function qHistLast(group,unit){
     var h=qHist();
     for(var i=0;i<h.length;i++){ if(h[i].group===group && h[i].unit===unit) return h[i]; }
@@ -3434,9 +3469,10 @@
         save(); render();
         var r=await saveIngCost(t.id, qty, price, label);
         if(!r.ok){ alert(r.msg); return; }
-        qHistPush({t:Date.now(), group:q.group, unit:q.unit, ingName:t.name, shop:q.shop||"", brand:q.brand||"",
+        var hrec={t:Date.now(), group:q.group, unit:q.unit, ingName:t.name, shop:q.shop||"", brand:q.brand||"",
           price:price, qty:qty, unitPrice:price/qty*1000,
-          date:(new Date().getMonth()+1)+"-"+new Date().getDate()});
+          date:(new Date().getMonth()+1)+"-"+new Date().getDate()};
+        qHistPush(hrec); pushHistCloud(hrec);
         toast("已写入「"+t.name+"」：¥"+r2(price/qty*1000)+qUnitTag(q.unit)+"（"+r2(price)+" / "+r2(qty)+q.unit+"）");
         renderQuotes();
       });
