@@ -1418,11 +1418,17 @@
   var app=document.getElementById("app");
   /* 商户被平台停用或到期时：顾客端只剩一张「暂停营业」页，菜单与下单都不再露出 */
   function renderClosed(){
-    app.innerHTML='<div class="page" style="padding-top:64px">'+
-      '<div class="card" style="padding:34px 22px;text-align:center">'+'<div class="kicker" style="letter-spacing:2px;color:#8a6b4f">CLOSED</div>'+
-      '<h2 style="margin:10px 0 8px;font-size:22px">本店暂停营业</h2>'+
-      '<div class="foot" style="margin-top:6px">菜单与下单已关闭，等店主恢复后刷新本页即可。</div>'+
-      '</div></div>';
+    var cb=document.getElementById("cartbar"); if(cb) cb.innerHTML="";
+    var tb=document.getElementById("tabbar"); if(tb) tb.innerHTML="";
+    app.innerHTML='<div class="page" style="padding-top:96px;text-align:center">'+
+      '<div style="font-size:10px;letter-spacing:.24em;color:var(--gray-2,#8a7a68)">CLOSED</div>'+
+      '<div style="margin:16px 0 12px;font-size:25px;font-weight:600;color:var(--ink,#17110c)">本店暂停营业</div>'+
+      '<div style="font-size:11.5px;line-height:2;color:var(--gray-2,#8a7a68);max-width:250px;margin:0 auto">'+
+        '菜单与下单暂时关闭。<br>店主恢复后刷新本页即可。</div>'+
+      '<div style="margin-top:26px"><button id="closedReload" style="border:1px solid rgba(0,0,0,.18);background:none;border-radius:999px;padding:9px 20px;font-size:11.5px;color:#3a2e24;cursor:pointer">刷新试试</button></div>'+
+      '</div>';
+    var b=document.getElementById("closedReload");
+    if(b) b.addEventListener("click",function(){ location.reload(); });
   }
   function render(){
     if(state.closed){ renderClosed(); return; }
