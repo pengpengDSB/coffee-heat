@@ -159,6 +159,45 @@
   .bean-tbl .pend{font-size:10.5px;color:var(--ink-faint)}
   .bean-hint{font-size:11px;color:var(--ink-faint);text-align:left;margin-top:12px;line-height:1.9}
   .bean-empty{border:1px dashed var(--line);border-radius:10px;padding:26px 20px;text-align:center;font-size:12px;color:var(--ink-faint)}
+  /* 窄窗口：一袋豆一张卡 */
+  .bean-cards{display:flex;flex-direction:column;gap:12px}
+  .bcard{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px 14px}
+  .bcard.best{background:rgba(198,148,72,.075);border-color:rgba(198,148,72,.45)}
+  .bcard.pending{opacity:.94}
+  .bcard-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .bcard-rk{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums;min-width:12px}
+  .bcard-name{flex:1;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12.5px;color:var(--ink)}
+  .bcard-type{flex:0 0 82px;padding:7px 4px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:11.5px;color:var(--ink)}
+  .bcard-name:focus,.bcard-type:focus,.bcard-shop:focus,.bf input:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
+  .bcard-kg{display:flex;align-items:baseline;gap:5px;margin:2px 0 9px}
+  .bcard-kg b{font-size:26px;line-height:1.12;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums}
+  .bcard-kg .pend{font-size:16px;color:var(--ink-faint);font-weight:400}
+  .bcard-kg i{font-style:normal;font-size:10px;color:var(--ink-faint)}
+  .bcard-kg em{font-style:normal;font-size:10.5px;color:#9C4A38;margin-left:2px}
+  .bcard-shop{width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12px;color:var(--ink);margin-bottom:9px}
+  .bcard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .bf{display:flex;flex-direction:column;gap:4px}
+  .bf span{font-size:9.5px;color:var(--ink-faint);letter-spacing:.06em}
+  .bf input{width:100%;box-sizing:border-box;padding:7px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12.5px;text-align:center;color:var(--ink);font-variant-numeric:tabular-nums}
+  .bcard-foot{display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--ink-soft);margin-bottom:9px}
+  .bcard-foot .btn{margin-left:auto}
+  .bcard-per b,.bcard-cups b{color:var(--ink);font-weight:500}
+  .bcard-wr{min-width:0}
+  @media(max-width:999px){
+    .bean-kpis{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .bkpi{padding:11px 12px}
+    .bkpi .v{font-size:19px}
+    .bkpi .m{font-size:10px;min-height:0}
+    .bean-bar{gap:8px;padding:10px 0;margin-bottom:12px}
+    .bean-spacer{width:100%;margin-left:0;justify-content:space-between}
+    .bean-chan{flex-direction:column;gap:2px;line-height:1.7}
+    .bean-hint{font-size:10.5px}
+    .bean-sort{flex:1;min-width:0;max-width:340px}
+  }
+  /* 平板这档：两列卡片，别把一袋豆拉成一整条 */
+  @media(min-width:620px) and (max-width:999px){
+    .bean-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  }
   .bean-note{font-size:11.5px;color:var(--ink-faint);margin-bottom:12px}
   .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
   .ing-ops{display:flex;gap:4px;margin-top:10px}
@@ -2574,6 +2613,21 @@
   }
   function beanTypeOf(b){ return (b.ctype==="电商"||b.ctype==="线下") ? b.ctype : ""; }
 
+  /* 窄窗口（手机 / 平板竖屏 / 电脑半屏）走卡片版，宽窗口走表格版 */
+  var BEAN_NARROW_W = 1000;
+  var beanNarrowState=null, beanResizeT=null;
+  function beanIsNarrow(){
+    return (window.innerWidth||document.documentElement.clientWidth||0) < BEAN_NARROW_W;
+  }
+  window.addEventListener("resize",function(){
+    if(!(state.view==="admin" && state.tab==="beans")) return;
+    clearTimeout(beanResizeT);
+    beanResizeT=setTimeout(function(){
+      var n=beanIsNarrow();
+      if(n!==beanNarrowState){ beanNarrowState=n; renderBeans(); }
+    },220);
+  });
+
   function renderBeans(){
     var body=document.getElementById("adminBody");
     var rows=state.beans;
@@ -2581,6 +2635,7 @@
     state.beanFilter = state.beanFilter || "all";
     state.beanSort = state.beanSort || "kg";
     var filter=state.beanFilter, sort=state.beanSort;
+    var narrow=beanIsNarrow(); beanNarrowState=narrow;
 
     var cnt={all:rows.length,ds:0,xx:0,none:0};
     rows.forEach(function(b){ var t=beanTypeOf(b); if(t==="电商")cnt.ds++; else if(t==="线下")cnt.xx++; else cnt.none++; });
@@ -2704,6 +2759,38 @@
         '</tr>';
     }).join("");
 
+    var cards=view.map(function(d){
+      var b=d.b, isBest=(d.kg>0 && b.id===bestId);
+      var cls="bcard"; if(isBest) cls+=" best"; if(!(d.kg>0)) cls+=" pending";
+      return '<div class="'+cls+'" data-brow="'+b.id+'">'+
+        '<div class="bcard-top">'+
+          '<span class="bcard-rk" data-brank>'+((rankMap[b.id]||"—"))+'</span>'+
+          '<input type="text" class="bcard-name" data-bid="'+b.id+'" data-bf="label" value="'+esc(b.label||"")+'" placeholder="豆名，例：巴西 SOE">'+
+          '<select class="bcard-type" data-bid="'+b.id+'" data-bf="ctype">'+
+            '<option value=""'+(!beanTypeOf(b)?' selected':'')+'>渠道</option>'+
+            BEAN_TYPES.map(function(t){ return '<option value="'+t+'"'+(b.ctype===t?' selected':'')+'>'+t+'</option>'; }).join("")+
+          '</select>'+
+        '</div>'+
+        '<div class="bcard-kg" data-bc="kg">'+kgCell(d, allPriced.length?allPriced[0].kg:0, isBest)+'</div>'+
+        '<input type="text" class="bcard-shop" data-bid="'+b.id+'" data-bf="shop" value="'+esc(b.shop||"")+'" placeholder="货源：淘宝·店名 / 展会名">'+
+        '<div class="bcard-grid">'+
+          '<label class="bf"><span>袋装 g</span><input type="number" data-bid="'+b.id+'" data-bf="grams" min="0" step="1" value="'+esc(b.grams==null?"":b.grams)+'"></label>'+
+          '<label class="bf"><span>单杯 g</span><input type="number" data-bid="'+b.id+'" data-bf="dose" min="0" step="1" value="'+esc(b.dose==null?"":b.dose)+'"></label>'+
+          '<label class="bf"><span>总价 ¥</span><input type="number" data-bid="'+b.id+'" data-bf="price" min="0" step="0.01" value="'+esc(b.price==null?"":b.price)+'"></label>'+
+        '</div>'+
+        '<div class="bcard-foot">'+
+          '<span class="bcard-per">单杯 <span data-bc="per">'+perCell(d)+'</span></span>'+
+          '<span class="bcard-cups">可做 <span data-bc="cups">'+cupsCell(d)+'</span></span>'+
+          '<button class="btn sm danger" data-bdel="'+b.id+'">删</button>'+
+        '</div>'+
+        '<div class="bean-wr bcard-wr">'+
+          '<select data-btarget="'+b.id+'">'+(opts||'<option value="">无可用配料</option>')+'</select>'+
+          '<button class="btn sm ghost" data-bapply="'+b.id+'">写入</button>'+
+          '<div class="beam-cur" data-bcur="'+b.id+'"></div>'+
+        '</div>'+
+        '</div>';
+    }).join("");
+
     var thead='<tr>'+
       '<th>#</th><th>豆名</th><th>渠道</th><th>货源 / 商家</th>'+
       '<th>袋装 g</th><th>单杯 g</th><th>总价 ¥</th>'+
@@ -2715,10 +2802,15 @@
       '<button class="bean-chip'+ (filter==="线下"?' on':'') +'" data-bchip="线下">线下<span class="n">'+cnt.xx+'</span></button>'+
       (cnt.none>0 ? '<button class="bean-chip'+ (filter==="none"?' on':'') +'" data-bchip="none">未选渠道<span class="n">'+cnt.none+'</span></button>' : '');
 
-    var tableHtml = view.length
-      ? '<div class="bean-table-wrap"><table class="bean-tbl"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>'
-      : '<div class="bean-empty">'+(rows.length? '当前筛选下没有报价，换个渠道筛选看看。'
-          : '还没有报价。点右上「＋ 加一袋」，把每袋的克数、总价、货源填进来，就能按 ¥/kg 排榜比价。')+'</div>';
+    var listHtml;
+    if(view.length){
+      listHtml = narrow
+        ? '<div class="bean-cards">'+cards+'</div>'
+        : '<div class="bean-table-wrap"><table class="bean-tbl"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>';
+    }else{
+      listHtml = '<div class="bean-empty">'+(rows.length? '当前筛选下没有报价，换个渠道筛选看看。'
+          : '还没有报价。点「＋ 加一袋」，把每袋的克数、总价、货源填进来，就能按 ¥/kg 排榜比价。')+'</div>';
+    }
 
     body.innerHTML =
       '<div id="beanKpis" class="bean-kpis">'+kpiHtml(kpi)+'</div>'+
@@ -2734,7 +2826,7 @@
         '</div>'+
       '</div>'+
       '<div class="bean-chan" id="beanChan">'+chanHtml()+'</div>'+
-      tableHtml+
+      listHtml+
       '<div class="bean-note">备忘 · 密封罐重 '+
         '<input type="number" id="canWeight" min="0" step="1" value="'+esc(beanNote().can)+'" '+
         'style="width:62px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card-2);font:inherit;font-size:11.5px;text-align:center"> g'+
