@@ -3480,6 +3480,19 @@
     }
 
     /* 行内编辑 */
+    function paintQBtn(q){
+      var btn=body.querySelector('[data-qapply="'+q.id+'"]');
+      if(!btn) return;
+      var t=ing(q.ingId);
+      var same = t && hasCost(t) && t.unit===q.unit && (+t.packQty||0)==(+q.qty||0) && (+t.packPrice||0)==(+q.price||0);
+      btn.textContent = same ? "在用" : "写入";
+      btn.classList.toggle("on-use", !!same);
+      if(!t) btn.title="先选要写入的配料";
+      else if(same) btn.title="✓ 这条报价就是「"+t.name+"」的当前采购价，点写入不会有改动";
+      else if(t.unit!==q.unit) btn.title="「"+t.name+"」按 "+t.unit+" 计价，这条按 "+q.unit+" 计价，先改成同一单位再写";
+      else if(!hasCost(t)) btn.title="把这条报价写成「"+t.name+"」的采购价 · 它还没填过采购价，直接写入";
+      else btn.title="把这条报价写成「"+t.name+"」的采购价 · 现价 ¥"+(unitCostOf(t)<0.01?unitCostOf(t).toFixed(4):r2(unitCostOf(t)))+"/"+t.unit+"；会先确认旧价 → 新价";
+    }
     body.querySelectorAll("[data-qf]").forEach(function(inp){
       inp.addEventListener("input",function(){
         var q=state.quotes.filter(function(x){ return x.id===inp.dataset.qid; })[0];
@@ -3496,6 +3509,7 @@
           }
           var cur=tr.querySelector('[data-qcur="'+q.id+'"]');
           if(cur) cur.textContent=curIng(q);
+          paintQBtn(q);
         }
       });
       inp.addEventListener("change",function(){
@@ -3514,7 +3528,7 @@
           : (hasCost(t) ? curIng(q)+"；点写入会先确认旧价 → 新价"
                         : curIng(q)+"；还没填过价格，点写入直接记为这条报价");
         sel.title=txt;
-        var ab=body.querySelector('[data-qapply="'+q.id+'"]'); if(ab) ab.title=txt;
+        paintQBtn(q);
         var cur=body.querySelector('[data-qcur="'+q.id+'"]');
         if(cur) cur.textContent=curIng(q);
       }
@@ -3544,6 +3558,7 @@
         if(t.unit!==q.unit){ alert("单位对不上：「"+t.name+"」按 "+t.unit+" 计价，这条报价按 "+q.unit+" 计价。不同单位不换算，请把报价改成同一单位。"); return; }
         var qty=+q.qty, price=+q.price;
         var label=(q.brand||"").trim()+(q.shop?" · "+q.shop:"");
+        if((+t.packQty||0)==qty && (+t.packPrice||0)==price){ toast("「"+t.name+"」当前就是这个价，未改动"); return; }
         if(hasCost(t)){
           var oldTxt=r2(t.packQty)+t.unit+" @ ¥"+r2(t.packPrice)+"（¥"+r2(unitCostOf(t))+" / "+t.unit+"）";
           var newTxt=r2(qty)+t.unit+" @ ¥"+r2(price)+"（¥"+r2(price/qty)+" / "+t.unit+"）";
