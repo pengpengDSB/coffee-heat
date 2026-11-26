@@ -1357,7 +1357,7 @@
   function loginFormHTML(){
     return '<form id="lgform" class="lgform" autocomplete="off">'+
       '<div class="lgfield" id="lgTenantField"><label for="lgTenant">商户编码</label>'+
-        '<input id="lgTenant" type="text" placeholder="如 bj01" value="bj01" spellcheck="false" autocapitalize="off"></div>'+
+        '<input id="lgTenant" type="text" placeholder="如 bj01" value="'+adminTenant()+'" spellcheck="false" autocapitalize="off"></div>'+
       '<div class="lgfield"><label for="lgPass">口令</label>'+
         '<input id="lgPass" type="password" placeholder="商户登录口令"></div>'+
       '<div class="lgerr" id="lgErr"></div>'+
