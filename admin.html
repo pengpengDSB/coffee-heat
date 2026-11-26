@@ -198,6 +198,48 @@
   @media(min-width:620px) and (max-width:999px){
     .bean-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
   }
+  /* ---- 辅料比价 ---- */
+  .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .qp-lead{flex:1;min-width:240px;font-size:11.5px;line-height:1.8;color:var(--ink-soft)}
+  .qp-lead b{color:var(--ink);font-weight:500}
+  .qp-sum{display:grid;grid-template-columns:repeat(3,1fr) 1.7fr;gap:10px;margin-bottom:16px}
+  .qps{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:11px 13px}
+  .qps .k{font-size:10px;letter-spacing:.1em;color:var(--ink-faint)}
+  .qps .v{font-size:19px;margin-top:6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qps .v small{font-size:10.5px;color:var(--ink-soft);margin-left:3px}
+  .qps.wide .v{font-size:15px}
+  .qps .m{font-size:10px;color:var(--ink-faint);margin-top:4px;line-height:1.5}
+  .qp-form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:14px;margin-bottom:16px}
+  .qpf{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .qpf label{font-size:10px;color:var(--ink-faint);letter-spacing:.08em}
+  .qpf input,.qpf select{font:inherit;font-size:12px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);color:var(--ink);width:100%;box-sizing:border-box}
+  .qpf input:focus,.qpf select:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
+  .qpf-btn{grid-column:1/-1;flex-direction:row;gap:8px;align-items:center}
+  .qg{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:14px 16px;margin-bottom:14px}
+  .qg-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .qg-name{font-size:15px;color:var(--ink);letter-spacing:.02em}
+  .qg-unit{font-size:10px;color:var(--ink-faint);margin-left:8px;letter-spacing:.06em;font-weight:400}
+  .qg-stat{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--ink-soft);margin-left:auto;font-variant-numeric:tabular-nums}
+  .qg-stat b{color:var(--ink);font-weight:500}
+  .qg-last{color:var(--ink-faint)}
+  .qg-tbl{min-width:1000px}
+  .qp-shops{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:14px 16px;margin-top:6px}
+  .qp-sub{font-size:11px;color:var(--ink);letter-spacing:.06em;margin-bottom:10px}
+  .qp-sub span{color:var(--ink-faint);font-size:10px;letter-spacing:0;margin-left:6px}
+  .qshop{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .qshop-name{flex:0 0 200px;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qshop-name i{font-style:normal;font-size:10px;color:var(--ink-faint);margin-left:6px}
+  .qshop input{flex:1;font:inherit;font-size:11.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);color:var(--ink-soft)}
+  @media(max-width:999px){
+    .qp-sum{grid-template-columns:repeat(3,1fr);gap:8px}
+    .qps{padding:10px}
+    .qps.wide{grid-column:1/-1}
+    .qp-form{grid-template-columns:1fr 1fr}
+    .qg{padding:12px 13px}
+    .qg-stat{margin-left:0;gap:10px 14px}
+    .qshop{flex-wrap:wrap;gap:4px}
+    .qshop-name{flex:0 0 100%}
+  }
   .bean-note{font-size:11.5px;color:var(--ink-faint);margin-bottom:12px}
   .ing-kcal{font-weight:400;color:var(--gold);font-size:13px}
   .ing-ops{display:flex;gap:4px;margin-top:10px}
@@ -1313,6 +1355,7 @@
     heroStyle:(function(){ try{ return localStorage.getItem("heat_hero_style")||"A"; }catch(e){ return "A"; } })()
   };
   state.beans = beanRows();
+  state.quotes = quoteRows();
 
   /* ---------- 工具 ---------- */
   function fmtTime(iso){
@@ -1602,7 +1645,7 @@
           setAuth(u); setAdminPass(pw);
           state.view="admin"; state.selProduct=null;
           render();
-          loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ if(state.view==="admin") render(); });
+          loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ return loadQuotesCloud(); }).then(function(){ if(state.view==="admin") render(); });
           toast("已登录 "+u+"，欢迎回来");
         })();
       });
@@ -2017,6 +2060,7 @@
       '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
       '<button data-tab="orders" class="'+(state.tab==="orders"?"active":"")+'">订单看板</button>' +
       '<button data-tab="beans" class="'+(state.tab==="beans"?"active":"")+'">豆价计算</button>' +
+      '<button data-tab="quotes" class="'+(state.tab==="quotes"?"active":"")+'">辅料比价</button>' +
       '<button data-tab="settings" class="'+(state.tab==="settings"?"active":"")+'">前台设置</button>' +
       '<span style="margin-left:auto;display:flex;gap:6px">' +
       '<button class="ghost-btn" id="exportBtn">导出 JSON</button>' +
@@ -2046,6 +2090,7 @@
     if(state.tab==="ings") renderIngs();
     else if(state.tab==="products") renderProducts();
     else if(state.tab==="beans") renderBeans();
+    else if(state.tab==="quotes") renderQuotes();
     else if(state.tab==="settings") renderSettings();
     else renderOrders();
   }
@@ -2620,11 +2665,12 @@
     return (window.innerWidth||document.documentElement.clientWidth||0) < BEAN_NARROW_W;
   }
   window.addEventListener("resize",function(){
-    if(!(state.view==="admin" && state.tab==="beans")) return;
+    var tab=state.tab;
+    if(!(state.view==="admin" && (tab==="beans"||tab==="quotes"))) return;
     clearTimeout(beanResizeT);
     beanResizeT=setTimeout(function(){
       var n=beanIsNarrow();
-      if(n!==beanNarrowState){ beanNarrowState=n; renderBeans(); }
+      if(n!==beanNarrowState){ beanNarrowState=n; if(tab==="beans") renderBeans(); else renderQuotes(); }
     },220);
   });
 
@@ -2971,6 +3017,437 @@
         if(!r.ok){ alert(r.msg); return; }
         toast("已把 "+(full?full+" ":"")+r2(c.net)+"g @ ¥"+r2(c.price)+" 写进「"+target.name+"」，单杯豆价 ¥"+r2(c.per));
         renderBeans();
+      });
+    });
+  }
+
+  /* ===== 辅料比价：按「品类/口味」分组，液体按 ¥/L、固体按 ¥/kg ===== */
+  var Q_KEY="cafe_quote_calc_v1", Q_SHOP_KEY="cafe_quote_shop_v1", Q_HIST_KEY="cafe_price_hist_v1";
+  var Q_TYPES=["电商","线下"];
+  function quoteRows(){
+    try{
+      /* 同 beans：这个函数早于 Q_KEY 赋值执行，必须用字面量键名 */
+      var raw=localStorage.getItem("cafe_quote_calc_v1");
+      var d=raw?JSON.parse(raw):null;
+      if(Array.isArray(d)) return d;
+    }catch(e){}
+    return [];
+  }
+  function qShopNotes(){
+    try{
+      var raw=localStorage.getItem(Q_SHOP_KEY);
+      var d=raw?JSON.parse(raw):null;
+      if(d && typeof d==="object") return d;
+    }catch(e){}
+    return {};
+  }
+  function qHist(){
+    try{
+      var raw=localStorage.getItem(Q_HIST_KEY);
+      var d=raw?JSON.parse(raw):null;
+      if(Array.isArray(d)) return d;
+    }catch(e){}
+    return [];
+  }
+  function qHistPush(rec){
+    var h=qHist(); h.unshift(rec);
+    try{ localStorage.setItem(Q_HIST_KEY, JSON.stringify(h.slice(0,300))); }catch(e){}
+  }
+  function qHistLast(group,unit){
+    var h=qHist();
+    for(var i=0;i<h.length;i++){ if(h[i].group===group && h[i].unit===unit) return h[i]; }
+    return null;
+  }
+  function qSave(push){
+    try{ localStorage.setItem(Q_KEY, JSON.stringify(state.quotes)); }catch(e){}
+    if(push!==false) scheduleQuotePush();
+  }
+  function qUnitPrice(q){
+    var qty=+q.qty>0?+q.qty:0;
+    var p=(q.price===""||q.price==null)?null:+q.price;
+    if(!(qty>0) || p===null || !(p>0)) return 0;
+    return p/qty*1000;
+  }
+  function qUnitTag(u){ return u==="g" ? "/kg" : "/L"; }
+  function qTypeOf(q){ return (q.ctype==="电商"||q.ctype==="线下")?q.ctype:""; }
+
+  /* ---------- 上云（表 quote_calc，同样只走口令 RPC） ---------- */
+  var quoteSync={state:"local", at:""};
+  var quotePushTimer=null, quotePushBusy=false, quotePushAgain=false;
+  function quoteSyncText(){
+    if(quoteSync.state==="ok") return "已存云端"+(quoteSync.at?" · "+quoteSync.at:"");
+    if(quoteSync.state==="pending") return "正在存云端…";
+    if(quoteSync.state==="failed") return "云端没存上（先留在本机，下次改动会重试）";
+    return "只在本机（未建辅料比价表或未登录）";
+  }
+  function paintQuoteSync(){
+    var el=document.querySelector("[data-qsync]");
+    if(el) el.textContent=quoteSyncText();
+  }
+  function scheduleQuotePush(){
+    if(!supaReady() || !sb || !adminPass()){ quoteSync.state="local"; paintQuoteSync(); return; }
+    quoteSync.state="pending"; paintQuoteSync();
+    clearTimeout(quotePushTimer);
+    quotePushTimer=setTimeout(function(){ pushQuotesCloud(); },900);
+  }
+  async function pushQuotesCloud(){
+    if(!supaReady() || !sb || !adminPass()){ quoteSync.state="local"; paintQuoteSync(); return; }
+    if(quotePushBusy){ quotePushAgain=true; return; }
+    quotePushBusy=true;
+    try{
+      var r=await sb.rpc("t_admin_save_quotes", {p_tenant:adminTenant(), p_pass:adminPass(), p_data: state.quotes});
+      if(r.error){ if(!rpcMissing(r.error)) console.warn("辅料比价上云失败", r.error); quoteSync.state="failed"; }
+      else{
+        var d=new Date();
+        quoteSync.state="ok";
+        quoteSync.at=(d.getMonth()+1)+"-"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+      }
+    }catch(e){ quoteSync.state="failed"; console.warn("辅料比价上云失败", e); }
+    finally{
+      quotePushBusy=false; paintQuoteSync();
+      if(quotePushAgain){ quotePushAgain=false; pushQuotesCloud(); }
+    }
+  }
+  async function loadQuotesCloud(){
+    if(!supaReady() || !sb || !adminPass()) return;
+    try{
+      var r=await sb.rpc("t_admin_list_quotes", {p_tenant:adminTenant(), p_pass:adminPass()});
+      if(r.error){ if(!rpcMissing(r.error)) console.warn("读取辅料比价失败", r.error); return; }
+      var d=r.data;
+      if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d=[]; } }
+      if(d && !Array.isArray(d) && Array.isArray(d.rows)) d=d.rows;
+      if(Array.isArray(d) && d.length){
+        state.quotes = d.map(function(q){
+          return {id:String(q.id||("q"+Math.random().toString(36).slice(2,7))), group:(q.group||""), unit:(q.unit==="g"?"g":(q.unit==="ml"?"ml":"")),
+            brand:(q.brand||""), spec:(q.spec||""), qty:(q.qty==null?"":q.qty), price:(q.price==null?"":q.price),
+            ctype:(q.ctype==="电商"||q.ctype==="线下")?q.ctype:"", shop:(q.shop||""), ingId:(q.ingId||"")};
+        });
+        try{ localStorage.setItem(Q_KEY, JSON.stringify(state.quotes)); }catch(e){}
+        quoteSync.state="ok"; quoteSync.at="";
+      }else{
+        await pushQuotesCloud();
+      }
+    }catch(e){ console.warn("读取辅料比价失败", e); }
+  }
+
+  function renderQuotes(){
+    var body=document.getElementById("adminBody");
+    if(!state.qLoadedOnce){
+      state.qLoadedOnce=true;
+      if(!state.quotes.length && supaReady() && adminPass()){
+        loadQuotesCloud().then(function(){ if(state.view==="admin" && state.tab==="quotes") renderQuotes(); });
+      }
+    }
+    var rows=state.quotes;
+    var narrow=beanIsNarrow(); beanNarrowState=narrow;
+    state.qShop = state.qShop || qShopNotes();
+    if(!state.qAdding) state.qAdding=false;
+
+    /* ---- 分组 ---- */
+    var gmap={}, gkeys=[];
+    rows.forEach(function(q){
+      var gname=(q.group||"").trim()||"未命名";
+      var key=gname+"|"+(q.unit||"?");
+      if(!gmap[key]){ gmap[key]={key:key,name:gname,unit:q.unit||"",list:[]}; gkeys.push(key); }
+      gmap[key].list.push(q);
+    });
+    var groups=gkeys.map(function(k){
+      var g=gmap[k];
+      var priced=g.list.map(function(q){ var up=qUnitPrice(q); return {q:q,up:up}; }).filter(function(x){ return x.up>0; }).sort(function(a,b){ return a.up-b.up; });
+      var min=priced.length?priced[0].up:0, max=priced.length?priced[priced.length-1].up:0;
+      return {g:g,priced:priced,min:min,max:max,spread:min>0?(max-min)/min*100:0,last:qHistLast(g.name,g.unit)};
+    });
+    groups.sort(function(a,b){
+      var ap=a.priced.length>=2?1:0, bp=b.priced.length>=2?1:0;
+      if(ap!==bp) return bp-ap;
+      if(a.spread!==b.spread) return b.spread-a.spread;
+      return a.g.name.localeCompare(b.g.name,"zh");
+    });
+
+    var pricedAll=rows.filter(function(q){ return qUnitPrice(q)>0; }).length;
+    var pendAll=rows.length-pricedAll;
+    var topSpread=groups.filter(function(g){ return g.priced.length>=2; })[0];
+    var ingCount=db.ings.filter(function(i){ return rows.some(function(q){ return q.ingId===i.id; }); }).length;
+
+    /* ---- 顶部摘要 ---- */
+    var summary='<div class="qp-sum">'+
+      '<div class="qps"><div class="k">比价组</div><div class="v">'+groups.length+'<small>组</small></div></div>'+
+      '<div class="qps"><div class="k">报价</div><div class="v">'+rows.length+'<small>份</small></div></div>'+
+      '<div class="qps"><div class="k">缺价 / 缺量</div><div class="v">'+pendAll+'<small>份</small></div></div>'+
+      '<div class="qps wide"><div class="k">价差最大的组</div><div class="v">'+(topSpread?esc(topSpread.g.name):"—")+'</div>'+
+        '<div class="m">'+(topSpread?'贵 '+Math.round(topSpread.spread)+'%（¥'+r2(topSpread.min)+' → ¥'+r2(topSpread.max)+qUnitTag(topSpread.g.unit)+'）':'至少两组同品类报价才看得出价差')+'</div></div>'+
+      '</div>';
+
+    /* ---- 每组的行 ---- */
+    function optIngs(q){
+      var list=db.ings.filter(function(i){ return !q.unit || i.unit===q.unit; });
+      if(!list.length) return "";
+      return '<option value=""'+(!q.ingId?' selected':'')+'>选择配料…</option>'+list.map(function(i){
+        return '<option value="'+i.id+'"'+(q.ingId===i.id?' selected':'')+'>'+esc(i.name)+'</option>';
+      }).join("");
+    }
+    function curIng(q){
+      var i=ing(q.ingId);
+      if(!i) return "未选写入目标";
+      if(!hasCost(i)) return "「"+i.name+"」还没填采购价";
+      return "当前 ¥"+(unitCostOf(i)<0.01?unitCostOf(i).toFixed(4):r2(unitCostOf(i)))+" / "+i.unit+
+        "（"+r2(i.packQty)+i.unit+" @ ¥"+r2(i.packPrice)+"）";
+    }
+    var TYPEOPTS=function(cur){
+      return '<option value=""'+(!cur?' selected':'')+'>未选</option>'+
+        Q_TYPES.map(function(t){ return '<option value="'+t+'"'+(cur===t?' selected':'')+'>'+t+'</option>'; }).join("");
+    };
+
+    function tsRow(q,rank,minUp,isBest){
+      var up=qUnitPrice(q);
+      var tag='';
+      if(isBest) tag='<span class="bean-best">最省</span>';
+      else if(up>0 && minUp>0){ var over=(up-minUp)/minUp*100; if(over>=1) tag='<em class="bean-over">+'+Math.round(over)+'%</em>'; }
+      var upTxt = up>0 ? '<b>¥'+r2(up)+'</b><i>'+qUnitTag(q.unit)+'</i>'+tag : '<span class="pend">待填</span>';
+      if(narrow){
+        return '<div class="bcard'+(isBest?" best":"")+(!(up>0)?" pending":"")+'" data-qrow="'+q.id+'">'+
+          '<div class="bcard-top"><span class="bcard-rk">'+rank+'</span>'+
+            '<input type="text" class="bcard-name" data-qid="'+q.id+'" data-qf="brand" value="'+esc(q.brand||"")+'" placeholder="品牌，例：莫林">'+
+            '<select class="bcard-type" data-qid="'+q.id+'" data-qf="ctype">'+TYPEOPTS(q.ctype)+'</select>'+
+          '</div>'+
+          '<div class="bcard-kg" data-qc="unit">'+upTxt+'</div>'+
+          '<input type="text" class="bcard-shop" data-qid="'+q.id+'" data-qf="spec" value="'+esc(q.spec||"")+'" placeholder="规格备注，例：750ml 瓶">'+
+          '<input type="text" class="bcard-shop" data-qid="'+q.id+'" data-qf="shop" value="'+esc(q.shop||"")+'" placeholder="货源：淘宝·店名 / 本地物料商 / 展会">'+
+          '<div class="bcard-grid">'+
+            '<label class="bf"><span>包装量 '+esc(q.unit||"")+'</span><input type="number" data-qid="'+q.id+'" data-qf="qty" min="0" step="1" value="'+esc(q.qty==null?"":q.qty)+'"></label>'+
+            '<label class="bf"><span>包装价 ¥</span><input type="number" data-qid="'+q.id+'" data-qf="price" min="0" step="0.01" value="'+esc(q.price==null?"":q.price)+'"></label>'+
+          '</div>'+
+          '<div class="bean-wr bcard-wr">'+
+            '<select data-qtarget="'+q.id+'">'+(optIngs(q)||'<option value="">没有同单位配料</option>')+'</select>'+
+            '<button class="btn sm ghost" data-qapply="'+q.id+'">写入</button>'+
+            '<div class="beam-cur" data-qcur="'+q.id+'">'+esc(curIng(q))+'</div>'+
+          '</div>'+
+          '<div class="bcard-foot"><button class="btn sm danger" data-qdel="'+q.id+'">删</button></div>'+
+          '</div>';
+      }
+      var rcls=[]; if(isBest) rcls.push("best"); if(!(up>0)) rcls.push("pending");
+      return '<tr data-qrow="'+q.id+'"'+(rcls.length?' class="'+rcls.join(" ")+'"':'')+'>'+
+        '<td class="rk">'+rank+'</td>'+
+        '<td><input type="text" data-qid="'+q.id+'" data-qf="brand" value="'+esc(q.brand||"")+'" placeholder="莫林 / 陶诗奇" style="min-width:104px"></td>'+
+        '<td><input type="text" data-qid="'+q.id+'" data-qf="spec" value="'+esc(q.spec||"")+'" placeholder="750ml 瓶" style="min-width:104px"></td>'+
+        '<td><select data-qid="'+q.id+'" data-qf="ctype" style="width:74px">'+TYPEOPTS(q.ctype)+'</select></td>'+
+        '<td><input type="text" data-qid="'+q.id+'" data-qf="shop" value="'+esc(q.shop||"")+'" placeholder="淘宝 / 本地物料商" style="min-width:120px"></td>'+
+        '<td><input type="number" data-qid="'+q.id+'" data-qf="qty" min="0" step="1" value="'+esc(q.qty==null?"":q.qty)+'" style="width:74px"></td>'+
+        '<td><input type="number" data-qid="'+q.id+'" data-qf="price" min="0" step="0.01" value="'+esc(q.price==null?"":q.price)+'" style="width:78px"></td>'+
+        '<td class="kg" data-qc="unit">'+upTxt+'</td>'+
+        '<td><div class="bean-wr">'+
+          '<select data-qtarget="'+q.id+'">'+(optIngs(q)||'<option value="">没有同单位配料</option>')+'</select>'+
+          '<button class="btn sm ghost" data-qapply="'+q.id+'">写入</button>'+
+          '<div class="beam-cur" data-qcur="'+q.id+'">'+esc(curIng(q))+'</div>'+
+        '</div></td>'+
+        '<td><button class="btn sm danger" data-qdel="'+q.id+'">删</button></td>'+
+        '</tr>';
+    }
+
+    function groupHtml(item){
+      var g=item.g, unit=g.unit;
+      var head='<div class="qg-head">'+
+        '<div class="qg-name">'+esc(g.name)+'<span class="qg-unit">'+(unit==="g"?"按 ¥/kg 比":(unit==="ml"?"按 ¥/L 比":"单位未定"))+'</span></div>'+
+        '<div class="qg-stat">'+
+          (item.priced.length
+            ? '<span>'+item.priced.length+' 份有效</span><span>最低 <b>¥'+r2(item.min)+qUnitTag(unit)+'</b></span>'+
+              '<span>最高 <b>¥'+r2(item.max)+qUnitTag(unit)+'</b></span>'+
+              (item.priced.length>=2?'<span>价差 <b>'+Math.round(item.spread)+'%</b></span>':'')
+            : '<span>还没有填全的报价</span>')+
+          (item.last?'<span class="qg-last">上次写入 ¥'+r2(item.last.unitPrice)+qUnitTag(unit)+'（'+esc(item.last.shop||item.last.brand||"—")+' · '+esc(item.last.date)+'）</span>':'')+
+        '</div>'+
+      '</div>';
+
+      var rankMap={}; item.priced.forEach(function(x,i){ rankMap[x.q.id]=i+1; });
+      var body;
+      if(narrow){
+        body='<div class="bean-cards">'+g.list.map(function(q){
+          return tsRow(q, rankMap[q.id]||"—", item.min, q.id===(item.priced[0]?item.priced[0].q.id:""));
+        }).join("")+'</div>';
+      }else{
+        body='<div class="bean-table-wrap"><table class="bean-tbl qg-tbl"><thead><tr>'+
+          '<th>#</th><th>品牌</th><th>规格</th><th>渠道</th><th>货源</th><th>包装量</th><th>包装价 ¥</th><th>单价 ¥'+qUnitTag(unit)+'</th><th>写入配料</th><th></th>'+
+          '</tr></thead><tbody>'+g.list.map(function(q){
+            return tsRow(q, rankMap[q.id]||"—", item.min, q.id===(item.priced[0]?item.priced[0].q.id:""));
+          }).join("")+'</tbody></table></div>';
+      }
+      return '<div class="qg">'+head+body+'</div>';
+    }
+
+    /* ---- 新增报价表单 ---- */
+    var gnameList=groups.map(function(x){ return x.g.name; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+    var preset=state.qPreset||{group:"",unit:"ml"};
+    var formHtml='';
+    if(state.qAdding){
+      formHtml='<div class="qp-form" id="qpForm">'+
+        '<div class="qpf"><label>品类 / 口味</label><select id="qfGroupSel">'+
+          '<option value="__new"'+(!preset.group?' selected':'')+'>＋ 新建品类</option>'+
+          gnameList.map(function(n){ return '<option value="'+esc(n)+'"'+(preset.group===n?' selected':'')+'>'+esc(n)+'</option>'; }).join("")+
+        '</select>'+
+        '<input type="text" id="qfGroupNew" placeholder="例：焦糖糖浆 / 全脂牛奶" value="'+esc(preset.group||"")+'"'+(preset.group?' style="display:none"':'')+'></div>'+
+        '<div class="qpf"><label>单位</label><select id="qfUnit">'+
+          '<option value="ml"'+(preset.unit!=="g"?' selected':'')+'>ml（液体，按 ¥/L）</option>'+
+          '<option value="g"'+(preset.unit==="g"?' selected':'')+'>g（粉/酱，按 ¥/kg）</option>'+
+        '</select></div>'+
+        '<div class="qpf"><label>品牌</label><input type="text" id="qfBrand" placeholder="莫林 / 陶诗奇"></div>'+
+        '<div class="qpf"><label>规格备注</label><input type="text" id="qfSpec" placeholder="750ml 瓶 / 1kg 袋"></div>'+
+        '<div class="qpf"><label>包装量</label><input type="number" id="qfQty" min="0" step="1" placeholder="750"></div>'+
+        '<div class="qpf"><label>包装价 ¥</label><input type="number" id="qfPrice" min="0" step="0.01" placeholder="48"></div>'+
+        '<div class="qpf"><label>渠道</label><select id="qfType"><option value="">未选</option><option value="电商">电商</option><option value="线下">线下</option></select></div>'+
+        '<div class="qpf"><label>货源</label><input type="text" id="qfShop" placeholder="淘宝·店名 / 本地物料商 / 展会"></div>'+
+        '<div class="qpf qpf-btn"><button class="btn" id="qfAdd">添加这条报价</button><button class="btn sm ghost" id="qfCancel">取消</button></div>'+
+        '</div>';
+    }
+    var addBtn = state.qAdding ? '' : '<button class="btn" id="qAddBtn">＋ 加一条报价</button>';
+
+    /* ---- 货源通讯录 ---- */
+    var shops=[];
+    rows.forEach(function(q){ var s=(q.shop||"").trim(); if(s && shops.indexOf(s)<0) shops.push(s); });
+    var shopHtml = shops.length ? '<div class="qp-shops"><div class="qp-sub">货源备注<span>（联系人 / 微信 / 配送日 / 起订量 / 有没有票，只记在这台电脑上）</span></div>'+
+      shops.map(function(s){
+        var note=state.qShop[s]||"";
+        var types=[]; rows.forEach(function(q){ if((q.shop||"").trim()===s && qTypeOf(q) && types.indexOf(qTypeOf(q))<0) types.push(qTypeOf(q)); });
+        return '<div class="qshop"><div class="qshop-name">'+esc(s)+'<i>'+types.join(" / ")+'</i></div>'+
+          '<input type="text" data-qshop="'+esc(s)+'" value="'+esc(note)+'" placeholder="备注：微信 xx / 周二送 / 起订 6 瓶"></div>';
+      }).join("")+'</div>' : '';
+
+    var listHtml = groups.length
+      ? groups.map(groupHtml).join("")
+      : '<div class="bean-empty">'+(rows.length? "" : '还没有辅料报价。点「＋ 加一条报价」，把同一品类不同品牌的包装量和价格填进来，就能按 ¥/L、¥/kg 组内排榜。')+'</div>';
+
+    body.innerHTML =
+      '<div class="qp-top">'+
+        '<div class="qp-lead">辅料比价：<b>同一个品类才有可比性</b>——莫林焦糖和陶诗奇焦糖可以比，和牛奶不行。液体按 ¥/L、粉酱按 ¥/kg，选中的那条一键写入对应配料的采购价。</div>'+
+        addBtn+
+      '</div>'+
+      summary+
+      formHtml+
+      listHtml+
+      shopHtml+
+      '<div class="bean-hint">'+
+        '· <b>写入配料</b>：一个配料只有一个采购价，写入＝覆盖（会先弹旧价→新价确认）；单价按「包装价 ÷ 包装量 × 1000」算，所以 750ml 和 1L 的瓶子能直接比。<br>'+
+        '· <b>单位必须一致</b>：糖浆有的按 ml、有的按 g 报价，跨单位不换算（密度各家不同），配料的单位是 ml 就只能写 ml 的报价。<br>'+
+        '· <b>分组</b>：以「品类/口味」为组，同一组里可以挂不同品牌、不同渠道、不同货源。<br>'+
+        '· <b>价格历史</b>：每次写入自动留一条（时间、配料、货源、单价），下次看这个组会显示「上次写入」。<br>'+
+        '· 数据状态：<span data-qsync>'+esc(quoteSyncText())+'</span>'+
+      '</div>';
+
+    /* ---- 事件 ---- */
+    if(document.getElementById("qAddBtn")){
+      document.getElementById("qAddBtn").addEventListener("click",function(){
+        state.qAdding=true; state.qPreset=null; renderQuotes();
+      });
+    }
+    var gsel=document.getElementById("qfGroupSel");
+    if(gsel){
+      var gnew=document.getElementById("qfGroupNew");
+      gsel.addEventListener("change",function(){
+        if(gsel.value==="__new"){ gnew.style.display=""; gnew.focus(); }
+        else{ gnew.style.display="none"; gnew.value=gsel.value; }
+      });
+      document.getElementById("qfCancel").addEventListener("click",function(){ state.qAdding=false; state.qPreset=null; renderQuotes(); });
+      document.getElementById("qfAdd").addEventListener("click",function(){
+        var gname=(gsel.value==="__new"?gnew.value:gsel.value).trim();
+        if(!gname){ alert("先给这条报价一个品类名，例：焦糖糖浆"); return; }
+        var unit=document.getElementById("qfUnit").value;
+        var brand=document.getElementById("qfBrand").value.trim();
+        var spec=document.getElementById("qfSpec").value.trim();
+        var qty=document.getElementById("qfQty").value;
+        var price=document.getElementById("qfPrice").value;
+        var ctype=document.getElementById("qfType").value;
+        var shop=document.getElementById("qfShop").value.trim();
+        if(!brand){ alert("填一下品牌，比价才有意义（例：莫林 / 陶诗奇）"); return; }
+        if(!(+qty>0) || price===""){ alert("包装量和包装价先填上，不然算不出单价"); return; }
+        state.quotes.push({id:"q"+Date.now(), group:gname, unit:unit, brand:brand, spec:spec,
+          qty:qty, price:price, ctype:ctype, shop:shop, ingId:""});
+        state.qAdding=false; state.qPreset=null;
+        qSave(); renderQuotes();
+        toast("已加「"+brand+" · "+gname+"」，记得在右边选要写入哪个配料");
+      });
+    }
+
+    /* 行内编辑 */
+    body.querySelectorAll("[data-qf]").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var q=state.quotes.filter(function(x){ return x.id===inp.dataset.qid; })[0];
+        if(!q) return;
+        q[inp.dataset.qf]=inp.value;
+        qSave();
+        var tr=body.querySelector('[data-qrow="'+q.id+'"]');
+        if(tr){
+          var cell=tr.querySelector('[data-qc="unit"]');
+          if(cell){
+            var up=qUnitPrice(q);
+            var best=(tr.classList.contains("best"));
+            cell.innerHTML = up>0 ? '<b>¥'+r2(up)+'</b><i>'+qUnitTag(q.unit)+'</i>'+(best?'<span class="bean-best">最省</span>':'') : '<span class="pend">待填</span>';
+          }
+          var cur=tr.querySelector('[data-qcur="'+q.id+'"]');
+          if(cur) cur.textContent=curIng(q);
+        }
+      });
+      inp.addEventListener("change",function(){
+        var ae=document.activeElement;
+        if(ae && ae.closest && ae.closest(".qg")) return;
+        setTimeout(function(){ if(state.view==="admin" && state.tab==="quotes") renderQuotes(); },180);
+      });
+    });
+
+    body.querySelectorAll("[data-qtarget]").forEach(function(sel){
+      sel.addEventListener("change",function(){
+        var q=state.quotes.filter(function(x){ return x.id===sel.dataset.qtarget; })[0];
+        if(!q) return;
+        q.ingId=sel.value; qSave();
+        var cur=body.querySelector('[data-qcur="'+q.id+'"]');
+        if(cur) cur.textContent=curIng(q);
+      });
+    });
+
+    body.querySelectorAll("[data-qdel]").forEach(function(b){
+      b.addEventListener("click",function(){
+        state.quotes=state.quotes.filter(function(x){ return x.id!==b.dataset.qdel; });
+        qSave(); renderQuotes();
+      });
+    });
+
+    body.querySelectorAll("[data-qapply]").forEach(function(btn){
+      btn.addEventListener("click",async function(){
+        var q=state.quotes.filter(function(x){ return x.id===btn.dataset.qapply; })[0];
+        if(!q) return;
+        if(!(+q.qty>0) || q.price===""){ alert("这条报价还没填包装量和包装价，算不出单价"); return; }
+        var t=ing(q.ingId);
+        if(!t){ alert("先在右边「写入配料」里选一个配料"); return; }
+        if(t.unit!==q.unit){ alert("单位对不上：「"+t.name+"」按 "+t.unit+" 计价，这条报价按 "+q.unit+" 计价。不同单位不换算，请把报价改成同一单位。"); return; }
+        var qty=+q.qty, price=+q.price;
+        var label=(q.brand||"").trim()+(q.shop?" · "+q.shop:"");
+        if(hasCost(t)){
+          var oldTxt=r2(t.packQty)+t.unit+" @ ¥"+r2(t.packPrice)+"（¥"+r2(unitCostOf(t))+" / "+t.unit+"）";
+          var newTxt=r2(qty)+t.unit+" @ ¥"+r2(price)+"（¥"+r2(price/qty)+" / "+t.unit+"）";
+          var ok=await askConfirm({
+            title:"覆盖「"+t.name+"」的采购价",
+            body:"当前：<b>"+oldTxt+"</b><br>改为：<b>"+newTxt+"</b>"+(label?"<br>来源：<b>"+esc(label)+"</b>":"")+
+                 "<br>一个配料只能有一个采购价；改完所有用到它的饮品成本会跟着变。",
+            ok:"覆盖"
+          });
+          if(!ok) return;
+        }
+        t.packQty=qty; t.packPrice=price; t.beanLabel=label;
+        save(); render();
+        var r=await saveIngCost(t.id, qty, price, label);
+        if(!r.ok){ alert(r.msg); return; }
+        qHistPush({t:Date.now(), group:q.group, unit:q.unit, ingName:t.name, shop:q.shop||"", brand:q.brand||"",
+          price:price, qty:qty, unitPrice:price/qty*1000,
+          date:(new Date().getMonth()+1)+"-"+new Date().getDate()});
+        toast("已写入「"+t.name+"」：¥"+r2(price/qty*1000)+qUnitTag(q.unit)+"（"+r2(price)+" / "+r2(qty)+q.unit+"）");
+        renderQuotes();
+      });
+    });
+
+    body.querySelectorAll("[data-qshop]").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        state.qShop=state.qShop||{};
+        if(inp.value.trim()) state.qShop[inp.dataset.qshop]=inp.value;
+        else delete state.qShop[inp.dataset.qshop];
+        try{ localStorage.setItem(Q_SHOP_KEY, JSON.stringify(state.qShop)); }catch(e){}
       });
     });
   }
