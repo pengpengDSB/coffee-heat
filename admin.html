@@ -133,9 +133,20 @@
   .bean-sort{font:inherit;font-size:11.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink-soft)}
   .bean-chan{display:flex;gap:8px 26px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:14px}
   .bean-chan span b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  /* 口径条：解释「每公斤价 ¥/kg」是什么，可收起但不彻底消失 */
+  .bean-unitbar{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:8px;background:var(--card-2);padding:10px 12px;margin-bottom:12px;font-size:11.5px;line-height:1.75;color:var(--ink-soft)}
+  .bean-unitbar .bub-k{flex:0 0 auto;font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);padding-right:9px;border-right:1px solid var(--line);margin-top:3px}
+  .bean-unitbar .bub-t{flex:1;min-width:0}
+  .bean-unitbar .bub-t b{color:var(--ink);font-weight:500}
+  .bean-unitbar .bub-x{flex:0 0 auto;border:none;background:none;font:inherit;font-size:13px;line-height:1;color:var(--ink-faint);cursor:pointer;padding:2px 1px;margin-top:1px}
+  .bean-unitbar .bub-x:hover{color:var(--ink)}
+  .bean-unitbar.mini{border:none;background:none;padding:0;margin-bottom:10px}
+  .bub-open{border:none;background:none;font:inherit;font-size:11px;color:var(--ink-faint);cursor:pointer;padding:0 0 2px;border-bottom:1px dashed var(--line-strong);letter-spacing:.02em}
+  .bub-open:hover{color:var(--ink)}
   .bean-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .bean-tbl{width:100%;min-width:1110px;border-collapse:collapse;font-size:12px;letter-spacing:.01em}
   .bean-tbl th{font-size:10.5px;font-weight:500;color:var(--ink-faint);letter-spacing:.08em;text-align:center;padding:0 6px 9px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+  .bean-tbl th .th-sub{display:block;font-weight:400;font-size:9.5px;letter-spacing:.04em;color:var(--ink-faint);margin-top:2px}
   .bean-tbl td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
   .bean-tbl input,.bean-tbl select{width:100%;box-sizing:border-box;padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12px;text-align:center;color:var(--ink)}
   .bean-tbl input[type="text"]{text-align:left}
@@ -169,6 +180,7 @@
   .bcard-name{flex:1;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:12.5px;color:var(--ink)}
   .bcard-type{flex:0 0 82px;padding:7px 4px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);font:inherit;font-size:11.5px;color:var(--ink)}
   .bcard-name:focus,.bcard-type:focus,.bcard-shop:focus,.bf input:focus{outline:none;border-color:var(--line-strong);background:var(--card)}
+  .bcard-kglab{font-size:9.5px;letter-spacing:.1em;color:var(--ink-faint);margin-top:5px}
   .bcard-kg{display:flex;align-items:baseline;gap:5px;margin:2px 0 9px}
   .bcard-kg b{font-size:26px;line-height:1.12;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums}
   .bcard-kg .pend{font-size:16px;color:var(--ink-faint);font-weight:400}
@@ -191,6 +203,8 @@
     .bean-bar{gap:8px;padding:10px 0;margin-bottom:12px}
     .bean-spacer{width:100%;margin-left:0;justify-content:space-between}
     .bean-chan{flex-direction:column;gap:2px;line-height:1.7}
+    .bean-unitbar{padding:9px 10px;font-size:11px;gap:8px}
+    .bean-unitbar .bub-k{padding-right:7px}
     .bean-hint{font-size:10.5px}
     .bean-sort{flex:1;min-width:0;max-width:340px}
   }
@@ -2674,6 +2688,27 @@
     },220);
   });
 
+  /* 口径条：默认展开，收起状态记在这台机器上，但永远留一行「怎么算的」入口 */
+  function beanUnitBarOff(){
+    try{ return localStorage.getItem("cafe_bean_unitbar_v1")==="off"; }catch(e){ return false; }
+  }
+  function setBeanUnitBarOff(v){
+    try{ if(v) localStorage.setItem("cafe_bean_unitbar_v1","off"); else localStorage.removeItem("cafe_bean_unitbar_v1"); }catch(e){}
+  }
+  function beanUnitBarHtml(narrow){
+    if(beanUnitBarOff()){
+      return '<div class="bean-unitbar mini"><button class="bub-open" id="beanUnitBarX">「每公斤价 ¥/kg」怎么算的？</button></div>';
+    }
+    var body = narrow
+      ? '<div class="bub-t"><b>每公斤价 ¥/kg ＝ 总价 ÷ 袋装 g × 1000</b>，把每袋折成「1000g 多少钱」，袋重不一样也能直接横比。<b>单杯豆价 ＝ 每公斤价 × 单杯 g ÷ 1000</b>。</div>'
+      : '<div class="bub-t"><b>每公斤价 ¥/kg ＝ 总价 ÷ 袋装 g × 1000</b>，把每袋折成「1000g 多少钱」，袋重不一样的豆子才能直接横比。'+
+          '　<b>单杯豆价 ＝ 每公斤价 × 单杯 g ÷ 1000</b>，只在你这个粉量下成立。</div>';
+    return '<div class="bean-unitbar">'+
+      '<span class="bub-k">口径</span>'+ body +
+      '<button class="bub-x" id="beanUnitBarX" title="收起这条说明">×</button>'+
+      '</div>';
+  }
+
   function renderBeans(){
     var body=document.getElementById("adminBody");
     var rows=state.beans;
@@ -2703,14 +2738,14 @@
       var v=function(x){ return x? '¥'+r2(x) : '—'; };
       var m=function(b){ return b ? esc(b.shop||b.label||"未填货源") : "还没有有效报价"; };
       if(!k){
-        return '<div class="bkpi na"><div class="k">全表最低 · ¥/kg</div><div class="v">—</div><div class="m">先把每袋的克数和总价填上</div></div>'+
-          '<div class="bkpi na"><div class="k">全表中位 · ¥/kg</div><div class="v">—</div><div class="m">—</div></div>'+
-          '<div class="bkpi na"><div class="k">全表最高 · ¥/kg</div><div class="v">—</div><div class="m">—</div></div>'+
+        return '<div class="bkpi na"><div class="k">全表最低 · 每公斤价</div><div class="v">—</div><div class="m">先把每袋的克数和总价填上</div></div>'+
+          '<div class="bkpi na"><div class="k">全表中位 · 每公斤价</div><div class="v">—</div><div class="m">—</div></div>'+
+          '<div class="bkpi na"><div class="k">全表最高 · 每公斤价</div><div class="v">—</div><div class="m">—</div></div>'+
           '<div class="bkpi na"><div class="k">全表价差</div><div class="v">—</div><div class="m">—</div></div>';
       }
-      return '<div class="bkpi low"><div class="k">全表最低 · ¥/kg</div><div class="v">'+v(k.min)+'</div><div class="m">'+m(k.minRow)+'</div></div>'+
-        '<div class="bkpi mid"><div class="k">全表中位 · ¥/kg</div><div class="v">'+v(k.mid)+'</div><div class="m">'+k.n+' 份有效报价取中位</div></div>'+
-        '<div class="bkpi high"><div class="k">全表最高 · ¥/kg</div><div class="v">'+v(k.max)+'</div><div class="m">'+m(k.maxRow)+'</div></div>'+
+      return '<div class="bkpi low"><div class="k">全表最低 · 每公斤价</div><div class="v">'+v(k.min)+'</div><div class="m">'+m(k.minRow)+'</div></div>'+
+        '<div class="bkpi mid"><div class="k">全表中位 · 每公斤价</div><div class="v">'+v(k.mid)+'</div><div class="m">'+k.n+' 份有效报价取中位</div></div>'+
+        '<div class="bkpi high"><div class="k">全表最高 · 每公斤价</div><div class="v">'+v(k.max)+'</div><div class="m">'+m(k.maxRow)+'</div></div>'+
         '<div class="bkpi spread"><div class="k">全表价差</div><div class="v">'+Math.round(k.spread)+'<small>%</small></div><div class="m">最贵比最省每公斤贵 ¥'+r2(k.gap)+'</div></div>';
     }
     function chanStat(t){
@@ -2817,6 +2852,7 @@
             BEAN_TYPES.map(function(t){ return '<option value="'+t+'"'+(b.ctype===t?' selected':'')+'>'+t+'</option>'; }).join("")+
           '</select>'+
         '</div>'+
+        '<div class="bcard-kglab">每公斤折合</div>'+
         '<div class="bcard-kg" data-bc="kg">'+kgCell(d, allPriced.length?allPriced[0].kg:0, isBest)+'</div>'+
         '<input type="text" class="bcard-shop" data-bid="'+b.id+'" data-bf="shop" value="'+esc(b.shop||"")+'" placeholder="货源：淘宝·店名 / 展会名">'+
         '<div class="bcard-grid">'+
@@ -2840,7 +2876,7 @@
     var thead='<tr>'+
       '<th>#</th><th>豆名</th><th>渠道</th><th>货源 / 商家</th>'+
       '<th>袋装 g</th><th>单杯 g</th><th>总价 ¥</th>'+
-      '<th>单价 ¥/kg</th><th>单杯豆价</th><th>可做</th><th>写入配料</th><th></th>'+
+      '<th>每公斤价<span class="th-sub">¥/kg</span></th><th>单杯豆价</th><th>可做</th><th>写入配料</th><th></th>'+
       '</tr>';
 
     var chipsHtml='<button class="bean-chip'+ (filter==="all"?' on':'') +'" data-bchip="all">全部<span class="n">'+cnt.all+'</span></button>'+
@@ -2855,7 +2891,7 @@
         : '<div class="bean-table-wrap"><table class="bean-tbl"><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>';
     }else{
       listHtml = '<div class="bean-empty">'+(rows.length? '当前筛选下没有报价，换个渠道筛选看看。'
-          : '还没有报价。点「＋ 加一袋」，把每袋的克数、总价、货源填进来，就能按 ¥/kg 排榜比价。')+'</div>';
+          : '还没有报价。点「＋ 加一袋」，把每袋的克数、总价、货源填进来，就能按每公斤价排榜比价。')+'</div>';
     }
 
     body.innerHTML =
@@ -2864,7 +2900,7 @@
         '<div class="bean-chips">'+chipsHtml+'</div>'+
         '<div class="bean-spacer">'+
           '<select class="bean-sort" id="beanSort">'+
-            '<option value="kg"'+(sort==="kg"?' selected':'')+'>按 ¥/kg 低→高</option>'+
+            '<option value="kg"'+(sort==="kg"?' selected':'')+'>按每公斤价低→高</option>'+
             '<option value="cup"'+(sort==="cup"?' selected':'')+'>按单杯豆价低→高</option>'+
             '<option value="new"'+(sort==="new"?' selected':'')+'>按录入顺序（新的在上）</option>'+
           '</select>'+
@@ -2872,13 +2908,14 @@
         '</div>'+
       '</div>'+
       '<div class="bean-chan" id="beanChan">'+chanHtml()+'</div>'+
+      beanUnitBarHtml(narrow)+
       listHtml+
       '<div class="bean-note">备忘 · 密封罐重 '+
         '<input type="number" id="canWeight" min="0" step="1" value="'+esc(beanNote().can)+'" '+
         'style="width:62px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--card-2);font:inherit;font-size:11.5px;text-align:center"> g'+
         '　（只记在这台浏览器里，不参与计算）</div>'+
       '<div class="bean-hint">'+
-        '· <b>单价 ¥/kg 是主口径</b>：总价 ÷ 袋装克数 × 1000，不受粉量和杯数影响，不同袋重、不同粉量能直接横比。<br>'+
+        '· <b>「每公斤价」＝ 总价 ÷ 袋装克数 × 1000</b>：把这一袋折算成「1000g 要多少钱」，袋重不同也能直接横比，不受粉量和杯数影响。<br>'+
         '· <b>单杯豆价</b> = 总价 × 单杯粉克数 ÷ 袋装克数，只在这个配方下成立；粉量一改就会变，所以别拿它跨豆比。<br>'+
         '· <b>渠道 / 货源</b>：渠道只分「电商」「线下」两类做横向对照（电商＝淘宝/抖音/1688 这类，线下＝展会/批发商/门店）；货源填具体店名或展位，方便回头复购。<br>'+
         '· <b>排名与结论</b>：只统计「克数 + 总价」都填全的行；缺价的排在最后、不进最低/中位/最高。<br>'+
@@ -2911,6 +2948,9 @@
     document.getElementById("canWeight").addEventListener("input",function(e){
       var n=beanNote(); n.can=e.target.value; saveBeanNote(n);
     });
+
+    var ubx=document.getElementById("beanUnitBarX");
+    if(ubx) ubx.addEventListener("click",function(){ setBeanUnitBarOff(!beanUnitBarOff()); renderBeans(); });
 
     var sortSel=document.getElementById("beanSort");
     if(sortSel) sortSel.addEventListener("change",function(){ state.beanSort=sortSel.value; renderBeans(); });
@@ -3245,6 +3285,7 @@
             '<input type="text" class="bcard-name" data-qid="'+q.id+'" data-qf="brand" value="'+esc(q.brand||"")+'" placeholder="品牌，例：莫林">'+
             '<select class="bcard-type" data-qid="'+q.id+'" data-qf="ctype">'+TYPEOPTS(q.ctype)+'</select>'+
           '</div>'+
+          '<div class="bcard-kglab">每'+(q.unit==="g"?"公斤":"升")+'折合</div>'+
           '<div class="bcard-kg" data-qc="unit">'+upTxt+'</div>'+
           '<input type="text" class="bcard-shop" data-qid="'+q.id+'" data-qf="spec" value="'+esc(q.spec||"")+'" placeholder="规格备注，例：750ml 瓶">'+
           '<input type="text" class="bcard-shop" data-qid="'+q.id+'" data-qf="shop" value="'+esc(q.shop||"")+'" placeholder="货源：淘宝·店名 / 本地物料商 / 展会">'+
@@ -3301,7 +3342,7 @@
         }).join("")+'</div>';
       }else{
         body='<div class="bean-table-wrap"><table class="bean-tbl qg-tbl"><thead><tr>'+
-          '<th>#</th><th>品牌</th><th>规格</th><th>渠道</th><th>货源</th><th>包装量</th><th>包装价 ¥</th><th>单价 ¥'+qUnitTag(unit)+'</th><th>写入配料</th><th></th>'+
+          '<th>#</th><th>品牌</th><th>规格</th><th>渠道</th><th>货源</th><th>包装量</th><th>包装价 ¥</th><th>每'+(unit==="ml"?"升":"公斤")+'价<span class="th-sub">¥'+qUnitTag(unit)+'</span></th><th>写入配料</th><th></th>'+
           '</tr></thead><tbody>'+g.list.map(function(q){
             return tsRow(q, rankMap[q.id]||"—", item.min, q.id===(item.priced[0]?item.priced[0].q.id:""));
           }).join("")+'</tbody></table></div>';
