@@ -426,9 +426,15 @@
   function buyer(){ var b=readLS(BUYER_KEY,null); return (b && /^1[3-9]\d{9}$/.test(b.phone||"")) ? b : null; }
   function saveBuyer(phone, nick){
     writeLS(BUYER_KEY, {phone:phone, nick:nick||"", at:Date.now()});
-    if(supaReady() && sb){
-      try{ sb.rpc('upsert_customer', {p_phone:phone, p_nick:nick||"", p_visitor:visitorId()}); }catch(e){}
-    }
+    if(!supaReady()) return;
+    // 直连 HTTP，不依赖 supabase-js 客户端是否已初始化
+    try{
+      fetch(SUPA_CONFIG.url + "/rest/v1/rpc/upsert_customer", {
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body: JSON.stringify({p_phone:phone, p_nick:nick||"", p_visitor:visitorId()})
+      }).catch(function(){});
+    }catch(e){}
   }
   function maskPhone(p){ return String(p||"").replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2"); }
 
