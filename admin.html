@@ -29,6 +29,38 @@
   .wrap{max-width:1200px;width:100%;margin:0 auto;padding:0 24px}
   .num,.prod-kcal,.ing-kcal,.total-bar .big,.ordno{font-family:"Archivo","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
 
+  /* ===== 开屏：品牌片头 ===== */
+  #splash{position:fixed;inset:0;z-index:200;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity .45s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  .splash-mark{display:flex;align-items:center;gap:18px}
+  .splash-bar{width:4px;height:56px;background:var(--gold);transform-origin:center;animation:splashBar .6s .05s both}
+  .splash-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:64px;line-height:1.2;letter-spacing:.1em;color:var(--espresso);display:flex}
+  .splash-word i{font-style:normal;animation:splashWord .7s cubic-bezier(.2,.7,.3,1) both}
+  .splash-word i:nth-child(1){animation-delay:.25s}
+  .splash-word i:nth-child(2){animation-delay:.45s}
+  .splash-sub{margin-top:20px;font-size:13px;letter-spacing:.42em;padding-left:.42em;color:var(--ink-soft);animation:splashWord .8s .8s both}
+  .splash-line{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:120px;height:2px;background:var(--line);overflow:hidden}
+  .splash-line span{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left;animation:splashLine 1.9s .1s linear both}
+  .splash-skip{position:absolute;left:0;right:0;bottom:42px;text-align:center;font-size:10px;letter-spacing:.22em;color:var(--ink-faint)}
+  @keyframes splashBar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes splashWord{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes splashLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @media(max-width:640px){
+    .splash-word{font-size:48px}
+    .splash-bar{height:44px;width:3px}
+    .splash-mark{gap:14px}
+    .splash-sub{font-size:11px;letter-spacing:.32em;padding-left:.32em}
+  }
+  /* ===== 开屏：数据加载过渡（同一字标呼吸） ===== */
+  body.splashing .boot-loader{opacity:0} /* 片头播放与淡出期间不露出第二个字标 */
+  .boot-loader{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  .boot-loader .bl-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:32px;letter-spacing:.14em;padding-left:.14em;color:var(--espresso);animation:blBreath 1.6s ease-in-out infinite}
+  .boot-loader .bl-sub{font-size:11px;letter-spacing:.3em;padding-left:.3em;color:var(--ink-faint)}
+  @keyframes blBreath{0%,100%{opacity:.3}50%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){
+    .splash-bar,.splash-word i,.splash-sub,.splash-line span,.boot-loader .bl-word{animation:none}
+  }
+
   /* ===== 顶栏 ===== */
   .topbar{position:sticky;top:0;z-index:20;background:var(--espresso);border-bottom:1px solid var(--espresso-2)}
   .topbar-in{display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:13px 0}
@@ -825,7 +857,7 @@
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
-<body>
+<body class="splashing">
 
 <div class="topbar">
   <div class="wrap topbar-in">
@@ -844,6 +876,38 @@
 </div>
 
 <div id="app"></div>
+
+<!-- ===== 开屏：品牌片头（每次打开播一次，点击 / 任意键跳过） ===== -->
+<div id="splash" role="presentation" aria-label="杯记">
+  <div class="splash-mark">
+    <span class="splash-bar"></span>
+    <span class="splash-word"><i>杯</i><i>记</i></span>
+  </div>
+  <div class="splash-sub">一杯的配方、热量与成本</div>
+  <div class="splash-line"><span></span></div>
+  <div class="splash-skip">点击任意处跳过</div>
+</div>
+<script>
+(function(){
+  var sp=document.getElementById("splash");
+  if(!sp) return;
+  var done=false, timer=null;
+  function close(){
+    if(done) return; done=true;
+    if(timer) clearTimeout(timer);
+    sp.classList.add("hide");
+    setTimeout(function(){
+      if(sp.parentNode) sp.parentNode.removeChild(sp);
+      document.body.classList.remove("splashing");
+    },500);
+    document.removeEventListener("keydown",close);
+  }
+  sp.addEventListener("click",close);
+  document.addEventListener("keydown",close);
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ close(); return; }
+  timer=setTimeout(close,2100); /* 片头约 2 秒，淡出 0.45 秒；数据加载在后台并行进行 */
+})();
+</script>
 
 <div class="overlay" id="overlay">
   <div class="modal" id="modal"></div>
@@ -4177,7 +4241,7 @@
     }catch(e){}
   })();
 
-  app.innerHTML = '<div class="empty" style="padding:80px 0">加载中…</div>';
+  app.innerHTML = '<div class="boot-loader"><div class="bl-word">杯记</div><div class="bl-sub">正在准备你的配方与成本</div></div>';
   boot().then(function(){ render(); }).catch(function(){ render(); });
 })();
 </script>
