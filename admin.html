@@ -174,6 +174,7 @@
   .bean-wr{display:grid;width:100%;min-width:0;box-sizing:border-box;grid-template-columns:minmax(0,1fr) auto;gap:5px 6px;align-items:center}
   .bean-wr select{font:inherit;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);text-align:left;width:100%;min-width:0;box-sizing:border-box}
   .bean-wr .btn{padding:5px 9px;font-size:11px;white-space:nowrap}
+  .bean-wr .btn.on-use{color:var(--low,#3F6B52);border-color:rgba(63,107,82,.42)}
   .beam-cur{grid-column:1/-1;min-width:0;font-size:10px;color:var(--ink-faint);text-align:left;line-height:1.45;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bean-tbl td.cups{font-variant-numeric:tabular-nums;color:var(--ink-soft);white-space:nowrap}
   .bean-tbl tr.best td{background:rgba(198,148,72,.09)}
@@ -2995,6 +2996,7 @@
         if(!b) return;
         b[inp.dataset.bf]=inp.value;
         saveBeans(); refreshNumbers();
+        refreshCur(b.id);          /* 改克数/总价后，「写入 / 在用」状态跟着变 */
       });
       /* 改完一格才重排：焦点还在表里就等它离开，避免抢焦点；焦点已到外面则稍等，让这次点击先落地 */
       inp.addEventListener("change",function(){
@@ -3035,11 +3037,16 @@
       }
       sel.title = note;
       var btn=body.querySelector('[data-bapply="'+rid+'"]');
-      if(btn) btn.title = btnTitle || "「"+i.name+"」已经是这个价，点写入不会改动";
+      if(btn){
+        /* 「写入」和「在用」都是两个字，宽度不变，行不会因为状态而跳动 */
+        btn.textContent = same ? "在用" : "写入";
+        btn.classList.toggle("on-use", !!same);
+        btn.title = btnTitle || "「"+i.name+"」已经是这个价，点写入不会改动";
+      }
       var cell=body.querySelector('[data-bcur="'+rid+'"]');
       if(!cell) return;
-      cell.textContent = same ? "✓ 这袋正在用" : txt;
-      cell.title = cell.textContent;
+      cell.textContent = txt;
+      cell.title = txt;
       cell.style.color = same ? "var(--low,#3F6B52)" : "var(--ink-faint)";
     }
     body.querySelectorAll("[data-btarget]").forEach(function(sel){
