@@ -356,6 +356,20 @@
   .morder .no{font-family:Archivo,sans-serif;font-size:14.5px;letter-spacing:.04em}
   .morder .st{font-size:9.5px;color:var(--brown);letter-spacing:.1em}
   .morder .r2{font-size:9.5px;color:var(--gray);margin-top:5px;letter-spacing:.03em}
+  /* ---------- 轻登录（手机号 + 昵称，不验真） ---------- */
+  .lgmask{position:fixed;inset:0;background:rgba(24,19,14,.62);display:none;z-index:90;align-items:flex-end;justify-content:center}
+  .lgmask.on{display:flex}
+  .lgcard{width:100%;max-width:420px;background:var(--paper);border-radius:16px 16px 0 0;padding:24px 22px calc(20px + env(safe-area-inset-bottom));}
+  .lgcard h2{font-size:17px;font-weight:500;letter-spacing:.04em;margin-bottom:6px}
+  .lgcard p{font-size:12px;color:var(--gray);line-height:1.7;margin-bottom:16px}
+  .lgf{margin-bottom:12px}
+  .lgf label{display:block;font-size:10.5px;letter-spacing:.14em;color:var(--gray-2);margin-bottom:6px}
+  .lgf input{width:100%;border:1px solid var(--line);background:#fff;border-radius:8px;padding:12px 13px;font:inherit;font-size:15px}
+  .lgf input:focus{outline:none;border-color:var(--brown)}
+  .lgerr{font-size:11.5px;color:#A5533F;min-height:16px;margin-bottom:6px}
+  .lgbtns{display:flex;gap:10px}
+  .lgskip{flex:0 0 auto;border:1px solid var(--line);background:none;border-radius:8px;padding:13px 16px;font:inherit;font-size:13px;color:var(--gray);cursor:pointer}
+  .lgok{flex:1;border:none;border-radius:8px;background:var(--dark);color:#F4F1E9;padding:13px 16px;font:inherit;font-size:14px;letter-spacing:.08em;cursor:pointer}
 </style>
 </head>
 <body>
@@ -388,10 +402,13 @@
 
   /* ---------- 本机存储：购物车 / 匿名访客 / 订单 ---------- */
   var CART_KEY="cafe_cart_v1", VIS_KEY="cafe_visitor_v1", ORD_KEY="cafe_orders_v1";
+  var BUYER_KEY="cafe_buyer_v1";
+  var loginMode="lazy";   /* off=完全不问 / lazy=只在查订单时问 / strict=下单前必须填 */
   function readLS(k,d){ try{ var r=JSON.parse(localStorage.getItem(k)); return r==null?d:r; }catch(e){ return d; } }
   function writeLS(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   function visitorId(){ var v=readLS(VIS_KEY,null); if(!v){ v="v"+Math.random().toString(36).slice(2,10); writeLS(VIS_KEY,v); } return v; }
   function pad2(n){ return String(n).padStart(2,"0"); }
+  function supaHeaders(){ return {apikey:SUPA_CONFIG.anonKey, Authorization:"Bearer "+SUPA_CONFIG.anonKey}; }
   function nextSeq(rows,prefix){
     var max=0;
     (rows||[]).forEach(function(o){
@@ -404,6 +421,72 @@
   function pad3(n){ return String(n).padStart(3,"0"); }
   state.cart = readLS(CART_KEY, []) || [];
   visitorId();
+
+  /* ---------- 轻登录：手机号 + 昵称 ---------- */
+  function buyer(){ var b=readLS(BUYER_KEY,null); return (b && /^1[3-9]\d{9}$/.test(b.phone||"")) ? b : null; }
+  function saveBuyer(phone, nick){
+    writeLS(BUYER_KEY, {phone:phone, nick:nick||"", at:Date.now()});
+    if(supaReady() && sb){
+      try{ sb.rpc('upsert_customer', {p_phone:phone, p_nick:nick||"", p_visitor:visitorId()}); }catch(e){}
+    }
+  }
+  function maskPhone(p){ return String(p||"").replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2"); }
+
+  async function loadLoginMode(){
+    try{
+      var r=await fetch(SUPA_CONFIG.url + "/rest/v1/settings?select=value&key=eq.site", {headers:supaHeaders(), cache:"no-store"});
+      if(!r.ok) return;
+      var rows=await r.json();
+      var lm=rows && rows[0] && rows[0].value && rows[0].value.loginMode;
+      if(lm==="off"||lm==="lazy"||lm==="strict"){ loginMode=lm; }
+      else { var cache=readLS("cafe_login_mode_v1",null); if(cache) loginMode=cache; }
+      writeLS("cafe_login_mode_v1", loginMode);
+    }catch(e){}
+  }
+
+  /* 返回 true=已保存 / false=跳过或未填 */
+  function showLogin(opt){
+    opt=opt||{};
+    return new Promise(function(resolve){
+      var m=document.getElementById("lgMask");
+      if(!m){
+        m=document.createElement("div"); m.id="lgMask"; m.className="lgmask";
+        m.innerHTML='<div class="lgcard">'+
+          '<h2>留个身份，订单跑不丢</h2>'+
+          '<p>手机号只用于柜台叫号和找回订单，不发短信、不验真。<br>不想留也可以跳过，本机照样能查单。</p>'+
+          '<div class="lgf"><label>手机号</label><input id="lgPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="11 位手机号"></div>'+
+          '<div class="lgf"><label>称呼（可选）</label><input id="lgNick" maxlength="20" placeholder="例：小岳"></div>'+
+          '<div class="lgerr" id="lgErr"></div>'+
+          '<div class="lgbtns"><button class="lgskip" id="lgSkip">先不填</button><button class="lgok" id="lgOk">保存</button></div>'+
+        '</div>';
+        document.body.appendChild(m);
+        m.addEventListener("click",function(e){ if(e.target===m && !opt.required){ close(false); } });
+        document.getElementById("lgSkip").addEventListener("click",function(){ close(false); });
+        document.getElementById("lgOk").addEventListener("click",function(){ submit(); });
+        document.getElementById("lgPhone").addEventListener("keydown",function(e){ if(e.key==="Enter") submit(); });
+        document.getElementById("lgNick").addEventListener("keydown",function(e){ if(e.key==="Enter") submit(); });
+      }
+      var skip=document.getElementById("lgSkip");
+      skip.style.display = opt.required ? "none" : "";
+      document.getElementById("lgErr").textContent="";
+      var b=buyer();
+      document.getElementById("lgPhone").value = (opt.phone!=null? opt.phone : (b? b.phone : ""));
+      document.getElementById("lgNick").value  = (opt.nick!=null? opt.nick : (b? b.nick : ""));
+      m.classList.add("on");
+      setTimeout(function(){ document.getElementById("lgPhone").focus(); }, 240);
+      function submit(){
+        var ph=document.getElementById("lgPhone").value.replace(/\D/g,"");
+        var nk=(document.getElementById("lgNick").value||"").trim();
+        if(!/^1[3-9]\d{9}$/.test(ph)){ document.getElementById("lgErr").textContent="手机号看起来不对，检查一下（11 位，1 开头）"; return; }
+        saveBuyer(ph, nk);
+        close(true, {phone:ph, nick:nk});
+      }
+      function close(ok, data){
+        m.classList.remove("on");
+        resolve(ok? (data||{ok:true}) : null);
+      }
+    });
+  }
 
   function money(n){ return (Math.round((+n||0)*100)/100).toFixed(2).replace(/\.00$/,""); }
   function cartCount(){ return state.cart.reduce(function(s,x){ return s + x.qty; },0); }
@@ -963,6 +1046,10 @@
   }
 
   function renderOrders(){
+    if(loginMode==="lazy" && !buyer() && !state.lgAsked){
+      state.lgAsked=true;
+      showLogin({}).then(function(got){ if(got){ renderMe(); renderOrders(); } });
+    }
     var list=(state.orders||[]);
     var live=list.filter(function(o){ return o.status!=="已取餐"; });
     var done=list.filter(function(o){ return o.status==="已取餐"; });
@@ -1022,6 +1109,10 @@
   function renderMe(){
     var milkCount=db.ings.filter(function(i){return /奶/.test(i.category);}).length;
     var liveCount=(state.orders||[]).filter(function(o){ return o.status!=="已取餐"; }).length;
+    var me=buyer();
+    var whoBlock = me
+      ? '<button class="merow" data-me="who"><div class="t"><b>'+esc(maskPhone(me.phone))+(me.nick?(' · '+esc(me.nick)):'')+'</b><span>已绑定本机 · 点击修改手机号或称呼</span></div><div class="go">'+IC.go+'</div></button>'
+      : '<button class="merow" data-me="who"><div class="t"><b>完善身份（可选）</b><span>留个手机号，柜台叫号更顺，换手机也能找回订单</span></div><div class="go">'+IC.go+'</div></button>';
     var ordBlock = '<button class="merow" data-go="orders"><div class="t"><b>我的订单</b><span>'+
         ((state.orders&&state.orders.length) ? ('共 '+state.orders.length+' 单' + (liveCount?(' · '+liveCount+' 单进行中'):'')) : '还没有下过单' )+
         '</span></div><div class="go">'+IC.go+'</div></button>';
@@ -1036,6 +1127,7 @@
           '<div><b>'+milkCount+'</b><span>款牛奶</span></div>' +
         '</div>' +
         '<div class="melist">' +
+          whoBlock +
           '<button class="merow" data-me="about"><div class="t"><b>热量怎么算</b><span>单位热量 × 用量，逐项相加</span></div><div class="go">'+IC.go+'</div></button>' +
           '<button class="merow" data-me="legend"><div class="t"><b>热量档位</b><span>低于 100 / 100–250 / 高于 250</span></div><div class="go">'+IC.go+'</div></button>' +
           '<button class="merow" data-me="milk"><div class="t"><b>牛奶可换</b><span>风味拿铁 / 轻因拿铁可换，美式家族 / 气泡特调固定</span></div><div class="go">'+IC.go+'</div></button>' +
@@ -1044,7 +1136,13 @@
         '<div class="foot" style="margin:30px 0 0">数据来自本店配料库与饮品配方，由商家后台统一维护。<br>下单到店自取，本 Demo 不含在线支付。</div>' +
       '</div>';
     Array.prototype.forEach.call(app.querySelectorAll(".merow"),function(b){
-      b.addEventListener("click",function(){ state.mePage=b.dataset.me; renderMeSub(); });
+      b.addEventListener("click",function(){
+        if(b.dataset.me==="who"){
+          showLogin({}).then(function(got){ state.mePage=null; render(); if(got) toast("已保存，柜台能按手机号叫号"); });
+          return;
+        }
+        state.mePage=b.dataset.me; renderMeSub();
+      });
     });
     Array.prototype.forEach.call(app.querySelectorAll("[data-go]"),function(b){
       b.addEventListener("click",function(){
@@ -1155,6 +1253,10 @@
 
   async function submitOrder(){
     if(!state.cart.length) return;
+    if(loginMode==="strict" && !buyer()){
+      var got=await showLogin({required:true});
+      if(!got){ return; }
+    }
     var btn=document.getElementById("cksub");
     if(btn){ btn.disabled=true; btn.textContent="提交中…"; }
     var noteEl=document.getElementById("cknote");
@@ -1163,9 +1265,11 @@
     var items=state.cart.map(function(x){
       return {pid:x.pid,name:x.name,qty:x.qty,price:x.price,kcal:x.kcal,milk:x.milk,sugar:x.sugar,ice:x.ice};
     });
+    var me=buyer();
     var payload={order_no:"", visitor_id:visitorId(), items:items,
       total:Math.round(cartTotal()*100)/100, total_kcal:Math.round(cartKcal()*10)/10,
-      pickup:"到店自取", note:note, status:"待制作", created_at:new Date().toISOString()};
+      pickup:"到店自取", note:note, status:"待制作", created_at:new Date().toISOString(),
+      buyer_phone:(me?me.phone:""), buyer_nick:(me?me.nick:"")};
 
     var saved=false, rpcMissing=false, seq=1;
     if(supaReady()){
@@ -1293,6 +1397,7 @@
 
   async function boot(){
     app.innerHTML='<div class="page" style="padding-top:56px"><div class="foot">正在读取配料库…</div></div>';
+    loadLoginMode();
     if(!supaReady()){ db=defaultData(); render(); return; }
     try{
       sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);

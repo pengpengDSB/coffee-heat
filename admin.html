@@ -505,6 +505,17 @@
   .set-pass input:focus{border-bottom-color:var(--ink)}
   .set-pass .hint{font-size:10px;color:var(--ink-faint);letter-spacing:.04em}
   .field-hint{font-size:10px;color:var(--ink-faint);line-height:1.7;margin-top:6px}
+  .set-login{max-width:1040px;margin:26px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+  .set-login .sl-h{font-size:12.5px;letter-spacing:.14em;color:var(--ink);margin-bottom:4px}
+  .set-login .sl-d{font-size:11px;color:var(--ink-faint);margin-bottom:14px}
+  .sl-opt{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border:1px solid var(--line);
+    border-radius:6px;margin-bottom:9px;cursor:pointer;background:var(--card-2)}
+  .sl-opt:hover{border-color:var(--gold)}
+  .sl-opt.on{border-color:var(--gold);background:#FBF4E6}
+  .sl-opt .dot{width:14px;height:14px;border:1px solid var(--line);border-radius:50%;flex:none;margin-top:2px}
+  .sl-opt.on .dot{background:var(--gold);border-color:var(--gold)}
+  .sl-opt b{font-size:12px;font-weight:500;display:block;color:var(--ink)}
+  .sl-opt span{font-size:11px;color:var(--ink-faint);line-height:1.7;display:block;margin-top:2px}
   .set-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;max-width:1040px}
   .set-note{font-size:10.5px;color:var(--ink-faint);line-height:1.95;margin-top:20px;padding-top:16px;
     border-top:1px dashed var(--line-strong);max-width:1040px}
@@ -680,9 +691,12 @@
       if(r.ok){
         var rows = await r.json();
         var row = rows && rows[0];
-        var hv = row && row.value && row.value.heroStyle;
-        if(hv && /^[ABC]$/.test(hv)){
-          var jt = {heroStyle:hv, updated:row.updated_at, source:"table"};
+        var val = (row && row.value) || {};
+        var hv = val.heroStyle, lm = val.loginMode;
+        if((hv && /^[ABC]$/.test(hv)) || (lm && /^(off|lazy|strict)$/.test(lm))){
+          var jt = {heroStyle:(hv && /^[ABC]$/.test(hv)) ? hv : "A",
+                    loginMode:(lm && /^(off|lazy|strict)$/.test(lm)) ? lm : "lazy",
+                    updated:row.updated_at, source:"table"};
           try{ localStorage.setItem(SITE_KEY, JSON.stringify(jt)); }catch(e){}
           return jt;
         }
@@ -708,8 +722,15 @@
   function setAdminPass(v){ try{ if(v) sessionStorage.setItem("cafe_admin_pass", v); }catch(e){} }
   function clearAdminPass(){ try{ sessionStorage.removeItem("cafe_admin_pass"); }catch(e){} }
 
-  async function publishSiteSetting(k){
-    var body = JSON.stringify({heroStyle:k, updated:new Date().toISOString()});
+  function siteSnapshot(){
+    try{ return JSON.parse(localStorage.getItem(SITE_KEY)||"{}") || {}; }catch(e){ return {}; }
+  }
+  async function publishSitePatch(patch){
+    var snap=siteSnapshot();
+    var val={heroStyle:snap.heroStyle||state.heroStyle||"A",
+             loginMode:snap.loginMode||state.loginMode||"lazy"};
+    Object.keys(patch||{}).forEach(function(k){ val[k]=patch[k]; });
+    var body = JSON.stringify(Object.assign({},val,{updated:new Date().toISOString()}));
     try{ localStorage.setItem(SITE_KEY, body); }catch(e){}
     /* 1) settings 表：口令校验写入 */
     var pw = adminPass();
@@ -718,7 +739,7 @@
         var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/set_site_setting", {
           method:"POST",
           headers: Object.assign({"Content-Type":"application/json"}, supaHeaders()),
-          body: JSON.stringify({pass:pw, val:{heroStyle:k}})
+          body: JSON.stringify({pass:pw, val:val})
         });
         if(r.ok) return {ok:true, via:"table"};
         if(r.status === 401 || r.status === 403 || r.status === 400){
@@ -740,6 +761,22 @@
       });
       return {ok:r2.ok, via:"bucket"};
     }catch(e){ console.error("publish setting failed", e); return {ok:false, via:"none"}; }
+  }
+  async function publishSiteSetting(k){ return publishSitePatch({heroStyle:k}); }
+  async function setLoginMode(v){
+    state.loginMode=v;
+    try{ localStorage.setItem("cafe_login_mode_v1", v); }catch(e){}
+    render();
+    if(isLocalEnv()){ toast("已切成" + loginLabel(v) + "（本机预览，未写线上）"); return; }
+    toast("正在同步到线上…");
+    var res=await publishSitePatch({loginMode:v});
+    if(res.ok){ render(); toast("已上线：" + loginLabel(v) + "，顾客刷新即生效"); }
+    else if(res.reason==="pass"){ toast("口令不对，线上没改"); }
+    else if(!adminPass()){ toast("会话里没有口令，请重新登录后再改"); }
+    else { toast("同步失败：只在本机生效"); }
+  }
+  function loginLabel(v){
+    return v==="off" ? "完全不问" : (v==="strict" ? "下单前必须填" : "只在查订单时问");
   }
 
   /* 环境开关：null=自动（本地 file:///localhost 走本机，线上域名走云端）；
@@ -1058,6 +1095,7 @@
     var siteSet = await loadSiteSetting();
     if(siteSet && siteSet.heroStyle){
       state.heroStyle = siteSet.heroStyle;
+      if(siteSet.loginMode){ state.loginMode = siteSet.loginMode; try{ localStorage.setItem("cafe_login_mode_v1", siteSet.loginMode); }catch(e){} }
       try{ localStorage.setItem("heat_hero_style", siteSet.heroStyle); }catch(e){}
       state.siteUpdated = siteSet.updated || "";
       state.siteSource = siteSet.source || "";
@@ -1165,6 +1203,7 @@
     ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"",
     modal:null, // {type:'ing'|'product', id:null}
     beans:[],
+    loginMode:"lazy",
     heroStyle:(function(){ try{ return localStorage.getItem("heat_hero_style")||"A"; }catch(e){ return "A"; } })()
   };
   state.beans = beanRows();
@@ -1593,6 +1632,18 @@
         '<input id="setPass" type="password" placeholder="输入店主口令后，切换才会写进线上">'+
         '<button class="ghost-btn" id="setPassOk">记住口令</button>'+
         '<span class="hint">会话过期或换标签页后需要重输一次</span></div>')+
+      '<div class="set-login">'+
+        '<div class="sl-h">点单是否要求顾客留身份</div>'+
+        '<div class="sl-d">只在「顾客端」生效：顾客端会读这里的设置，刷新页面即生效。</div>'+
+        [
+          ["off","完全不问（保持现状）","顾客匿名点单，订单只记在本机；后台看不到手机号。"],
+          ["lazy","只在查订单时问（推荐）","下单不打扰；顾客点「订单 / 我的」时弹一次，可跳过。"],
+          ["strict","下单前必须填","不填手机号不能提交订单，数据最干净，但会流失一部分人。"]
+        ].map(function(o){
+          return '<div class="sl-opt '+(state.loginMode===o[0]?"on":"")+'" data-lm="'+o[0]+'">'+
+            '<span class="dot"></span><div><b>'+o[1]+'</b><span>'+o[2]+'</span></div></div>';
+        }).join("")+
+      '</div>'+
       '<div class="set-actions">'+
         '<button class="ghost-btn" id="previewLanding">预览首页</button>'+
         '<button class="ghost-btn" id="previewLogin">预览登录页</button>'+
@@ -1605,6 +1656,9 @@
 
     document.querySelectorAll(".set-row[data-set]").forEach(function(r){
       r.addEventListener("click",function(){ setHeroStyle(r.dataset.set); });
+    });
+    document.querySelectorAll(".sl-opt[data-lm]").forEach(function(o){
+      o.addEventListener("click",function(){ if(state.loginMode!==o.dataset.lm) setLoginMode(o.dataset.lm); });
     });
     var passOk=document.getElementById("setPassOk");
     if(passOk) passOk.addEventListener("click",function(){
@@ -1657,6 +1711,7 @@
           '<div class="ord-time">'+hm(o.created_at)+' · 到店自取</div></div>'+
         '<div class="ord-items">'+items+'</div>'+
         (o.note?'<div class="ord-note">备注：'+esc(o.note)+'</div>':"")+
+        ((o.buyer_phone||o.buyer_nick)?'<div class="ord-note">顾客：'+esc((o.buyer_nick||"")+(o.buyer_nick&&o.buyer_phone?" · ":"")+(o.buyer_phone?String(o.buyer_phone).replace(/(\d{3})\d{4}(\d{4})/,"$1****$2"):""))+'</div>':'')+
         '<div class="ord-foot"><div class="ord-sum">'+(o.total!=null?('¥<b>'+r2(o.total)+'</b>'):"—")+'　·　'+(o.total_kcal||0)+' 大卡'+costBit+'</div>'+
           '<div class="ord-ops">'+ops+'</div></div>'+
         '</div>';
