@@ -686,12 +686,14 @@
   async function loadSiteSetting(){
     /* 1) settings 表（正式做法） */
     try{
-      var r = await fetch(SUPA_CONFIG.url + "/rest/v1/settings?select=value,updated_at&key=eq.site",
-        {headers:supaHeaders(), cache:"no-store"});
+      var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_site", {
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body: JSON.stringify({p_tenant:adminTenant()})
+      });
       if(r.ok){
-        var rows = await r.json();
-        var row = rows && rows[0];
-        var val = (row && row.value) || {};
+        var val = (await r.json()) || {};
+        var row = {value: val, updated_at: (state && state.siteUpdated) || null};
         var hv = val.heroStyle, lm = val.loginMode;
         if((hv && /^[ABC]$/.test(hv)) || (lm && /^(off|lazy|strict)$/.test(lm))){
           var jt = {heroStyle:(hv && /^[ABC]$/.test(hv)) ? hv : "A",
@@ -719,6 +721,13 @@
   function adminPass(){
     try{ return sessionStorage.getItem("cafe_admin_pass") || ""; }catch(e){ return ""; }
   }
+  /* 当前查看的商户编码：登录时填的 > 链接 ?t= > 默认 bj01 */
+  function adminTenant(){
+    try{ var t=sessionStorage.getItem("cafe_admin_tenant"); if(t) return t; }catch(e){}
+    try{ var q=new URLSearchParams(location.search).get("t"); if(q && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(q)) return q; }catch(e){}
+    return "bj01";
+  }
+  function setAdminTenant(v){ try{ if(v) sessionStorage.setItem("cafe_admin_tenant", v); }catch(e){} }
   function setAdminPass(v){ try{ if(v) sessionStorage.setItem("cafe_admin_pass", v); }catch(e){} }
   function clearAdminPass(){ try{ sessionStorage.removeItem("cafe_admin_pass"); }catch(e){} }
 
@@ -736,10 +745,10 @@
     var pw = adminPass();
     if(pw){
       try{
-        var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/set_site_setting", {
+        var r = await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_set_site", {
           method:"POST",
           headers: Object.assign({"Content-Type":"application/json"}, supaHeaders()),
-          body: JSON.stringify({pass:pw, val:val})
+          body: JSON.stringify({p_tenant:adminTenant(), p_pass:pw, p_patch:val})
         });
         if(r.ok) return {ok:true, via:"table"};
         if(r.status === 401 || r.status === 403 || r.status === 400){
@@ -979,7 +988,7 @@
     var pass = adminPass();
     if(!pass){ return; }
     try{
-      var r = await sb.rpc("admin_list_costs", {pass:pass});
+      var r = await sb.rpc("t_admin_list_costs", {p_tenant:adminTenant(), p_pass:pass});
       if(r.error){
         if(!rpcMissing(r.error)) console.warn("读取配料成本失败", r.error);
         return;
@@ -999,16 +1008,7 @@
     var pass = adminPass();
     if(!pass) return {ok:false, msg:"登录状态已失效，重新登录后再保存价格"};
     try{
-      /* 先试带豆名的 5 参数版；云端还没升级时退回 4 参数版，保证不断档 */
-      var r = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price, p_label:(label||"")});
-      if(r.error && rpcMissing(r.error)){
-        var r2 = await sb.rpc("admin_save_cost", {pass:pass, p_lid:lid, p_qty:qty, p_price:price});
-        if(r2.error){
-          if(rpcMissing(r2.error)) return {ok:false, msg:"云端还没建成本表，先把成本 SQL 跑一遍再保存"};
-          return {ok:false, msg:"保存失败："+((r2.error&&r2.error.message)||r2.error)};
-        }
-        return {ok:true, noLabel:true};
-      }
+      var r = await sb.rpc("t_admin_save_cost", {p_tenant:adminTenant(), p_pass:pass, p_lid:lid, p_qty:qty, p_price:price, p_label:(label||"")});
       if(r.error) return {ok:false, msg:"保存失败："+((r.error&&r.error.message)||r.error)};
       return {ok:true};
     }catch(e){ return {ok:false, msg:"保存失败："+((e&&e.message)||e)}; }
@@ -1017,56 +1017,31 @@
   async function writeRows(table, rows, fn){
     if(!rows || !rows.length) return;
     var pass = adminPass();
-    var first;
-    if(pass){
-      first = await sb.rpc(fn, {pass:pass, p_row:rows[0]});
-      if(first && first.error && rpcMissing(first.error)){
-        var q = await sb.from(table).upsert(rows, {onConflict:"lid"});
-        if(q.error) throw q.error;
-        return;
-      }
-    }else{
-      var q2 = await sb.from(table).upsert(rows, {onConflict:"lid"});
-      if(q2.error) throw q2.error;
-      return;
-    }
+    if(!pass) throw new Error("登录状态已失效，请重新登录");
+    var first = await sb.rpc(fn, {p_tenant:adminTenant(), p_pass:pass, p_row:rows[0]});
     if(first && first.error) throw first.error;
     await Promise.all(rows.slice(1).map(function(row){
-      return sb.rpc(fn, {pass:pass, p_row:row}).then(function(r){
-        if(r.error && !rpcMissing(r.error)) throw r.error;
+      return sb.rpc(fn, {p_tenant:adminTenant(), p_pass:pass, p_row:row}).then(function(r){
+        if(r.error) throw r.error;
       });
     }));
   }
   async function removeRow(table, lid, fn){
     var pass = adminPass();
-    if(!pass){
-      var d0 = await sb.from(table).delete().eq("lid", lid);
-      if(d0.error) throw d0.error;
-      return;
-    }
-    var r = await sb.rpc(fn, {pass:pass, p_lid:lid});
-    if(r && r.error){
-      if(rpcMissing(r.error)){
-        var d = await sb.from(table).delete().eq("lid", lid);
-        if(d.error) throw d.error;
-        return;
-      }
-      throw r.error;
-    }
+    if(!pass) throw new Error("登录状态已失效，请重新登录");
+    var r = await sb.rpc(fn, {p_tenant:adminTenant(), p_pass:pass, p_lid:lid});
+    if(r && r.error) throw r.error;
   }
 
   /* 全量对齐云端：本地优先，异步同步；失败仅提示，本地改动保留 */
   async function syncRemote(){
     if(!supaReady()) return true;
     try{
-      const old = await Promise.all([
-        sb.from('ingredients').select('lid'),
-        sb.from('products').select('lid')
-      ]);
-      if(old[0].error) throw old[0].error;
-      if(old[1].error) throw old[1].error;
-      const oldIng = new Set((old[0].data||[]).map(function(r){return r.lid;}));
-      const oldProd = new Set((old[1].data||[]).map(function(r){return r.lid;}));
+      const cat = await sb.rpc('t_catalog',{p_tenant:adminTenant()});
+      if(cat.error) throw cat.error;
+      const pack = cat.data || {};
+      const oldIng = new Set((pack.ingredients||[]).map(function(r){return r.lid;}));
+      const oldProd = new Set((pack.products||[]).map(function(r){return r.lid;}));
 
       if(db.ings.length) await writeRows('ingredients', db.ings.map(ingToRow), 'admin_save_ingredient');
       if(db.products.length) await writeRows('products', db.products.map(prodToRow), 'admin_save_product');
@@ -1106,14 +1081,11 @@
     if(!supaReady()){ db = load(); return; }
     try{
       sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
-      const res = await Promise.all([
-        sb.from('ingredients').select('*'),
-        sb.from('products').select('*')
-      ]);
-      if(res[0].error) throw res[0].error;
-      if(res[1].error) throw res[1].error;
-      const ings = (res[0].data||[]).map(rowToIng);
-      const prods = (res[1].data||[]).map(rowToProduct);
+      const cat = await sb.rpc('t_catalog',{p_tenant:adminTenant()});
+      if(cat.error) throw cat.error;
+      const pack = cat.data || {};
+      const ings = (pack.ingredients||[]).map(rowToIng);
+      const prods = (pack.products||[]).map(rowToProduct);
       if(ings.length || prods.length){
         db = { ings:ings, products:prods };
       }else{
@@ -1381,10 +1353,10 @@
 
   function loginFormHTML(){
     return '<form id="lgform" class="lgform" autocomplete="off">'+
-      '<div class="lgfield"><label for="lgUser">账号</label>'+
-        '<input id="lgUser" type="text" placeholder="商家账号" spellcheck="false" autocapitalize="off"></div>'+
-      '<div class="lgfield"><label for="lgPass">密码</label>'+
-        '<input id="lgPass" type="password" placeholder="登录密码"></div>'+
+      '<div class="lgfield" id="lgTenantField"><label for="lgTenant">商户编码</label>'+
+        '<input id="lgTenant" type="text" placeholder="如 bj01" value="bj01" spellcheck="false" autocapitalize="off"></div>'+
+      '<div class="lgfield"><label for="lgPass">口令</label>'+
+        '<input id="lgPass" type="password" placeholder="商户登录口令"></div>'+
       '<div class="lgerr" id="lgErr"></div>'+
       '<button class="lgbtn" id="lgBtn" type="submit">登录商家后台</button>'+
     '</form>'+
@@ -1455,23 +1427,41 @@
       });
       f.addEventListener("submit",function(e){
         e.preventDefault();
-        var u=(document.getElementById("lgUser").value||"").trim();
+        var tEl=document.getElementById("lgTenant");
+        var u=(tEl && tEl.value || "bj01").trim().toLowerCase();
         var pw=(document.getElementById("lgPass").value||"").trim();
         var err=document.getElementById("lgErr"), btn=document.getElementById("lgBtn");
-        if(!u||!pw){ err.textContent="请输入账号与密码"; return; }
-        if(authToken(u,pw)!==AUTH_HASH){
-          err.textContent="账号或密码不正确";
-          var pi=document.getElementById("lgPass"); if(pi) pi.focus();
-          return;
-        }
-        btn.disabled=true; btn.textContent="正在进入…";
-        setAuth(u); setAdminPass(pw);
-        setTimeout(function(){
+        if(!u||!pw){ err.textContent="请输入商户编码与口令"; return; }
+        if(!/^[a-z0-9][a-z0-9_-]{1,11}$/.test(u)){ err.textContent="商户编码格式不对（小写字母/数字，2–12 位）"; return; }
+        btn.disabled=true; btn.textContent="正在验证…";
+        (async function(){
+          var ok=false, msg="商户编码或口令不正确";
+          if(supaReady()){
+            try{
+              var r=await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_admin_login", {
+                method:"POST", cache:"no-store",
+                headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+                body: JSON.stringify({p_tenant:u, p_pass:pw})
+              });
+              var j=await r.json();
+              if(j && j.ok){ ok=true; setAdminTenant(u); }
+              else if(j && j.reason==="no_tenant"){ msg="没有这个商户编码"; }
+              else if(j && j.reason==="status"){ msg="该商户已停用，请联系平台"; }
+            }catch(e){}
+          }
+          /* 云端不可达时的本机演示兜底：只允许 bj01 */
+          if(!ok && u==="bj01" && authToken(AUTH_USER,pw)===AUTH_HASH){ ok=true; setAdminTenant(u); msg=""; }
+          if(!ok){
+            err.textContent=msg; btn.disabled=false; btn.textContent="登录商家后台";
+            var pi=document.getElementById("lgPass"); if(pi) pi.focus();
+            return;
+          }
+          setAuth(u); setAdminPass(pw);
           state.view="admin"; state.selProduct=null;
           render();
           loadIngCosts().then(function(){ return loadBeansCloud(); }).then(function(){ if(state.view==="admin") render(); });
-          toast("已登录，欢迎回来");
-        },220);
+          toast("已登录 "+u+"，欢迎回来");
+        })();
       });
     }
     setTimeout(function(){ var i=document.getElementById("lgUser"); if(i) i.focus(); },160);
@@ -1579,10 +1569,10 @@
     if(!supaReady()){ adminOrders=[]; ordErr="本机模式预览，读不到云端订单。"; ordLoaded=true; return; }
     try{
       var pass=adminPass();
-      var r = pass ? await sb.rpc("admin_list_orders",{pass:pass}) : null;
+      var r = pass ? await sb.rpc("t_admin_list_orders",{p_tenant:adminTenant(), p_pass:pass}) : null;
       if(!r || (r.error && rpcMissing(r.error))){
         /* 云端还没有该函数：退回直读（订单表收回读权限后这条会失败） */
-        var q=await sb.from("orders").select("*").order("created_at",{ascending:false}).limit(40);
+        var q=await sb.from("orders").select("*").eq("tenant_id",adminTenant()).order("created_at",{ascending:false}).limit(40);
         if(q.error) throw q.error;
         adminOrders=q.data||[];
       }else{
@@ -1665,8 +1655,14 @@
       var el=document.getElementById("setPass");
       var pw=(el && el.value || "").trim();
       if(!pw){ toast("先输入口令"); return; }
-      if(authToken(AUTH_USER,pw)!==AUTH_HASH){ toast("口令不对"); return; }
-      setAdminPass(pw); toast("口令已记住，可以切换了"); render();
+      fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_admin_login", {
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body: JSON.stringify({p_tenant:adminTenant(), p_pass:pw})
+      }).then(function(r){ return r.json(); }).then(function(j){
+        if(!(j && j.ok)){ toast("口令不对"); return; }
+        setAdminPass(pw); toast("口令已记住，可以切换了"); render();
+      }).catch(function(){ toast("验证失败，检查网络"); });
     });
     document.getElementById("previewLanding").addEventListener("click",function(){ goView("landing"); });
     document.getElementById("previewLogin").addEventListener("click",function(){ openLogin(); });
@@ -1759,10 +1755,10 @@
     if(!supaReady()){ alert("本机模式改不了云端订单状态。"); return; }
     try{
       var pass = adminPass();
-      var r = pass ? await sb.rpc("admin_set_order_status",{pass:pass, p_order_no:no, p_status:st}) : null;
+      var r = pass ? await sb.rpc("t_admin_set_order_status",{p_tenant:adminTenant(), p_pass:pass, p_order_no:no, p_status:st}) : null;
       if(!r || (r.error && rpcMissing(r.error))){
         /* 云端还没建该函数：退回旧写法，保证未跑 SQL 时后台照常可用 */
-        var u = await sb.from("orders").update({status:st,updated_at:new Date().toISOString()}).eq("order_no",no);
+        var u = await sb.from("orders").update({status:st,updated_at:new Date().toISOString()}).eq("tenant_id",adminTenant()).eq("order_no",no);
         if(u.error) throw u.error;
       }else if(r.error){
         throw r.error;
@@ -1778,7 +1774,7 @@
     try{
       var pass=adminPass();
       if(!pass){ alert("登录状态已失效，请重新登录后再删。"); return; }
-      var r=await sb.rpc("admin_delete_order",{pass:pass, p_order_no:no});
+      var r=await sb.rpc("t_admin_delete_order",{p_tenant:adminTenant(), p_pass:pass, p_order_no:no});
       if(r.error) throw r.error;
       adminOrders=adminOrders.filter(function(x){ return x.order_no!==no; });
       renderOrders();
@@ -2037,7 +2033,7 @@
     if(beanPushBusy){ beanPushAgain=true; return {ok:false,busy:true}; }
     beanPushBusy=true;
     try{
-      var r=await sb.rpc("admin_save_beans", {pass:adminPass(), p_data: state.beans});
+      var r=await sb.rpc("t_admin_save_beans", {p_tenant:adminTenant(), p_pass:adminPass(), p_data: state.beans});
       if(r.error){
         if(rpcMissing(r.error)){ beanSync.state="local"; console.warn("豆价表 RPC 不存在，先存本机"); }
         else { beanSync.state="failed"; console.warn("豆价表上云失败", r.error); }
@@ -2055,7 +2051,7 @@
   async function loadBeansCloud(){
     if(!supaReady() || !sb || !adminPass()) return;
     try{
-      var r=await sb.rpc("admin_list_beans", {pass:adminPass()});
+      var r=await sb.rpc("t_admin_list_beans", {p_tenant:adminTenant(), p_pass:adminPass()});
       if(r.error){ if(!rpcMissing(r.error)) console.warn("读取豆价表失败", r.error); return; }
       var d=r.data;
       if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d=[]; } }

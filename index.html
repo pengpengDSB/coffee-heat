@@ -397,6 +397,17 @@
   var IMG_BASE = "https://pnucsuxkduvwpgklizmw.supabase.co/storage/v1/object/public/product-images/";
   var SCALE_FLOOR = 200;
   var sb = null, db = {ings:[], products:[]}, ready=false;
+
+  /* ---------- 商户（租户）识别：链接带 ?t= 就认它，否则用上次记住的，默认 bj01 ---------- */
+  var TENANT_KEY = "cafe_tenant_v1";
+  function detectTenant(){
+    var q = null;
+    try{ q = new URLSearchParams(location.search).get("t"); }catch(e){}
+    if(q && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(q)){ writeLS(TENANT_KEY, q); return q; }
+    var saved = readLS(TENANT_KEY, null);
+    return (saved && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(saved)) ? saved : "bj01";
+  }
+  var TENANT = detectTenant();
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
     sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[] };
 
@@ -429,10 +440,10 @@
     if(!supaReady()) return;
     // 直连 HTTP，不依赖 supabase-js 客户端是否已初始化
     try{
-      fetch(SUPA_CONFIG.url + "/rest/v1/rpc/upsert_customer", {
+      fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_upsert_customer", {
         method:"POST", cache:"no-store",
         headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
-        body: JSON.stringify({p_phone:phone, p_nick:nick||"", p_visitor:visitorId()})
+        body: JSON.stringify({p_tenant:TENANT, p_phone:phone, p_nick:nick||"", p_visitor:visitorId()})
       }).catch(function(){});
     }catch(e){}
   }
@@ -440,10 +451,14 @@
 
   async function loadLoginMode(){
     try{
-      var r=await fetch(SUPA_CONFIG.url + "/rest/v1/settings?select=value&key=eq.site", {headers:supaHeaders(), cache:"no-store"});
+      var r=await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_site", {
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body: JSON.stringify({p_tenant:TENANT})
+      });
       if(!r.ok) return;
-      var rows=await r.json();
-      var lm=rows && rows[0] && rows[0].value && rows[0].value.loginMode;
+      var site=await r.json();
+      var lm=site && site.loginMode;
       if(lm==="off"||lm==="lazy"||lm==="strict"){ loginMode=lm; }
       else { var cache=readLS("cafe_login_mode_v1",null); if(cache) loginMode=cache; }
       writeLS("cafe_login_mode_v1", loginMode);
@@ -1272,7 +1287,7 @@
       return {pid:x.pid,name:x.name,qty:x.qty,price:x.price,kcal:x.kcal,milk:x.milk,sugar:x.sugar,ice:x.ice};
     });
     var me=buyer();
-    var payload={order_no:"", visitor_id:visitorId(), items:items,
+    var payload={tenant:TENANT, order_no:"", visitor_id:visitorId(), items:items,
       total:Math.round(cartTotal()*100)/100, total_kcal:Math.round(cartKcal()*10)/10,
       pickup:"到店自取", note:note, status:"待制作", created_at:new Date().toISOString(),
       buyer_phone:(me?me.phone:""), buyer_nick:(me?me.nick:"")};
@@ -1281,7 +1296,7 @@
     if(supaReady()){
       /* 优先走服务端：单号、金额、热量都由数据库生成，前端不预读订单表 */
       try{
-        var rpc0=await sb.rpc('create_order',{payload:payload});
+        var rpc0=await sb.rpc('t_create_order',{payload:payload});
         if(!rpc0.error){
           saved=true;
           payload=Object.assign({},payload,rpc0.data||{});
@@ -1300,7 +1315,8 @@
         for(var attempt=0; attempt<3; attempt++){
           payload.order_no=prefix+pad3(seq);
           try{
-            var ins=await sb.from('orders').insert(payload);
+            var rowIns=Object.assign({tenant_id:TENANT}, payload);
+            var ins=await sb.from('orders').insert(rowIns);
             if(!ins.error){ saved=true; break; }
             if(ins.error && ins.error.code==="23505"){ seq++; continue; }
             console.error("insert order failed",ins.error); break;
@@ -1327,9 +1343,9 @@
     var vid=visitorId();
     if(supaReady()){
       try{
-        var r=await sb.rpc('get_my_orders',{p_visitor:vid});
+        var r=await sb.rpc('t_get_my_orders',{p_tenant:TENANT, p_visitor:vid});
         if(!r.error && r.data){ state.orders=(Array.isArray(r.data)?r.data:[]).slice(0,20); return; }
-        var q=await sb.from('orders').select('*').eq('visitor_id',vid).order('created_at',{ascending:false}).limit(20);
+        var q=await sb.from('orders').select('*').eq('tenant_id',TENANT).eq('visitor_id',vid).order('created_at',{ascending:false}).limit(20);
         if(!q.error && q.data){ state.orders=q.data; return; }
       }catch(e){}
     }
@@ -1376,13 +1392,13 @@
     await new Promise(function(r){ setTimeout(r,6000); });
     if(!state.viewOrder || state.viewOrder.order_no!==no) return;
     try{
-      var r=await sb.rpc('get_order',{p_order_no:no, p_visitor:visitorId()});
+      var r=await sb.rpc('t_get_order',{p_tenant:TENANT, p_order_no:no, p_visitor:visitorId()});
       var st=(r.data && r.data.status) || (Array.isArray(r.data)&&r.data[0]&&r.data[0].status) || "";
       if(!r.error && st){
         if(st!==state.viewOrder.status){ state.viewOrder.status=st; render(); }
         return;
       }
-      var q=await sb.from("orders").select("status").eq("order_no",no).limit(1);
+      var q=await sb.from("orders").select("status").eq("tenant_id",TENANT).eq("order_no",no).limit(1);
       if(!q.error && q.data && q.data[0] && q.data[0].status && q.data[0].status!==state.viewOrder.status){
         state.viewOrder.status=q.data[0].status; render();
       }
@@ -1407,10 +1423,10 @@
     if(!supaReady()){ db=defaultData(); render(); return; }
     try{
       sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
-      const res = await Promise.all([ sb.from('ingredients').select('*'), sb.from('products').select('*') ]);
-      if(res[0].error) throw res[0].error;
-      if(res[1].error) throw res[1].error;
-      var ings=(res[0].data||[]).map(rowToIng), prods=(res[1].data||[]).map(rowToProduct);
+      const cat = await sb.rpc('t_catalog',{p_tenant:TENANT});
+      if(cat.error) throw cat.error;
+      const pack = cat.data || {};
+      var ings=(pack.ingredients||[]).map(rowToIng), prods=(pack.products||[]).map(rowToProduct);
       db=(ings.length||prods.length)?{ings:ings,products:prods}:defaultData();
     }catch(e){
       db=defaultData();
