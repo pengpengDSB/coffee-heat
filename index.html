@@ -4,8 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>精品咖啡</title>
-<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Archivo:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Archivo:wght@300;400;500&family=Noto+Serif+SC:wght@900&display=swap">
 <style>
+  /* ===== 开屏：品牌片头 ===== */
+  #csplash{position:fixed;inset:0;z-index:60;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity .45s ease}
+  #csplash.hide{opacity:0;pointer-events:none}
+  .cs-mark{display:flex;align-items:center;gap:14px}
+  .cs-bar{width:3px;height:46px;background:var(--brown);transform-origin:center;animation:csBar .6s .05s both}
+  .cs-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:52px;line-height:1.2;letter-spacing:.1em;color:var(--dark);display:flex}
+  .cs-word i{font-style:normal;animation:csWord .7s cubic-bezier(.2,.7,.3,1) both}
+  .cs-word i:nth-child(1){animation-delay:.25s}
+  .cs-word i:nth-child(2){animation-delay:.45s}
+  .cs-sub{margin-top:16px;font-size:11px;letter-spacing:.34em;padding-left:.34em;color:var(--gray);animation:csWord .8s .8s both}
+  .cs-line{position:absolute;left:50%;bottom:calc(78px + env(safe-area-inset-bottom));transform:translateX(-50%);width:104px;height:2px;background:var(--line-2);overflow:hidden}
+  .cs-line span{display:block;height:100%;width:100%;background:var(--brown);transform-origin:left;animation:csLine 1.9s .1s linear both}
+  .cs-skip{position:absolute;left:0;right:0;bottom:calc(36px + env(safe-area-inset-bottom));text-align:center;font-size:10px;letter-spacing:.2em;color:var(--gray-2)}
+  @keyframes csBar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes csWord{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes csLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  /* ===== 开屏：读取数据的字标呼吸（同一套） ===== */
+  .cs-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:70vh}
+  .cs-loader .cl-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:30px;letter-spacing:.14em;padding-left:.14em;color:var(--dark);animation:clBreath 1.6s ease-in-out infinite}
+  .cs-loader .cl-sub{font-size:11px;letter-spacing:.28em;padding-left:.28em;color:var(--gray-2)}
+  @keyframes clBreath{0%,100%{opacity:.3}50%{opacity:1}}
+  body.splashing .cs-loader{opacity:0} /* 片头期间不露出第二个字标 */
+  @media(prefers-reduced-motion:reduce){
+    .cs-bar,.cs-word i,.cs-sub,.cs-line span,.cs-loader .cl-word{animation:none}
+  }
+
   :root{
     --paper:#FCFCFA;
     --ink:#141410;
@@ -372,7 +398,38 @@
   .lgok{flex:1;border:none;border-radius:8px;background:var(--dark);color:#F4F1E9;padding:13px 16px;font:inherit;font-size:14px;letter-spacing:.08em;cursor:pointer}
 </style>
 </head>
-<body>
+<body class="splashing">
+<!-- ===== 开屏：品牌片头（每次打开播一次，点击 / 任意键跳过） ===== -->
+<div id="csplash" role="presentation" aria-label="杯记">
+  <div class="cs-mark">
+    <span class="cs-bar"></span>
+    <span class="cs-word"><i>杯</i><i>记</i></span>
+  </div>
+  <div class="cs-sub">每一杯，都看得见</div>
+  <div class="cs-line"><span></span></div>
+  <div class="cs-skip">点击跳过</div>
+</div>
+<script>
+(function(){
+  var sp=document.getElementById("csplash");
+  if(!sp) return;
+  var done=false, timer=null;
+  function close(){
+    if(done) return; done=true;
+    if(timer) clearTimeout(timer);
+    sp.classList.add("hide");
+    setTimeout(function(){
+      if(sp.parentNode) sp.parentNode.removeChild(sp);
+      document.body.classList.remove("splashing");
+    },500);
+    document.removeEventListener("keydown",close);
+  }
+  sp.addEventListener("click",close);
+  document.addEventListener("keydown",close);
+  if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ close(); return; }
+  timer=setTimeout(close,2100); /* 片头约 2 秒，数据在后台并行读取 */
+})();
+</script>
 <div class="phone">
   <div id="app"></div>
   <div id="cartbar"></div>
@@ -1443,7 +1500,7 @@
   }
 
   async function boot(){
-    app.innerHTML='<div class="page" style="padding-top:56px"><div class="foot">正在读取配料库…</div></div>';
+    app.innerHTML='<div class="cs-loader"><div class="cl-word">杯记</div><div class="cl-sub">正在准备今天的饮品</div></div>';
     loadLoginMode();
     if(!supaReady()){ db=defaultData(); render(); return; }
     try{
