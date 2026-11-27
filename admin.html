@@ -150,15 +150,16 @@
   .admin-tabs button.active{background:none;color:var(--ink);font-weight:500;border-bottom:2px solid var(--ink)}
 
   /* ===== 后台标题区：主操作上提 + 营业状态 ===== */
-  .adm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:28px}
-  .adm-head-l{min-width:0}
-  .page-title-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+  .adm-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 28px}
+  .page-title-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;min-width:0}
+  .page-title-row h1.page-title{margin:0}
   .biz-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.12em;line-height:1.4;
     color:var(--low);background:var(--low-bg);border:1px solid #D8E4DB;border-radius:999px;padding:3px 10px 3px 8px;white-space:nowrap}
   .biz-badge i{width:5px;height:5px;border-radius:50%;background:var(--low);display:block}
   .biz-badge.closed{color:var(--high);background:var(--high-bg);border-color:#E7D0C9}
   .biz-badge.closed i{background:var(--high)}
-  .adm-acts{display:flex;align-items:center;gap:9px;margin-top:28px;flex:none}
+  .adm-acts{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none}
+  .adm-sub{grid-column:1 / -1;max-width:none;margin:6px 0 24px;line-height:1.75}
   .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);
     font:inherit;font-size:12px;letter-spacing:.08em;padding:9px 16px;border-radius:999px;cursor:pointer;
     transition:border-color .16s,background .16s}
@@ -830,8 +831,9 @@
     .admin-tabs{flex-wrap:wrap;gap:6px}
     .admin-tabs span{margin-left:0;flex-wrap:wrap}
     .admin-tabs .ghost-btn{padding:8px 10px;font-size:10.5px}
-    .adm-head{flex-direction:column;gap:0}
-    .adm-acts{margin-top:4px;flex-wrap:wrap}
+    .adm-head{grid-template-columns:minmax(0,1fr);gap:0}
+    .adm-acts{margin-top:12px;justify-content:flex-start;flex-wrap:wrap}
+    .adm-sub{margin:10px 0 20px}
     .pill{font-size:11.5px;padding:8px 13px}
     .toolbar{flex-direction:column;align-items:stretch;gap:10px}
     .toolbar .search{min-width:0}
@@ -2492,9 +2494,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var ICON_CLOCK='<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
     var ICON_LOG='<svg viewBox="0 0 16 16"><path d="M4 2.5h8v11h-8z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M6 5.5h4M6 8h4M6 10.5h2.5" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>';
     var html = '<div class="wrap">';
-    html += '<div class="adm-head"><div class="adm-head-l">' +
+    html += '<div class="adm-head">' +
       '<div class="page-title-row"><h1 class="page-title">商家后台</h1>'+bizBadgeHTML()+'</div>' +
-      '<p class="page-sub">维护配料库与饮品配方；热量按「每 1g / 1ml 大卡 × 用量」实时计算。'+(supaReady()?'数据已同步到云端，多端一致。':'数据保存在本机浏览器。')+'</p></div>' +
       '<div class="adm-acts">' +
         '<button class="pill" id="shopSetBtn">'+ICON_PEN+'店铺设置</button>' +
         '<button class="pill solid" id="qrBtn">'+ICON_QR+'顾客端二维码</button>' +
@@ -2510,7 +2511,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             '<button class="warn" id="resetBtn">'+ICON_RS+'重置示例数据</button>' +
           '</div>' +
         '</div>' +
-      '</div></div>';
+      '</div>' +
+      '<p class="page-sub adm-sub">维护配料库与饮品配方；热量按「每 1g / 1ml 大卡 × 用量」实时计算。'+(supaReady()?'数据已同步到云端，多端一致。':'数据保存在本机浏览器。')+'</p>' +
+      '</div>';
     html += '<div class="admin-tabs">' +
       '<button data-tab="ings" class="'+(state.tab==="ings"?"active":"")+'">配料库</button>' +
       '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
