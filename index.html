@@ -23,13 +23,14 @@
   @keyframes csWord{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes csLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}
   /* ===== 开屏：读取数据的字标呼吸（同一套） ===== */
-  .cs-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:70vh}
-  .cs-loader .cl-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:30px;letter-spacing:.14em;padding-left:.14em;color:var(--dark);animation:clBreath 1.6s ease-in-out infinite}
+  .cs-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:70vh}
+  .cs-loader .cl-line{width:96px;height:2px;background:var(--line-2);overflow:hidden;position:relative}
+  .cs-loader .cl-line span{position:absolute;left:0;top:0;height:100%;width:40%;background:var(--brown);animation:clSweep 1.15s ease-in-out infinite}
+  @keyframes clSweep{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
   .cs-loader .cl-sub{font-size:11px;letter-spacing:.28em;padding-left:.28em;color:var(--gray-2)}
-  @keyframes clBreath{0%,100%{opacity:.3}50%{opacity:1}}
-  body.splashing .cs-loader{opacity:0} /* 片头期间不露出第二个字标 */
+  body.splashing .cs-loader{opacity:0} /* 片头期间不露出加载态 */
   @media(prefers-reduced-motion:reduce){
-    .cs-bar,.cs-word i,.cs-sub,.cs-line span,.cs-loader .cl-word{animation:none}
+    .cs-bar,.cs-word i,.cs-sub,.cs-line span,.cs-loader .cl-line span{animation:none}
   }
 
   :root{
@@ -419,7 +420,7 @@
 (function(){
   var sp=document.getElementById("csplash");
   if(!sp) return;
-  var done=false, timer=null;
+  var done=false, timer=null, minOk=false, bootOk=false;
   function close(){
     if(done) return; done=true;
     if(timer) clearTimeout(timer);
@@ -430,10 +431,14 @@
     },500);
     document.removeEventListener("keydown",close);
   }
+  /* 数据没准备好就先留住片头：最短 2.1 秒，最长 6 秒，避免"片头 → 第二个字标"两次开屏 */
+  function wantClose(){ if(minOk && bootOk) close(); }
+  window.__cSplashDone=function(){ bootOk=true; wantClose(); };
   sp.addEventListener("click",close);
   document.addEventListener("keydown",close);
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ close(); return; }
-  timer=setTimeout(close,2100); /* 片头约 2 秒，数据在后台并行读取 */
+  timer=setTimeout(function(){ minOk=true; wantClose(); },2100); /* 片头约 2 秒 */
+  setTimeout(close,6000); /* 兜底：6 秒还没回话也收场 */
 })();
 </script>
 <div class="phone">
@@ -1582,7 +1587,7 @@
   }
 
   async function boot(){
-    app.innerHTML='<div class="cs-loader"><div class="cl-word">'+esc(siteName())+'</div><div class="cl-sub">正在准备今天的饮品</div></div>';
+    app.innerHTML='<div class="cs-loader"><div class="cl-line"><span></span></div><div class="cl-sub">正在准备今天的饮品</div></div>';
     await loadLoginMode();
     if(!supaReady()){ db=defaultData(); render(); return; }
     try{
@@ -1600,7 +1605,8 @@
     render();
     loadOrders().then(function(){ if(((state.tab==="me"&&!state.mePage)||state.tab==="orders") && !state.viewOrder) render(); });
   }
-  boot();
+  boot().then(function(){ if(window.__cSplashDone) window.__cSplashDone(); })
+        .catch(function(){ if(window.__cSplashDone) window.__cSplashDone(); });
 })();
 </script>
 </body>

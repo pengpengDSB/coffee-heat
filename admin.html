@@ -52,13 +52,15 @@
     .splash-sub{font-size:11px;letter-spacing:.32em;padding-left:.32em}
   }
   /* ===== 开屏：数据加载过渡（同一字标呼吸） ===== */
-  body.splashing .boot-loader{opacity:0} /* 片头播放与淡出期间不露出第二个字标 */
-  .boot-loader{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-  .boot-loader .bl-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:32px;letter-spacing:.14em;padding-left:.14em;color:var(--espresso);animation:blBreath 1.6s ease-in-out infinite}
+  body.splashing .boot-loader{opacity:0} /* 片头期间不露出加载态 */
+  .boot-loader{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+  .boot-loader .bl-line{width:104px;height:2px;background:var(--line);overflow:hidden;position:relative}
+  .boot-loader .bl-line span{position:absolute;left:0;top:0;height:100%;width:40%;background:var(--gold);animation:blSweep 1.15s ease-in-out infinite}
+  @keyframes blSweep{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
   .boot-loader .bl-sub{font-size:11px;letter-spacing:.3em;padding-left:.3em;color:var(--ink-faint)}
   @keyframes blBreath{0%,100%{opacity:.3}50%{opacity:1}}
   @media(prefers-reduced-motion:reduce){
-    .splash-bar,.splash-word i,.splash-sub,.splash-line span,.boot-loader .bl-word{animation:none}
+    .splash-bar,.splash-word i,.splash-sub,.splash-line span,.boot-loader .bl-line span{animation:none}
   }
 
   /* ===== 顶栏 ===== */
@@ -1144,7 +1146,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 (function(){
   var sp=document.getElementById("splash");
   if(!sp) return;
-  var done=false, timer=null;
+  var done=false, timer=null, minOk=false, bootOk=false;
   function close(){
     if(done) return; done=true;
     if(timer) clearTimeout(timer);
@@ -1155,10 +1157,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     },500);
     document.removeEventListener("keydown",close);
   }
+  /* 数据没准备好就先留住片头：最短 2.1 秒，最长 6 秒，避免"片头 → 第二个字标"两次开屏 */
+  function wantClose(){ if(minOk && bootOk) close(); }
+  window.__bootDone=function(){ bootOk=true; wantClose(); };
   sp.addEventListener("click",close);
   document.addEventListener("keydown",close);
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ close(); return; }
-  timer=setTimeout(close,2100); /* 片头约 2 秒，淡出 0.45 秒；数据加载在后台并行进行 */
+  timer=setTimeout(function(){ minOk=true; wantClose(); },2100); /* 片头约 2 秒，淡出 0.45 秒 */
+  setTimeout(close,6000); /* 兜底：6 秒还没回话也收场 */
 })();
 </script>
 
@@ -5498,8 +5504,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     }catch(e){}
   })();
 
-  app.innerHTML = '<div class="boot-loader"><div class="bl-word">杯记</div><div class="bl-sub">正在准备你的配方与成本</div></div>';
-  boot().then(function(){ render(); }).catch(function(){ render(); });
+  app.innerHTML = '<div class="boot-loader"><div class="bl-line"><span></span></div><div class="bl-sub">正在准备你的配方与成本</div></div>';
+  boot().then(function(){ if(window.__bootDone) window.__bootDone(); render(); })
+      .catch(function(){ if(window.__bootDone) window.__bootDone(); render(); });
 })();
 </script>
 </body>
