@@ -5691,22 +5691,54 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     }catch(e){}
   })();
 
-  /* 大屏窗口：后台一保存就收到通知，重拉目录后重绘，不停播 */
+  /* ---------- 大屏窗口的取数：同机广播 / 云端实时订阅(版本表) / 版本轮询 / 全量兜底 ---------- */
+  function boardRedraw(){
+    return refreshCatalog().then(function(ok){ if(ok && state.view==="board") renderBoard(); });
+  }
   if(BOARD_MODE && SYNC_CH){
     SYNC_CH.onmessage=function(ev){
       var d=(ev&&ev.data)||{};
-      if(d.type==="catalog"){
-        refreshCatalog().then(function(ok){ if(ok && state.view==="board") renderBoard(); });
-      }else if(d.type==="site"){
-        loadSiteSetting().then(function(){ if(state.view==="board") renderBoard(); });
-      }
+      if(d.type==="catalog"){ boardRedraw(); }
+      else if(d.type==="site"){ loadSiteSetting().then(function(){ if(state.view==="board") renderBoard(); }); }
     };
   }
-  /* 兜底轮询：浏览器不支持 BroadcastChannel 或窗口是另开的进程时，60 秒对一次云端 */
+  /* 版本号：小表 catalog_ver 由触发器维护，读它比拉全量目录便宜得多 */
+  function fetchCatalogVer(){
+    return fetch(SUPA_CONFIG.url+"/rest/v1/catalog_ver?tenant_id=eq."+encodeURIComponent(adminTenant())+"&select=ver",
+      {cache:"no-store", headers:supaHeaders()})
+      .then(function(r){ if(!r.ok) return null; return r.json(); })
+      .then(function(j){ return (j && j[0] && j[0].ver) ? String(j[0].ver) : null; })
+      .catch(function(){ return null; });
+  }
+  var BW_LASTVER=null, BW_VERMISS=false, BW_KICK=null;
+  function bwKick(delay){
+    if(BW_KICK) clearTimeout(BW_KICK);
+    BW_KICK=setTimeout(function(){ BW_KICK=null; boardRedraw(); }, delay||400);
+  }
   if(BOARD_MODE){
+    /* 1) 真·实时：订阅 catalog_ver 的变更（跨设备、跨浏览器都生效） */
+    try{
+      if(supaReady()){
+        if(!sb) sb=supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+        sb.channel("catalog-"+adminTenant())
+          .on("postgres_changes",
+              {event:"*", schema:"public", table:"catalog_ver", filter:"tenant_id=eq."+adminTenant()},
+              function(){ bwKick(350); })
+          .subscribe(function(st){ try{ window.__rtState=st; }catch(e){} });
+      }
+    }catch(e){ try{ window.__rtErr=String(e); }catch(_){} }
+    /* 2) 兜底：20 秒看一次版本号，变了才拉全量（版本表没建就退回 60 秒全量） */
     setInterval(function(){
       if(state.view!=="board") return;
-      refreshCatalog().then(function(ok){ if(ok) renderBoard(); });
+      fetchCatalogVer().then(function(v){
+        if(!v){ BW_VERMISS=true; return; }
+        BW_VERMISS=false;
+        if(v!==BW_LASTVER){ BW_LASTVER=v; boardRedraw(); }
+      });
+    },20000);
+    setInterval(function(){
+      if(state.view!=="board" || !BW_VERMISS) return;
+      boardRedraw();
     },60000);
   }
 
