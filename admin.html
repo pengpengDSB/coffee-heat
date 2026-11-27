@@ -408,24 +408,24 @@
     .bw-stage.n1{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
   }
 
-  /* ---- 顾客端二维码（每店一码） ---- */
-  .qr-mask{position:fixed;inset:0;z-index:96;background:rgba(18,16,13,.58);display:flex;align-items:center;justify-content:center;padding:20px}
-  .qr-panel{position:relative;background:#FCF9F1;border-radius:12px;padding:24px 26px 20px;width:min(430px,92vw);
-    max-height:92vh;overflow:auto;box-shadow:0 26px 70px rgba(0,0,0,.28);text-align:center}
-  .qr-kicker{font-size:9.5px;letter-spacing:.34em;color:#9A8B72}
-  .qr-panel h3{font-size:19px;font-weight:500;margin:9px 0 2px;letter-spacing:.02em}
-  .qr-sub{font-size:11px;color:#8A7A63;letter-spacing:.06em}
-  .qr-code{display:inline-block;margin:16px 0 6px;padding:10px;background:#fff;border:1px solid #E4DECE}
-  .qr-code canvas{display:block;width:min(280px,62vw);height:min(280px,62vw)}
-  .qr-url{font-size:10.5px;line-height:1.7;color:#3B352B;background:#F3EEE2;border-radius:6px;
-    padding:9px 11px;text-align:left;word-break:break-all;margin-top:10px}
-  .qr-ops{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .qr-ok{border:0;border-radius:6px;background:#141410;color:#F6F2E8;padding:9px 20px;font-size:12px;cursor:pointer}
-  .qr-note{font-size:11px;line-height:1.85;color:#8A7A63;margin-top:13px;text-align:left;
-    border-top:1px solid #E9E3D3;padding-top:11px}
+  /* ---- 顾客端二维码：海报式（每店一码） ---- */
+  .qr-mask{position:fixed;inset:0;z-index:96;background:rgba(18,16,13,.6);display:flex;align-items:center;
+    justify-content:center;padding:18px;overflow:auto}
+  .qr-panel{position:relative;width:min(438px,94vw);max-height:94vh;overflow:auto;background:#F6F2E7;
+    border-radius:10px;padding:14px 14px 16px;box-shadow:0 26px 70px rgba(0,0,0,.3)}
+  .qr-poster{display:block;width:100%;height:auto;border-radius:4px;box-shadow:0 2px 10px rgba(60,45,25,.12)}
+  .qr-brandrow{display:flex;align-items:center;gap:8px;margin:12px 2px 0}
+  .qr-brandrow label{font-size:10.5px;color:#7E7361;letter-spacing:.06em;flex:none}
+  .qr-brandrow input{flex:1;min-width:0;border:1px solid #DCD3BF;background:#FFFDF8;border-radius:5px;
+    padding:6px 9px;font-size:11.5px;color:#141410;font-family:inherit}
+  .qr-brandrow input:focus{outline:none;border-color:#A9773F}
+  .qr-ops{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .qr-ok{border:0;border-radius:6px;background:#141410;color:#F6F2E8;padding:9px 18px;font-size:12px;cursor:pointer}
+  .qr-url{font-size:10px;line-height:1.6;color:#6E6353;word-break:break-all;margin:10px 2px 0;text-align:left}
+  .qr-note{font-size:10.5px;line-height:1.75;color:#7E7361;margin-top:8px;text-align:left}
   .qr-note b{color:#141410;font-weight:500}
-  .qr-x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:20px;line-height:1;
-    color:#8A7A63;cursor:pointer;padding:2px 6px}
+  .qr-x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:19px;line-height:1;
+    color:#8A7A63;cursor:pointer;padding:3px 7px}
 
   /* ---- 辅料比价 ---- */
   .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
@@ -2353,7 +2353,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         db=defaultData(); save(); syncRemote(); render();
       }
     });
-    document.getElementById("qrBtn").addEventListener("click",function(){ openTenantQr(adminTenant(), "杯记 · 顾客端"); });
+    document.getElementById("qrBtn").addEventListener("click",function(){ openTenantQr(adminTenant()); });
     document.getElementById("exportBtn").addEventListener("click",exportJSON);
     document.getElementById("exportMdBtn").addEventListener("click",exportMarkdown);
     document.getElementById("importBtn").addEventListener("click",function(){ document.getElementById("importFile").click(); });
@@ -4586,66 +4586,162 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
   function exitBoard(){ state.view=(typeof isAuthed==="function" && isAuthed())?"admin":"landing"; render(); }
 
-  /* ============ 顾客端二维码：一店一码 ============
-     链接形如 https://…/index.html?t=bj01，租户只在 URL 参数里，不靠设备记忆。
-     二维码在本地用 canvas 画（内联二维码库），不请求任何外部接口。 */
+  /* ============ 顾客端二维码：一店一码 · 海报 ============
+     画成一张 902×1280 的海报（品牌行 / 主张 / 白卡里的码 / 免责脚注），
+     弹窗里就是这张海报的预览，下载按 2 倍出图直接打印。
+     二维码由内联二维码库在本地绘制，不请求任何外部接口。 */
+  var QR_W=902, QR_H=1280;
+  var QR_SERIF='"Songti SC","Noto Serif CJK SC","STSong","SimSun",serif';
+  var QR_SANS='"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif';
+
   function cQrUrl(tenant){
     var base=location.origin+location.pathname.replace(/[^\/]*$/,"");
     return base+"index.html?t="+encodeURIComponent(tenant);
   }
-  function drawQr(canvas,text,size){
-    if(typeof qrcode!=="function") return;
+  function qrMatrix(text){
     var q=qrcode(0,"M"); q.addData(text); q.make();
-    var n=q.getModuleCount(), quiet=4;
-    var cell=Math.max(3,Math.floor((size||320)/(n+quiet*2)));
-    var px=cell*(n+quiet*2);
-    canvas.width=px; canvas.height=px;
+    return q;
+  }
+  /* 把二维码画进 (x,y,size) 的正方形，quiet 静区按模块数算 */
+  function paintQr(ctx,q,x,y,size,quiet){
+    var n=q.getModuleCount(), cell=Math.floor(size/(n+quiet*2));
+    x=Math.round(x); y=Math.round(y);
+    ctx.fillStyle="#FFFFFF"; ctx.fillRect(x,y,cell*(n+quiet*2),cell*(n+quiet*2));
+    ctx.fillStyle="#12100E";
+    for(var r=0;r<n;r++){
+      for(var c=0;c<n;c++){
+        if(q.isDark(r,c)) ctx.fillRect(x+(c+quiet)*cell,y+(r+quiet)*cell,cell,cell);
+      }
+    }
+  }
+  /* k=倍率；所有坐标按 902×1280 的设计稿写 */
+  function drawQrPoster(canvas, tenant, name, url, k){
+    k=k||1;
+    canvas.width=Math.round(QR_W*k); canvas.height=Math.round(QR_H*k);
     var ctx=canvas.getContext("2d");
-    ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,px,px);
-    ctx.fillStyle="#000000";
-    for(var r=0;r<n;r++){ for(var c=0;c<n;c++){ if(q.isDark(r,c)) ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell); } }
+    var S=function(v){ return v*k; };
+    ctx.scale(k,k);
+    ctx.fillStyle="#F6F2E7"; ctx.fillRect(0,0,QR_W,QR_H);
+
+    /* 品牌行：铜色短线 + 店名 + 竖线 + 副标 */
+    ctx.fillStyle="#A9773F"; ctx.fillRect(76,74,42,2);
+    var brand=(name||"杯记");
+    ctx.fillStyle="#1B1814";
+    var brandSize=40;
+    ctx.font=brandSize+'px '+QR_SERIF;
+    while(ctx.measureText(brand).width>150 && brandSize>26){ brandSize-=2; ctx.font=brandSize+'px '+QR_SERIF; }
+    ctx.textBaseline="alphabetic";
+    ctx.fillText(brand,128,102);
+    var bx=128+ctx.measureText(brand).width+18;
+    ctx.strokeStyle="#D9CFB8"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(Math.round(bx)+.5,74); ctx.lineTo(Math.round(bx)+.5,102); ctx.stroke();
+    ctx.fillStyle="#6E6353"; ctx.font='19px '+QR_SANS;
+    ctx.fillText("一杯的配方、热量与成本",bx+18,99);
+
+    /* 主张：两行宋体大字 */
+    ctx.fillStyle="#1B1814"; ctx.font='bold 80px '+QR_SERIF;
+    ctx.fillText("每一杯的热量，",74,298);
+    ctx.fillText("都看得见。",74,398);
+
+    /* 说明 */
+    ctx.fillStyle="#40392E"; ctx.font='24px '+QR_SANS;
+    ctx.fillText("浓缩、牛奶、糖浆，逐项拆给你看。",76,484);
+    ctx.fillText("点单前，先知道这杯多少大卡。",76,526);
+
+    /* 分隔细线 */
+    ctx.strokeStyle="#D9CFB8"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(76,564.5); ctx.lineTo(826,564.5); ctx.stroke();
+
+    /* 白卡 */
+    var cx=172, cy=582, cw=558, ch=516, cr=26;
+    ctx.save();
+    ctx.beginPath();
+    if(ctx.roundRect){ ctx.roundRect(cx,cy,cw,ch,cr); }
+    else{
+      ctx.moveTo(cx+cr,cy); ctx.lineTo(cx+cw-cr,cy); ctx.quadraticCurveTo(cx+cw,cy,cx+cw,cy+cr);
+      ctx.lineTo(cx+cw,cy+ch-cr); ctx.quadraticCurveTo(cx+cw,cy+ch,cx+cw-cr,cy+ch);
+      ctx.lineTo(cx+cr,cy+ch); ctx.quadraticCurveTo(cx,cy+ch,cx,cy+ch-cr);
+      ctx.lineTo(cx,cy+cr); ctx.quadraticCurveTo(cx,cy,cx+cr,cy);
+    }
+    ctx.closePath();
+    ctx.fillStyle="#FFFDF8"; ctx.fill();
+    ctx.strokeStyle="#E1D6BE"; ctx.lineWidth=1; ctx.stroke();
+    ctx.restore();
+
+    /* 码：白卡内居中，静区 2 模块 */
+    var qrSize=294;
+    paintQr(ctx,qrMatrix(url),(QR_W-qrSize)/2,cy+30,qrSize,2);
+
+    /* 卡内文案 */
+    ctx.textAlign="center";
+    ctx.fillStyle="#1B1814"; ctx.font='600 25px '+QR_SANS;
+    ctx.fillText("扫码看菜单 · 每杯热量",QR_W/2,cy+392);
+    ctx.fillStyle="#6E6353"; ctx.font='17.5px '+QR_SANS;
+    ctx.fillText("微信扫一扫即可打开，无需下载",QR_W/2,cy+428);
+    ctx.fillText("点单页里可切换奶种，热量跟着变",QR_W/2,cy+456);
+    ctx.textAlign="left";
+
+    /* 脚注 */
+    ctx.strokeStyle="#D9CFB8";
+    ctx.beginPath(); ctx.moveTo(76,1146.5); ctx.lineTo(826,1146.5); ctx.stroke();
+    ctx.fillStyle="#6E6353"; ctx.font='16px '+QR_SANS;
+    ctx.fillText("配方与成本在杯记里管理，换豆或换奶后自动更新。",76,1190);
+    ctx.fillStyle="#8A7A63"; ctx.font='14.5px '+QR_SANS;
+    ctx.fillText("热量为原料理论计算值，非实验室检测。",76,1219);
+  }
+  function qrBrandOf(tenant,name){
+    if(name) return name;
+    try{ var v=localStorage.getItem("cafe_qr_brand_"+tenant); if(v) return v; }catch(e){}
+    return "杯记";
   }
   function openTenantQr(tenant,name){
     var old=document.getElementById("qrMask"); if(old) old.parentNode.removeChild(old);
     var url=cQrUrl(tenant);
+    var brand=qrBrandOf(tenant,name);
     var el=document.createElement("div");
     el.className="qr-mask"; el.id="qrMask";
     el.innerHTML='<div class="qr-panel">'+
       '<button class="qr-x" id="qrX" aria-label="关闭">×</button>'+
-      '<div class="qr-kicker">CUSTOMER QR</div>'+
-      '<h3>'+esc(name||"顾客端")+'</h3>'+
-      '<div class="qr-sub">商户编码 '+esc(tenant)+'</div>'+
-      '<div class="qr-code"><canvas id="qrCanvas"></canvas></div>'+
-      '<div class="qr-url">'+esc(url)+'</div>'+
+      '<canvas class="qr-poster" id="qrPoster"></canvas>'+
+      '<div class="qr-brandrow"><label for="qrBrand">海报店名</label>'+
+        '<input id="qrBrand" maxlength="14" value="'+esc(brand)+'" placeholder="比如 杯记 · 下关店"></div>'+
       '<div class="qr-ops">'+
+        '<button class="ghost-btn" id="qrDl">下载海报 PNG</' + 'button>'+
         '<button class="ghost-btn" id="qrCopy">复制链接</button>'+
-        '<button class="ghost-btn" id="qrDl">下载 PNG</button>'+
         '<button class="qr-ok" id="qrOk">完成</button>'+
       '</div>'+
-      '<div class="qr-note">打印贴店内就用这个码。链接里的 <b>?t='+esc(tenant)+'</b> 决定顾客进哪家店——'+
-        '每店一份，别混用；换店必须换码，设备记不住是哪家。</div>'+
+      '<div class="qr-url">'+esc(url)+'</div>'+
+      '<div class="qr-note">每店一码：链接里的 <b>?t='+esc(tenant)+'</b> 决定顾客进哪家店。'+
+        '换店必须换海报，别混用。</div>'+
     '</div>';
     document.body.appendChild(el);
-    drawQr(document.getElementById("qrCanvas"),url,320);
+    drawQrPoster(document.getElementById("qrPoster"),tenant,brand,url,1);
+    var inp=document.getElementById("qrBrand");
+    if(inp){
+      inp.addEventListener("input",function(){
+        brand=inp.value.trim()||"杯记";
+        drawQrPoster(document.getElementById("qrPoster"),tenant,brand,url,1);
+        try{ localStorage.setItem("cafe_qr_brand_"+tenant,brand); }catch(e){}
+      });
+    }
     function close(){ var m=document.getElementById("qrMask"); if(m&&m.parentNode) m.parentNode.removeChild(m); }
     el.addEventListener("click",function(e){ if(e.target===el) close(); });
     document.getElementById("qrX").addEventListener("click",close);
     document.getElementById("qrOk").addEventListener("click",close);
     document.getElementById("qrCopy").addEventListener("click",function(){
-      var done=function(){ toast("链接已复制"); };
-      try{ navigator.clipboard.writeText(url).then(done,function(){ window.prompt("复制这个链接",url); }); }
+      try{ navigator.clipboard.writeText(url).then(function(){ toast("链接已复制"); },function(){ window.prompt("复制这个链接",url); }); }
       catch(e){ window.prompt("复制这个链接",url); }
     });
     document.getElementById("qrDl").addEventListener("click",function(){
       var cv=document.createElement("canvas");
-      drawQr(cv,url,1024);
+      drawQrPoster(cv,tenant,brand,url,2);
       try{
         var a=document.createElement("a");
-        a.download="顾客端二维码_"+tenant+".png";
+        a.download="顾客端海报_"+tenant+"_"+brand.replace(/[\\/:*?\"<>|\s]/g,"")+".png";
         a.href=cv.toDataURL("image/png");
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        toast("已下载 PNG");
-      }catch(e){ toast("下载失败，可右键画布另存"); }
+        toast("已下载海报 · 1804×2560");
+      }catch(e){ toast("下载失败，可右键海报另存"); }
     });
     if(!openTenantQr._key){
       openTenantQr._key=true;
