@@ -202,6 +202,15 @@
   .bh-dash{color:var(--ink-faint);font-size:11px}
   .bh-quick{margin-left:auto;font-size:10.5px;color:var(--gold);background:none;border:none;cursor:pointer;letter-spacing:.04em}
   .bh-quick:hover{text-decoration:underline}
+  /* 变更记录列表 */
+  .au-list{max-height:330px;overflow:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .au-row{display:flex;align-items:baseline;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:12px}
+  .au-row:last-child{border-bottom:none}
+  .au-k{width:56px;flex:none;color:var(--ink-faint);font-size:10.5px;letter-spacing:.1em}
+  .au-v{flex:1;min-width:0;color:var(--ink);line-height:1.55;word-break:break-word}
+  .au-v i{font-style:normal;color:var(--ink-faint);padding:0 3px}
+  .au-t{flex:none;color:var(--ink-faint);font-size:10.5px;letter-spacing:.02em}
+  .au-empty{padding:28px 6px;text-align:center;color:var(--ink-soft);font-size:11.5px;line-height:1.9}
 
   .grid{display:grid;gap:16px}
   @media(min-width:820px){ .grid.two{grid-template-columns:1fr 1fr} }
@@ -2481,6 +2490,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var ICON_MD='<svg viewBox="0 0 16 16"><path d="M3 3.5h10v9h-10z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M5 10.5V6l1.8 2.2L8.6 6v4.5M10.4 10.5V6" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>';
     var ICON_RS='<svg viewBox="0 0 16 16"><path d="M12.6 6.4A4.6 4.6 0 1 0 13 9.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M12.9 3.2v3.4h-3.4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
     var ICON_CLOCK='<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>';
+    var ICON_LOG='<svg viewBox="0 0 16 16"><path d="M4 2.5h8v11h-8z" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M6 5.5h4M6 8h4M6 10.5h2.5" fill="none" stroke="currentColor" stroke-width="1.1"/></svg>';
     var html = '<div class="wrap">';
     html += '<div class="adm-head"><div class="adm-head-l">' +
       '<div class="page-title-row"><h1 class="page-title">商家后台</h1>'+bizBadgeHTML()+'</div>' +
@@ -2491,6 +2501,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         '<div class="more-wrap"><button class="more-btn" id="moreBtn" aria-label="更多操作"><i></i><i></i><i></i></button>' +
           '<div class="more-menu" id="moreMenu">' +
             '<button id="hoursBtn">'+ICON_CLOCK+'营业时间</button>' +
+            '<button id="auditBtn">'+ICON_LOG+'变更记录</button>' +
             '<div class="sep"></div>' +
             '<button id="exportBtn">'+ICON_DL+'导出 JSON</button>' +
             '<button id="exportMdBtn">'+ICON_MD+'导出 Markdown</button>' +
@@ -2535,6 +2546,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var bzb=document.getElementById("bizBadge");
     if(bzb) bzb.addEventListener("click",openBizHours);
     document.getElementById("hoursBtn").addEventListener("click",openBizHours);
+    document.getElementById("auditBtn").addEventListener("click",openAuditLog);
     document.getElementById("qrBtn").addEventListener("click",function(){ openTenantQr(adminTenant()); });
     document.getElementById("shopSetBtn").addEventListener("click",openShopSettings);
     document.getElementById("exportBtn").addEventListener("click",exportJSON);
@@ -5001,6 +5013,88 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
      写云端走 t_set_site（settings.value 合并写），顾客端从 t_site 读回来同一份；
      未营业时顾客端首页提示 + 下单被挡。 */
   var BIZ_WDNAME = {0:"周日",1:"周一",2:"周二",3:"周三",4:"周四",5:"周五",6:"周六"};
+  function hoursSummary(c){
+    var N=[],i,w,open=[],rest=[],first=null,same=true;
+    for(i=0;i<7;i++) N.push(BIZ_WDNAME[i]);
+    if(!c || c.mode!=="custom") return "24 小时营业";
+    for(i=0;i<7;i++){
+      w=c.days[i];
+      if(w && w[0] && w[1]){ open.push(i); if(!first) first=w; else if(w[0]!==first[0]||w[1]!==first[1]) same=false; }
+      else rest.push(N[i]);
+    }
+    if(!open.length) return "每天休息";
+    if(open.length===7 && same) return "每天 "+first[0]+"–"+first[1];
+    var parts=[];
+    open.forEach(function(i){ var d=c.days[i]; parts.push(N[i]+" "+d[0]+"–"+d[1]); });
+    return parts.join("、")+(rest.length?("；"+rest.join("、")+" 休息"):"");
+  }
+  function auTime(iso){
+    var d=new Date(iso); if(!iso || isNaN(d.getTime())) return "";
+    return ("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+" "+
+           ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+  }
+  /* ============ 变更记录（只读，读 tenant_audit 的窄接口） ============
+     表本身对 anon 是 revoked 的，只有 t_admin_audit 能读，且只读自己店。 */
+  function openAuditLog(){
+    var old=document.getElementById("auMask"); if(old && old.parentNode) old.parentNode.removeChild(old);
+    var tenant=adminTenant(), pass=adminPass();
+    var el=document.createElement("div");
+    el.className="qr-mask"; el.id="auMask";
+    el.innerHTML='<div class="qr-panel" style="width:min(474px,94vw)">'+
+      '<button class="qr-x" id="auX" aria-label="关闭">×</button>'+
+      '<div class="ss-head"><div class="ss-title">变更记录</div>'+
+        '<div class="ss-sub">本店最近 20 条改动 · 只读</div></div>'+
+      '<div class="au-list" id="auList"><div class="au-empty">读取中…</div></div>'+
+      '<div class="qr-ops" style="margin-top:14px"><button class="qr-ok" id="auOk">关闭</button></div>'+
+      '<div class="qr-note">记的是店名、登录口令、营业时间三类改动；口令只记「改过」，不记具体值。</div>'+
+    '</div>';
+    document.body.appendChild(el);
+    function close(){ var m=document.getElementById("auMask"); if(m&&m.parentNode) m.parentNode.removeChild(m); }
+    el.addEventListener("click",function(e){ if(e.target===el) close(); });
+    document.getElementById("auX").addEventListener("click",close);
+    document.getElementById("auOk").addEventListener("click",close);
+
+    var list=document.getElementById("auList");
+    function say(msg){ list.innerHTML='<div class="au-empty">'+esc(msg)+'</div>'; }
+    if(!pass){ say("会话里没有口令，请退出后重新登录再查"); return; }
+    if(!supaReady()){ say("云端没连上，查不了"); return; }
+    fetch(SUPA_CONFIG.url+"/rest/v1/rpc/t_admin_audit",{
+      method:"POST", cache:"no-store",
+      headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+      body:JSON.stringify({p_tenant:tenant, p_pass:pass, p_limit:20})
+    }).then(function(r){
+      return r.text().then(function(txt){ return {code:r.status, txt:txt}; });
+    }).then(function(res){
+      var j=null; try{ j=JSON.parse(res.txt); }catch(e){}
+      if(res.code>=400 || !j || j.ok!==true){
+        var raw=String((j&&(j.message||j.details))||res.txt||("HTTP "+res.code));
+        if(/find|does not exist|schema cache|PGRST202/i.test(raw)){
+          say("云端还没建 t_admin_audit，先在 SQL Editor 跑《租户7_变更记录.sql》");
+          return;
+        }
+        var why={no_tenant:"没有这个商户",bad_pass:"当前口令不对，请重新登录"};
+        say(why[j&&j.reason] || ("读取失败："+raw.slice(0,60)));
+        return;
+      }
+      var rows=j.rows||[];
+      if(!rows.length){ say("还没有记录。改店名、口令、营业时间都会记在这里。"); return; }
+      var KIND={name:"店名",pass:"口令",hours:"营业时间"};
+      list.innerHTML=rows.map(function(x){
+        var k=KIND[x.kind]||x.kind;
+        var v;
+        if(x.kind==="pass"){ v="口令已更新"; }
+        else {
+          var a=(x.old==null||x.old==="")?"—":String(x.old);
+          v=esc(a)+' <i>→</i> '+esc(x.new==null?"—":String(x.new));
+        }
+        return '<div class="au-row"><span class="au-k">'+esc(k)+'</span>'+
+               '<span class="au-v">'+v+'</span>'+
+               '<span class="au-t">'+esc(auTime(x.at))+'</span></div>';
+      }).join("");
+    }).catch(function(e){
+      say("调用失败："+(e.message||e));
+    });
+  }
   function openBizHours(){
     var old=document.getElementById("bhMask"); if(old && old.parentNode) old.parentNode.removeChild(old);
     var tenant=adminTenant(), cfg=bizHours(tenant);
@@ -5083,25 +5177,35 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if(!pass){ toast("会话里没有口令，请退出后重新登录"); return; }
       if(!supaReady()){ toast("云端没连上，改不了"); return; }
       var payload={mode:(always?"always":"custom"), days:days};
+      var oldTxt=hoursSummary(bizHours(tenant)), newTxt=hoursSummary(payload);
       btn.disabled=true; btn.textContent="保存中…";
-      fetch(SUPA_CONFIG.url+"/rest/v1/rpc/t_set_site",{
-        method:"POST", cache:"no-store",
-        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
-        body:JSON.stringify({p_tenant:tenant, p_pass:pass, p_patch:{hours:payload}})
-      }).then(function(r){
-        return r.json().catch(function(){ return {}; }).then(function(j){ return {code:r.status, j:j||{}}; });
+      function putHours(withAudit){
+        var url=SUPA_CONFIG.url+"/rest/v1/rpc/"+(withAudit?"t_admin_set_hours":"t_set_site");
+        var body=withAudit
+          ? {p_tenant:tenant, p_pass:pass, p_hours:payload, p_old:oldTxt, p_new:newTxt}
+          : {p_tenant:tenant, p_pass:pass, p_patch:{hours:payload}};
+        return fetch(url,{ method:"POST", cache:"no-store",
+          headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+          body:JSON.stringify(body)
+        }).then(function(r){ return r.text().then(function(t){ return {code:r.status, txt:t}; }); });
+      }
+      putHours(true).then(function(res){
+        if(res.code>=400 && /find|does not exist|schema cache|PGRST202/i.test(res.txt)){
+          var p2=putHours(false); return p2.then(function(r2){ return {code:r2.code, txt:r2.txt, noAudit:true}; });
+        }
+        return res;
       }).then(function(res){
         btn.disabled=false; btn.textContent="保存";
-        if(res.code>=400 || (res.j && res.j.code)){
-          var raw=String((res.j&&(res.j.message||res.j.details))||("HTTP "+res.code));
-          toast(/42501|permission|口令/i.test(raw) ? "当前口令不对，请重新登录" :
-                /find|does not exist/i.test(raw) ? "云端还没有 t_set_site，先在 SQL Editor 跑《租户2_接口与主键.sql》" :
-                "保存失败："+raw);
+        var j=null; try{ j=JSON.parse(res.txt); }catch(e){}
+        var raw=String((j&&(j.message||j.details))||res.txt||("HTTP "+res.code));
+        if(res.code>=400 || (j && (j.ok===false || j.code))){
+          var why={no_tenant:"没有这个商户",bad_pass:"当前口令不对，请重新登录",status:"商户已停用或到期",bad_hours:"时段数据不合法"};
+          toast(why[j&&j.reason] || (/42501|permission/i.test(raw) ? "当前口令不对，请重新登录" : ("保存失败："+raw.slice(0,80))));
           return;
         }
         setBizHours(payload, tenant);
         close();
-        toast(always ? "已设为 24 小时营业" : "营业时间已更新");
+        toast((always ? "已设为 24 小时营业" : "营业时间已更新") + (res.noAudit ? "（云端还没建留痕函数，这条不进记录）" : ""));
       }).catch(function(e){
         btn.disabled=false; btn.textContent="保存";
         toast("调用失败："+(e.message||e));
