@@ -465,6 +465,26 @@
     return (saved && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(saved)) ? saved : "bj01";
   }
   var TENANT = detectTenant();
+  /* ---------- 店名：由云端 t_site 带回来，落在本机（按商户分键），页面各处品牌位读它 ---------- */
+  var SITE_NAME_KEY = "cafe_site_name_"+TENANT;
+  var SITE_NAME = readLS(SITE_NAME_KEY, "") || "";
+  function siteName(){ return SITE_NAME || "杯记"; }
+  function applySiteName(){
+    SITE_NAME = SITE_NAME || "";
+    try{ document.title = siteName(); }catch(e){}
+    var sp=document.getElementById("csplash");
+    if(sp){
+      sp.setAttribute("aria-label", siteName());
+      var w=sp.querySelector(".cs-word");
+      if(w) w.innerHTML=String(siteName()).split("").slice(0,8).map(function(ch){ return "<i>"+ch+"</i>"; }).join("");
+    }
+  }
+  function setSiteName(v){
+    v=String(v||"").trim(); if(!v) return;
+    SITE_NAME=v; try{ localStorage.setItem(SITE_NAME_KEY, v); }catch(e){}
+    applySiteName();
+  }
+  applySiteName();
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
     sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[], closed:false };
 
@@ -525,6 +545,7 @@
       });
       if(!r.ok) return;
       var site=await r.json();
+      if(site && site.name) setSiteName(site.name);     /* 店名随 t_site 一起回来 */
       var lm=site && site.loginMode;
       if(lm==="off"||lm==="lazy"||lm==="strict"){ loginMode=lm; }
       else { var cache=readLS("cafe_login_mode_v1",null); if(cache) loginMode=cache; }
@@ -754,7 +775,7 @@
     var c=productKcal(p,defaultMilk(p));
     var img=p.image?'<img id="himg" src="'+esc(p.image)+'" alt="">':"";
     return '<div class="hero"><div class="hmedia">'+img+'<div class="hscrim"></div></div>'+
-      '<div class="hbrand"><span>杯记</span><span>NANJING · 2026</span></div>'+
+      '<div class="hbrand"><span>'+esc(siteName())+'</span><span>NANJING · 2026</span></div>'+
       '<div class="hmeta"><div class="hname" id="hname">'+esc(p.name)+'</div>'+
         '<div class="hsub" id="hsub">'+esc(subline(p))+'</div></div>'+
       '<div class="hval"><b id="hnum">'+nz(c.total)+'</b><span>大卡</span><em id="htier">'+esc(tier(c.total,p.big))+'</em></div>'+
@@ -1206,7 +1227,7 @@
         '</span></div><div class="go">'+IC.go+'</div></button>';
     app.innerHTML =
       '<div class="page">' +
-        '<div class="top" style="padding:24px 0 0"><div>杯记</div><div class="r">NANJING · 2026</div></div>' +
+        '<div class="top" style="padding:24px 0 0"><div>'+esc(siteName())+'</div><div class="r">NANJING · 2026</div></div>' +
         '<div class="mehead"><h1>喝得明白，<br>喝得安心。</h1>' +
           '<p>配方与热量全部公开，改配方即刻重算。</p></div>' +
         '<div class="mestats">' +
@@ -1510,8 +1531,8 @@
   }
 
   async function boot(){
-    app.innerHTML='<div class="cs-loader"><div class="cl-word">杯记</div><div class="cl-sub">正在准备今天的饮品</div></div>';
-    loadLoginMode();
+    app.innerHTML='<div class="cs-loader"><div class="cl-word">'+esc(siteName())+'</div><div class="cl-sub">正在准备今天的饮品</div></div>';
+    await loadLoginMode();
     if(!supaReady()){ db=defaultData(); render(); return; }
     try{
       sb = supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);

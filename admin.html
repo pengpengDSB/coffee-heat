@@ -67,6 +67,7 @@
   .brand{font-weight:500;color:var(--cream);font-size:13px;letter-spacing:.22em;display:flex;align-items:center;gap:10px}
   .brand::before{content:"";width:3px;height:15px;background:#8C6A4E;display:inline-block;flex:none}
   .brand-sub{font-size:10.5px;letter-spacing:.1em;opacity:.62;font-weight:400}
+  .brand-name{max-width:min(44vw,340px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .view-switch{display:flex;gap:20px;background:none;padding:0;margin-left:auto}
   .view-switch button{
     border:none;background:none;color:rgba(244,241,233,.55);font:inherit;font-size:11.5px;letter-spacing:.14em;
@@ -426,6 +427,18 @@
   .qr-note b{color:#141410;font-weight:500}
   .qr-x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:19px;line-height:1;
     color:#8A7A63;cursor:pointer;padding:3px 7px}
+
+  /* ---- 店铺设置（复用二维码弹窗的外壳） ---- */
+  .ss-head{margin:0 2px 16px;text-align:left}
+  .ss-title{font-family:"Songti SC","Noto Serif CJK SC","STSong",serif;font-size:23px;letter-spacing:.06em;color:#141410}
+  .ss-sub{font-size:10.5px;color:#7E7361;margin-top:5px}
+  .ss-sub b{color:#141410;font-weight:500;letter-spacing:.04em}
+  .ss-field{margin-bottom:13px;text-align:left}
+  .ss-field label{display:block;font-size:10px;letter-spacing:.1em;color:#7E7361;margin-bottom:6px}
+  .ss-field input{width:100%;box-sizing:border-box;border:1px solid #DCD3BF;background:#FFFDF8;border-radius:5px;
+    padding:9px 10px;font-size:13px;color:#1B1814;font-family:inherit}
+  .ss-field input:focus{outline:none;border-color:#A9773F}
+  .ss-hint{font-size:10px;line-height:1.6;color:#8A7E6B;margin-top:5px}
 
   /* ---- 辅料比价 ---- */
   .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
@@ -1029,7 +1042,7 @@
 
 <div class="topbar">
   <div class="wrap topbar-in">
-    <div class="brand">杯记<span class="brand-sub">一杯的配方、热量与成本</span></div>
+    <div class="brand"><span class="brand-name">杯记</span><span class="brand-sub">一杯的配方、热量与成本</span></div>
     <div class="view-switch" id="viewSwitch">
       <button data-view="landing">首页</button>
       <button data-view="board">展示面板</button>
@@ -1130,6 +1143,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       });
       if(r.ok){
         var val = (await r.json()) || {};
+        if(val.name) setShopName(val.name, adminTenant());   /* 店名随 t_site 一起回来 */
         var row = {value: val, updated_at: (state && state.siteUpdated) || null};
         var hv = val.heroStyle, lm = val.loginMode;
         if((hv && /^[ABC]$/.test(hv)) || (lm && /^(off|lazy|strict)$/.test(lm))){
@@ -1167,6 +1181,36 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function setAdminTenant(v){ try{ if(v) sessionStorage.setItem("cafe_admin_tenant", v); }catch(e){} }
   function setAdminPass(v){ try{ if(v) sessionStorage.setItem("cafe_admin_pass", v); }catch(e){} }
   function clearAdminPass(){ try{ sessionStorage.removeItem("cafe_admin_pass"); }catch(e){} }
+
+  /* ---------- 店名：接口拿到的名字按租户记在本机，页面各处品牌位都读它 ---------- */
+  function shopNameKey(t){ return "cafe_shop_name_"+(t||"bj01"); }
+  function shopName(t){
+    t=t||adminTenant();
+    try{ var v=localStorage.getItem(shopNameKey(t)); if(v) return v; }catch(e){}
+    return "杯记";
+  }
+  function shopNameEsc(t){
+    return String(shopName(t)).replace(/[&<>"]/g,function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c];
+    });
+  }
+  function paintBrand(){
+    var n=shopName();
+    try{ document.title=n+" · 一杯的配方、热量与成本"; }catch(e){}
+    var bn=document.querySelector(".topbar .brand .brand-name"); if(bn) bn.textContent=n;
+    var sp=document.querySelector("#splash"); if(sp){ sp.setAttribute("aria-label",n);
+      var w=sp.querySelector(".splash-word");
+      if(w) w.innerHTML=String(n).split("").slice(0,8).map(function(ch){ return "<i>"+ch+"</i>"; }).join("");
+    }
+    var bl=document.querySelector("#app .bl-word"); if(bl) bl.textContent=n;
+  }
+  function shopFile(t){ return String(shopName(t)).replace(/[\\/:*?"<>|]/g,"-"); }
+  function setShopName(v,t){
+    if(!v) return;
+    t=t||adminTenant();
+    try{ localStorage.setItem(shopNameKey(t), v); }catch(e){}
+    paintBrand();
+  }
 
   function siteSnapshot(){
     try{ return JSON.parse(localStorage.getItem(SITE_KEY)||"{}") || {}; }catch(e){ return {}; }
@@ -1544,7 +1588,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function exportJSON(){
     var blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
     var a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download="杯记数据.json";
+    a.href=URL.createObjectURL(blob); a.download=shopFile()+"数据.json";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(a.href);
   }
@@ -1554,7 +1598,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var now=new Date();
     var stamp=now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+" "+pad(now.getHours())+":"+pad(now.getMinutes());
     var L=[];
-    L.push("# 杯记 · 饮品清单","");
+    L.push("# "+shopName()+" · 饮品清单","");
     L.push("> 导出时间："+stamp+"　热量单位：大卡（kcal）","");
 
     L.push("## 一、配料库","");
@@ -1589,7 +1633,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
     var blob=new Blob([L.join("\n")],{type:"text/markdown;charset=utf-8"});
     var a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download="杯记清单.md";
+    a.href=URL.createObjectURL(blob); a.download=shopFile()+"清单.md";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(a.href);
   }
@@ -1895,7 +1939,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                 body: JSON.stringify({p_tenant:u, p_pass:pw})
               });
               var j=await r.json();
-              if(j && j.ok){ ok=true; setAdminTenant(u); }
+              if(j && j.ok){ ok=true; setAdminTenant(u); if(j.name) setShopName(j.name,u); }
               else if(j && j.reason==="no_tenant"){ msg="没有这个商户编码"; }
               else if(j && j.reason==="status"){ msg="该商户已停用，请联系平台"; }
             }catch(e){}
@@ -2333,6 +2377,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       '<button data-tab="quotes" class="'+(state.tab==="quotes"?"active":"")+'">辅料比价</button>' +
       '<button data-tab="settings" class="'+(state.tab==="settings"?"active":"")+'">前台设置</button>' +
       '<span style="margin-left:auto;display:flex;gap:6px">' +
+      '<button class="ghost-btn" id="shopSetBtn">店铺设置</button>' +
       '<button class="ghost-btn" id="qrBtn">顾客端二维码</button>' +
       '<button class="ghost-btn" id="exportBtn">导出 JSON</button>' +
       '<button class="ghost-btn" id="exportMdBtn">导出 Markdown</button>' +
@@ -2354,6 +2399,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
     });
     document.getElementById("qrBtn").addEventListener("click",function(){ openTenantQr(adminTenant()); });
+    document.getElementById("shopSetBtn").addEventListener("click",openShopSettings);
     document.getElementById("exportBtn").addEventListener("click",exportJSON);
     document.getElementById("exportMdBtn").addEventListener("click",exportMarkdown);
     document.getElementById("importBtn").addEventListener("click",function(){ document.getElementById("importFile").click(); });
@@ -4479,7 +4525,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           '<div class="feat"><div class="feat-ic">'+ic('list')+'</div><b>配方可溯</b><span>每款饮品的配料、基准量与档位一目了然。</span></div>' +
           '<div class="feat"><div class="feat-ic">'+ic('drop')+'</div><b>牛奶可换</b><span>咖啡支持切换牛奶版本，热量随之更新。</span></div>' +
         '</div></section>' +
-        '<div class="landing-foot">杯记 · 一杯的配方、热量与成本 —— 数据来自本店配料库与配方</div>' +
+        '<div class="landing-foot">'+shopNameEsc()+' · 一杯的配方、热量与成本 —— 数据来自本店配料库与配方</div>' +
       '</div>';
     app.innerHTML=html;
     app.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ goView(b.dataset.go); }); });
@@ -4729,8 +4775,91 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function qrBrandOf(tenant,name){
     if(name) return name;
     try{ var v=localStorage.getItem("cafe_qr_brand_"+tenant); if(v) return v; }catch(e){}
-    return "杯记";
+    return shopName(tenant);
   }
+
+  /* ============ 店铺设置：商户自己改店名 / 改口令 ============
+     走 t_admin_self_update，必须同时带对当前口令；改完立刻生效：
+     店名写回 tenants.name，顾客端下次刷新就换名字；口令写回 tenants.pass。 */
+  function openShopSettings(){
+    var old=document.getElementById("ssMask"); if(old && old.parentNode) old.parentNode.removeChild(old);
+    var tenant=adminTenant(), cur=shopName();
+    var el=document.createElement("div");
+    el.className="qr-mask"; el.id="ssMask";
+    el.innerHTML='<div class="qr-panel" style="width:min(430px,94vw)">'+
+      '<button class="qr-x" id="ssX" aria-label="关闭">×</button>'+
+      '<div class="ss-head">'+
+        '<div class="ss-title">店铺设置</div>'+
+        '<div class="ss-sub">商户编码 <b>'+esc(tenant)+'</b> · 保存即刻生效</div>'+
+      '</div>'+
+      '<div class="ss-field"><label for="ssName">店名</label>'+
+        '<input id="ssName" maxlength="24" value="'+esc(cur)+'" placeholder="比如 杯记 · 下关店">'+
+        '<div class="ss-hint">顾客端标题、首页、我的页、海报默认名都跟着改；2–24 个字。</div></div>'+
+      '<div class="ss-field"><label for="ssPass">新登录口令</label>'+
+        '<input id="ssPass" type="password" maxlength="32" placeholder="不改就别填（至少 6 位）" autocomplete="new-password">'+
+        '<div class="ss-hint">改完旧口令立即失效，别的电脑要重新登录。</div></div>'+
+      '<div class="ss-field"><label for="ssPass2">再输一遍新口令</label>'+
+        '<input id="ssPass2" type="password" maxlength="32" placeholder="两次要一致" autocomplete="new-password"></div>'+
+      '<div class="qr-ops">'+
+        '<button class="ghost-btn" id="ssCancel">取消</button>'+
+        '<button class="qr-ok" id="ssSave">保存</button>'+
+      '</div>'+
+      '<div class="qr-note">店名与口令都存在云端商户表；改口令不会动菜单、订单和顾客数据。</div>'+
+    '</div>';
+    document.body.appendChild(el);
+
+    function close(){ var m=document.getElementById("ssMask"); if(m && m.parentNode) m.parentNode.removeChild(m); }
+    el.addEventListener("click",function(e){ if(e.target===el) close(); });
+    document.getElementById("ssX").addEventListener("click",close);
+    document.getElementById("ssCancel").addEventListener("click",close);
+
+    var btn=document.getElementById("ssSave");
+    btn.addEventListener("click",function(){
+      var nm=(document.getElementById("ssName").value||"").trim();
+      var np=(document.getElementById("ssPass").value||"").trim();
+      var np2=(document.getElementById("ssPass2").value||"").trim();
+      if(nm.length<2 || nm.length>24){ toast("店名 2–24 个字"); return; }
+      if(np && np.length<6){ toast("新口令至少 6 位"); return; }
+      if(np && np!==np2){ toast("两次口令不一致"); return; }
+      if(!np && nm===shopName()){ toast("没有改动"); return; }
+      var pass=adminPass();
+      if(!pass){ toast("会话里没有口令，请退出后重新登录再改"); return; }
+      if(!supaReady()){ toast("云端没连上，改不了"); return; }
+      btn.disabled=true; btn.textContent="保存中…";
+      fetch(SUPA_CONFIG.url+"/rest/v1/rpc/t_admin_self_update",{
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body:JSON.stringify({p_tenant:tenant, p_pass:pass, p_name:nm, p_new_pass:(np||null)})
+      }).then(function(r){
+        return r.json().catch(function(){ return {}; }).then(function(j){ return {code:r.status, j:j||{}}; });
+      }).then(function(res){
+        var j=res.j;
+        if(res.code>=400 || j.ok!==true){
+          var why={no_tenant:"没有这个商户",bad_pass:"当前口令不对，请重新登录",status:"商户已停用或到期",
+                   name_len:"店名长度不合格",pass_len:"口令至少 6 位",same_pass:"新口令和旧口令一样"};
+          btn.disabled=false; btn.textContent="保存";
+          var raw=String(j.message||"");
+          var msg=why[j.reason];
+          if(!msg){
+            msg=/find|does not exist|schema cache/i.test(raw)
+              ? "云端还没建 t_admin_self_update，先在 SQL Editor 跑《租户5_店名与自助改密.sql》"
+              : "保存失败："+(raw||j.reason||("HTTP "+res.code));
+          }
+          toast(msg);
+          return;
+        }
+        if(np) setAdminPass(np);
+        if(j.name) setShopName(j.name, tenant);
+        close();
+        toast(np ? "店名与口令已更新" : "店名已更新");
+        render();
+      }).catch(function(e){
+        btn.disabled=false; btn.textContent="保存";
+        toast("调用失败："+(e.message||e)+"（云端可能还没执行新版 SQL）");
+      });
+    });
+  }
+
   function openTenantQr(tenant,name){
     var old=document.getElementById("qrMask"); if(old) old.parentNode.removeChild(old);
     var url=cQrUrl(tenant);
@@ -4794,7 +4923,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var el=document.createElement("div");
     el.id="boardView"; el.className="bw"+(boardMode==="all"?" bw-all":"");
 
-    var head='<div class="bw-top"><div class="bw-brand">杯记<em>CUP NOTES</em></div>'+
+    var head='<div class="bw-top"><div class="bw-brand">'+shopNameEsc()+'<em>CUP NOTES</em></div>'+
       '<div class="bw-right"><div class="bw-title" id="bwCat"></div><div class="bw-meta" id="bwMeta"></div></div></div>';
 
     if(!db || !db.products || !db.products.length){
