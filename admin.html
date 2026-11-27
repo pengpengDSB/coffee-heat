@@ -4614,46 +4614,80 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
     }
   }
-  /* k=倍率；所有坐标按 902×1280 的设计稿写 */
+  /* k=倍率；版面按 902×1280 的样稿标定，全部按「墨迹框」定位——
+     字号按目标墨迹宽度拟合、落点按墨迹上下沿对齐，这样换到没有思源宋体的设备上
+     （回落到系统宋体/Noto）版面和间距也不会走形。 */
+  function qInk(ctx,t){
+    var m=ctx.measureText(t);
+    var l=(m.actualBoundingBoxLeft||0), r=(m.actualBoundingBoxRight||0);
+    return {l:l,w:(l+r)||m.width,a:(m.actualBoundingBoxAscent||0),d:(m.actualBoundingBoxDescent||0)};
+  }
+  function qFit(ctx,t,weight,fam,refW,start,lo,hi){
+    var size=start,i,ns;
+    for(i=0;i<8;i++){
+      ctx.font=weight+' '+size.toFixed(1)+'px '+fam;
+      var w=qInk(ctx,t).w||1;
+      if(Math.abs(w-refW)<=0.8) break;
+      ns=Math.max(lo,Math.min(hi,size*refW/w));
+      if(Math.abs(ns-size)<0.3){ size=ns; break; }
+      size=ns;
+    }
+    ctx.font=weight+' '+size.toFixed(1)+'px '+fam;
+    return size;
+  }
+  function qDraw(ctx,t,x,inkTop){          /* x = 墨迹左沿，inkTop = 墨迹上沿 */
+    var m=ctx.measureText(t);
+    ctx.textAlign="left";
+    ctx.fillText(t,x+(m.actualBoundingBoxLeft||0),inkTop+(m.actualBoundingBoxAscent||0));
+  }
+  function qDrawC(ctx,t,center,inkTop){
+    var m=ctx.measureText(t);
+    ctx.textAlign="center";
+    ctx.fillText(t,center,inkTop+(m.actualBoundingBoxAscent||0));
+  }
+  var QR_BG="#FBF7F0",QR_INK="#1C1108",QR_SUB="#645748",QR_DESC="#544537",
+      QR_MUTE="#635548",QR_FINE="#9D9081",QR_COPPER="#C38F42",
+      QR_HAIR="#E8E0D3",QR_BAR="#EEE6DC",QR_CARD="#FFFDF9",QR_EDGE="#E4DACB";
   function drawQrPoster(canvas, tenant, name, url, k){
     k=k||1;
     canvas.width=Math.round(QR_W*k); canvas.height=Math.round(QR_H*k);
     var ctx=canvas.getContext("2d");
-    var S=function(v){ return v*k; };
     ctx.scale(k,k);
-    ctx.fillStyle="#F6F2E7"; ctx.fillRect(0,0,QR_W,QR_H);
-
-    /* 品牌行：铜色短线 + 店名 + 竖线 + 副标 */
-    ctx.fillStyle="#A9773F"; ctx.fillRect(76,74,42,2);
-    var brand=(name||"杯记");
-    ctx.fillStyle="#1B1814";
-    var brandSize=40;
-    ctx.font=brandSize+'px '+QR_SERIF;
-    while(ctx.measureText(brand).width>150 && brandSize>26){ brandSize-=2; ctx.font=brandSize+'px '+QR_SERIF; }
+    ctx.fillStyle=QR_BG; ctx.fillRect(0,0,QR_W,QR_H);
     ctx.textBaseline="alphabetic";
-    ctx.fillText(brand,128,102);
-    var bx=128+ctx.measureText(brand).width+18;
-    ctx.strokeStyle="#D9CFB8"; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(Math.round(bx)+.5,74); ctx.lineTo(Math.round(bx)+.5,102); ctx.stroke();
-    ctx.fillStyle="#6E6353"; ctx.font='19px '+QR_SANS;
-    ctx.fillText("一杯的配方、热量与成本",bx+18,99);
 
-    /* 主张：两行宋体大字 */
-    ctx.fillStyle="#1B1814"; ctx.font='bold 80px '+QR_SERIF;
-    ctx.fillText("每一杯的热量，",74,298);
-    ctx.fillText("都看得见。",74,398);
+    /* 品牌行：铜色短线（y76 起 38×4）+ 店名（墨迹上沿 67）+ 竖线 + 副标（上沿 73） */
+    ctx.fillStyle=QR_COPPER; ctx.fillRect(76,76,38,4);
+    var brand=(name||"杯记");
+    var bSize=qFit(ctx,"杯记",400,QR_SERIF,58,32,20,40);
+    var bw=qInk(ctx,brand).w;
+    if(bw>176){
+      bSize=qFit(ctx,brand,400,QR_SERIF,176,bSize,18,bSize);
+      bw=qInk(ctx,brand).w;
+    }
+    ctx.fillStyle=QR_INK; qDraw(ctx,brand,127,67);
+    var bx=Math.round(127+bw+14);
+    ctx.fillStyle=QR_BAR; ctx.fillRect(bx,66,2,27);
+    qFit(ctx,"一杯的配方、热量与成本",400,QR_SANS,168,16,12,22);
+    ctx.fillStyle=QR_SUB; qDraw(ctx,"一杯的配方、热量与成本",bx+11,73);
 
-    /* 说明 */
-    ctx.fillStyle="#40392E"; ctx.font='24px '+QR_SANS;
-    ctx.fillText("浓缩、牛奶、糖浆，逐项拆给你看。",76,484);
-    ctx.fillText("点单前，先知道这杯多少大卡。",76,526);
+    /* 主张：两行宋体大字，墨迹宽 447，两行上沿 244 / 343 */
+    ctx.fillStyle=QR_INK;
+    qFit(ctx,"每一杯的热量，",700,QR_SERIF,447,80,58,96);
+    qDraw(ctx,"每一杯的热量，",79,244);
+    qDraw(ctx,"都看得见。",79,343);
+
+    /* 说明：墨迹宽 379，两行上沿 441 / 481 */
+    ctx.fillStyle=QR_DESC;
+    qFit(ctx,"浓缩、牛奶、糖浆，逐项拆给你看。",400,QR_SANS,379,26,18,32);
+    qDraw(ctx,"浓缩、牛奶、糖浆，逐项拆给你看。",77,441);
+    qDraw(ctx,"点单前，先知道这杯多少大卡。",77,481);
 
     /* 分隔细线 */
-    ctx.strokeStyle="#D9CFB8"; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(76,564.5); ctx.lineTo(826,564.5); ctx.stroke();
+    ctx.fillStyle=QR_HAIR; ctx.fillRect(76,534,750,1);
 
     /* 白卡 */
-    var cx=172, cy=582, cw=558, ch=516, cr=26;
+    var cx=172, cy=570, cw=558, ch=552, cr=26;
     ctx.save();
     ctx.beginPath();
     if(ctx.roundRect){ ctx.roundRect(cx,cy,cw,ch,cr); }
@@ -4664,30 +4698,33 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       ctx.lineTo(cx,cy+cr); ctx.quadraticCurveTo(cx,cy,cx+cr,cy);
     }
     ctx.closePath();
-    ctx.fillStyle="#FFFDF8"; ctx.fill();
-    ctx.strokeStyle="#E1D6BE"; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle=QR_CARD; ctx.fill();
+    ctx.strokeStyle=QR_EDGE; ctx.lineWidth=1; ctx.stroke();
     ctx.restore();
 
-    /* 码：白卡内居中，静区 2 模块 */
-    var qrSize=294;
-    paintQr(ctx,qrMatrix(url),(QR_W-qrSize)/2,cy+30,qrSize,2);
+    /* 码：墨迹按 287 定宽（整数模块），墨迹左沿 307、上沿 622，静区 2 模块 */
+    var q=qrMatrix(url), n=q.getModuleCount(), cell=Math.max(3,Math.round(287/n));
+    var inkW=n*cell, inkLeft=Math.round(451-inkW/2), inkTop=622;
+    paintQr(ctx,q,inkLeft-2*cell,inkTop-2*cell,(n+4)*cell,2);
 
-    /* 卡内文案 */
-    ctx.textAlign="center";
-    ctx.fillStyle="#1B1814"; ctx.font='600 25px '+QR_SANS;
-    ctx.fillText("扫码看菜单 · 每杯热量",QR_W/2,cy+392);
-    ctx.fillStyle="#6E6353"; ctx.font='17.5px '+QR_SANS;
-    ctx.fillText("微信扫一扫即可打开，无需下载",QR_W/2,cy+428);
-    ctx.fillText("点单页里可切换奶种，热量跟着变",QR_W/2,cy+456);
-    ctx.textAlign="left";
+    /* 卡内文案：三行上沿 967 / 1004 / 1030 */
+    var cap1="扫码看菜单 · 每杯热量";
+    qFit(ctx,cap1,600,QR_SANS,235,23,17,28);
+    ctx.fillStyle=QR_INK; qDrawC(ctx,cap1,451,967);
+    ctx.fillStyle=QR_MUTE;
+    qFit(ctx,"微信扫一扫即可打开，无需下载",400,QR_SANS,229,16,12,20);
+    qDrawC(ctx,"微信扫一扫即可打开，无需下载",451,1004);
+    qFit(ctx,"点单页里可切换奶种，热量跟着变",400,QR_SANS,244,16,12,20);
+    qDrawC(ctx,"点单页里可切换奶种，热量跟着变",451,1030);
 
-    /* 脚注 */
-    ctx.strokeStyle="#D9CFB8";
-    ctx.beginPath(); ctx.moveTo(76,1146.5); ctx.lineTo(826,1146.5); ctx.stroke();
-    ctx.fillStyle="#6E6353"; ctx.font='16px '+QR_SANS;
-    ctx.fillText("配方与成本在杯记里管理，换豆或换奶后自动更新。",76,1190);
-    ctx.fillStyle="#8A7A63"; ctx.font='14.5px '+QR_SANS;
-    ctx.fillText("热量为原料理论计算值，非实验室检测。",76,1219);
+    /* 脚注：细线 y1189，两行上沿 1213 / 1238 */
+    ctx.fillStyle=QR_HAIR; ctx.fillRect(76,1189,750,1);
+    var f1="配方与成本在杯记里管理，换豆或换奶后自动更新。";
+    qFit(ctx,f1,400,QR_SANS,366,16,11,20);
+    ctx.textAlign="left"; ctx.fillStyle=QR_MUTE; qDraw(ctx,"配方与成本在"+brand+"里管理，换豆或换奶后自动更新。",78,1213);
+    ctx.fillStyle=QR_FINE;
+    qFit(ctx,"热量为原料理论计算值，非实验室检测。",400,QR_SANS,221,13,10,16);
+    qDraw(ctx,"热量为原料理论计算值，非实验室检测。",78,1238);
   }
   function qrBrandOf(tenant,name){
     if(name) return name;
