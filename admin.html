@@ -161,7 +161,9 @@
   .biz-badge.closed{color:var(--high);background:var(--high-bg);border-color:#E7D0C9}
   .biz-badge.closed i{background:var(--high)}
   .adm-acts{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex:none}
-  .adm-sub{grid-column:1 / -1;max-width:none;margin:6px 0 24px;line-height:1.75}
+  .adm-sub{grid-column:1 / -1;max-width:none;margin:18px 0 24px;line-height:1.75}
+  /* 徽标与胶囊相对标题的光学下移（只挪视觉，不影响布局高度） */
+  #bizBadge,.adm-acts{transform:translateY(var(--opt-shift,4px))}
   .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);
     font:inherit;font-size:12px;letter-spacing:.08em;padding:9px 16px;border-radius:999px;cursor:pointer;
     transition:border-color .16s,background .16s}
@@ -835,7 +837,7 @@
     .admin-tabs .ghost-btn{padding:8px 10px;font-size:10.5px}
     .adm-head{grid-template-columns:minmax(0,1fr);gap:0}
     .adm-acts{margin-top:12px;justify-content:flex-start;flex-wrap:wrap}
-    .adm-sub{margin:10px 0 20px}
+    .adm-sub{margin:14px 0 20px}
     .pill{font-size:11.5px;padding:8px 13px}
     .toolbar{flex-direction:column;align-items:stretch;gap:10px}
     .toolbar .search{min-width:0}
