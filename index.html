@@ -1361,16 +1361,26 @@
 
     var saved=false, rpcMissing=false, seq=1;
     if(supaReady()){
-      /* 优先走服务端：单号、金额、热量都由数据库生成，前端不预读订单表 */
+      /* 服务端 t_create_order 要求「单号 + 访客标识」都非空（实测空单号返回 22000），
+         所以下单前先用本地当天序号生成单号；撞号时再换一个时间后缀重试。 */
       try{
+        payload.order_no = prefix + pad3(nextSeq(readLS(ORD_KEY,[]), prefix));
         var rpc0=await sb.rpc('t_create_order',{payload:payload});
+        if(rpc0.error){
+          var m0=String((rpc0.error&&(rpc0.error.message||rpc0.error.details))||"")+" "+String((rpc0.error&&rpc0.error.code)||"");
+          var dup=/duplicate|23505|已存在|重复/i.test(m0);
+          if(dup){
+            payload.order_no = prefix + Date.now().toString(36).slice(-5).toUpperCase();
+            rpc0=await sb.rpc('t_create_order',{payload:payload});
+            if(rpc0.error){ console.error("create_order retry failed",rpc0.error); }
+          }else{
+            if(/Could not find the function|PGRST202|42883|does not exist/i.test(m0)){ rpcMissing=true; }
+            else{ console.error("create_order failed",rpc0.error); }
+          }
+        }
         if(!rpc0.error){
           saved=true;
           payload=Object.assign({},payload,rpc0.data||{});
-        }else{
-          var m0=String((rpc0.error&&(rpc0.error.message||rpc0.error.details))||"")+" "+String((rpc0.error&&rpc0.error.code)||"");
-          if(/Could not find the function|PGRST202|42883|does not exist/i.test(m0)){ rpcMissing=true; }
-          else{ console.error("create_order failed",rpc0.error); }
         }
       }catch(e){ rpcMissing=true; }
       if(!saved && rpcMissing){
@@ -1401,7 +1411,7 @@
     document.getElementById("mask").classList.remove("on");
     var sh=document.getElementById("sheet"); sh.classList.remove("on"); sh.innerHTML="";
     state.viewOrder=payload;
-    if(!saved) toast("订单已记在这台设备上");
+    if(!saved) toast("订单没同步到云端，只存在这台手机上（后台暂看不到）");
     render();
     loadOrders();
   }
