@@ -295,6 +295,32 @@
   @media(min-width:680px) and (max-width:1049px){ .cm-cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media(max-width:1049px){ .cm-kpis{grid-template-columns:1fr 1fr;gap:10px} .cmk{padding:12px} .cmk .v{font-size:20px} }
 
+  .cm-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px 0}
+  .cm-tools .search{flex:1;min-width:170px;max-width:300px}
+  .cm-tools .hit{font-size:11px;color:var(--ink-soft)}
+  .cm-tbl tbody tr{cursor:pointer}
+  .cm-tbl tbody tr:hover td{background:var(--card-2)}
+  .cm-c{cursor:pointer}
+  .cms-mask{position:fixed;inset:0;background:rgba(28,25,20,.42);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+  .cms-panel{background:var(--card);border-radius:12px;width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 18px 48px rgba(0,0,0,.18)}
+  .cms-head{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .cms-head b{font-size:15px;font-weight:500}
+  .cms-head i{font-style:normal;display:block;font-size:11px;color:var(--ink-faint);margin-top:3px}
+  .cms-x{margin-left:auto;border:0;background:none;font-size:20px;line-height:1;color:var(--ink-soft);cursor:pointer;padding:2px 6px}
+  .cms-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .cms-kpis div span{display:block;font-size:10px;color:var(--ink-faint);margin-bottom:4px}
+  .cms-kpis div b{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+  .cms-list{overflow:auto;padding:4px 18px 18px}
+  .cms-ord{border-bottom:1px solid rgba(226,223,212,.55);padding:12px 0}
+  .cms-ord:last-child{border-bottom:0}
+  .cms-ord .t{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-soft);margin-bottom:6px}
+  .cms-ord .t b{font-size:12.5px;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  .cms-ord .t .st{margin-left:auto}
+  .cms-ord .l{font-size:11.5px;line-height:1.9;color:var(--ink)}
+  .cms-ord .m{font-size:11px;color:var(--ink-soft);margin-top:5px}
+  .cms-ord.void{opacity:.62}
+  @media(max-width:640px){ .cms-kpis{grid-template-columns:1fr 1fr} .cms-mask{padding:0;align-items:flex-end} .cms-panel{max-width:none;max-height:88vh;border-radius:14px 14px 0 0} }
+
   /* ---- 辅料比价 ---- */
   .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   .qp-lead{flex:1;min-width:240px;font-size:11.5px;line-height:1.8;color:var(--ink-soft)}
@@ -1475,7 +1501,7 @@
     view:"landing", tab:"ings",
     catFilter:"全部", shopCat:"全部",
     selProduct:null, milkSel:{},
-    ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"",
+    ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"", cmQuery:"",
     modal:null, // {type:'ing'|'product', id:null}
     beans:[],
     loginMode:"lazy",
@@ -2499,6 +2525,16 @@
     if(!d) return "—";
     return String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   }
+  function cmWhen(iso){
+    if(!iso) return "";
+    var d=new Date(iso); if(isNaN(d.getTime())) return String(iso).slice(5,16).replace("T"," ");
+    return String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  function cmKeyOf(o){
+    var phone=(o.buyer_phone||"").trim();
+    var vid=(o.visitor_id||"").trim();
+    return phone ? "p:"+phone : "v:"+(vid||"?");
+  }
   function cmAgg(){
     var map={}, list=[];
     (adminOrders||[]).forEach(function(o){
@@ -2506,9 +2542,9 @@
       if(st==="作废"||st==="已取消") return;
       var phone=(o.buyer_phone||"").trim();
       var vid=(o.visitor_id||"").trim();
-      var key= phone ? "p:"+phone : "v:"+(vid||"?");
+      var key=cmKeyOf(o);
       var g=map[key];
-      if(!g){ g=map[key]={phone:phone,vid:vid,nick:(o.buyer_nick||"").trim(),orders:0,spent:0,first:null,last:null,items:{},live:0}; }
+      if(!g){ g=map[key]={key:key,phone:phone,vid:vid,nick:(o.buyer_nick||"").trim(),orders:0,spent:0,first:null,last:null,items:{},live:0}; }
       if(!g.nick && (o.buyer_nick||"").trim()) g.nick=o.buyer_nick.trim();
       g.orders++; g.spent+=(+o.total||0);
       if(st!=="已取餐") g.live++;
@@ -2546,27 +2582,29 @@
     var body=document.getElementById("adminBody");
     if(!body) return;
     var narrow=qIsNarrow();
-    var list=cmAgg();
-    var n=list.length, back=list.filter(function(g){ return g.orders>=2; }).length;
-    var totalSpent=list.reduce(function(s,g){ return s+g.spent; },0);
+    var all=cmAgg();
+    var n=all.length, back=all.filter(function(g){ return g.orders>=2; }).length;
+    var totalSpent=all.reduce(function(s,g){ return s+g.spent; },0);
     var avg = n ? totalSpent/n : 0;
     var rate= n ? Math.round(back/n*100) : 0;
+    var dq=function(g){ return ((g.nick||"")+" "+(g.phone||"")+" "+(g.vid||"")).toLowerCase(); };
+
     var kpis='<div class="cm-kpis">'+
       '<div class="cmk"><div class="k">顾客 · 去重人数</div><div class="v">'+n+'<small>位</small></div><div class="m">'+n+' 人共 '+(adminOrders||[]).length+' 单（不含作废）</div></div>'+
-      '<div class="cmk"><div class="k">回头客 · 来过 2 次以上</div><div class="v">'+back+'<small>位</small></div><div class="m">'+(back? '其中最多的一人来过 '+Math.max.apply(null,list.map(function(g){return g.orders;}))+' 次' : '还没有回头客')+'</div></div>'+
+      '<div class="cmk"><div class="k">回头客 · 来过 2 次以上</div><div class="v">'+back+'<small>位</small></div><div class="m">'+(back? '其中最多的一人来过 '+Math.max.apply(null,all.map(function(g){return g.orders;}))+' 次' : '还没有回头客')+'</div></div>'+
       '<div class="cmk"><div class="k">回头率</div><div class="v">'+rate+'<small>%</small></div><div class="m">回头看客 / 全部顾客</div></div>'+
       '<div class="cmk"><div class="k">人均消费</div><div class="v">¥'+r2(avg)+'</div><div class="m">累计 ¥'+r2(totalSpent)+'</div></div>'+
       '</div>';
 
     var state_txt = !supaReady() ? '<div class="cm-empty">本机模式：读不到云端订单，这里没有可聚合的顾客。<br>登录云端商户后台后自动出现。</div>'
       : (ordErr ? '<div class="cm-empty">'+esc(ordErr)+'</div>'
-      : (!list.length ? '<div class="cm-empty">还没有有效订单。<br>顾客在顾客端下单后，这里会按「手机号 / 访客标识」自动去重汇总。</div>' : ''));
+      : (!all.length ? '<div class="cm-empty">还没有有效订单。<br>顾客在顾客端下单后，这里会按「手机号 / 访客标识」自动去重汇总。</div>' : ''));
 
     var inner="";
-    if(list.length){
+    if(all.length){
       if(narrow){
-        inner='<div class="cm-cards">'+list.map(function(g){
-          return '<div class="cm-c">'+
+        inner='<div class="cm-cards">'+all.map(function(g){
+          return '<div class="cm-c" data-cmk="'+esc(g.key)+'" data-q="'+esc(dq(g))+'">'+
             '<div class="h"><b>'+esc(cmName(g))+'</b><i>'+esc(cmSub(g))+'</i>'+
               (g.orders>=2?'<span class="cm-tag back">回头客</span>':'')+
               (g.live?'<span class="cm-tag live">'+g.live+' 单进行中</span>':'')+'</div>'+
@@ -2580,8 +2618,8 @@
         }).join("")+'</div>';
       }else{
         var cols='<colgroup><col style="width:27%"><col style="width:9%"><col style="width:12%"><col style="width:12%"><col style="width:26%"><col style="width:14%"></colgroup>';
-        var rows=list.map(function(g){
-          return '<tr>'+
+        var rows=all.map(function(g){
+          return '<tr data-cmk="'+esc(g.key)+'" data-q="'+esc(dq(g))+'">'+
             '<td><div class="cm-who"><b>'+esc(cmName(g))+'</b><i>'+esc(cmSub(g))+(g.orders>=2?'<span class="cm-tag back">回头客</span>':'')+(g.live?'<span class="cm-tag live">'+g.live+' 单待取</span>':'')+'</i></div></td>'+
             '<td class="num">'+g.orders+' 次</td>'+
             '<td class="num">¥'+r2(g.spent)+'</td>'+
@@ -2595,15 +2633,94 @@
           '<tbody>'+rows+'</tbody></table></div>';
       }
     }
+
     body.innerHTML = kpis +
       '<div class="cm-card"><div class="cm-head"><b>顾客</b>'+
         '<span>按「手机号优先、否则访客标识」去重；作废单不计入</span>'+
-        '<span style="margin-left:auto;display:flex;align-items:center;gap:10px">'+(n?('最近一单 '+cmDay(list[0].last)+''):'')+'<button class="ghost-btn" id="cmRefresh" style="padding:4px 10px;font-size:11px">刷新</button></span>'+
-      '</div>'+ state_txt + inner +'</div>'+
+        '<span style="margin-left:auto;display:flex;align-items:center;gap:10px">'+(n?('最近一单 '+cmDay(all[0].last)+''):'')+'<button class="ghost-btn" id="cmRefresh" style="padding:4px 10px;font-size:11px">刷新</button></span>'+
+      '</div>'+
+        '<div class="cm-tools"><input type="search" id="cmSearch" class="search" placeholder="搜索昵称 / 手机号 / 尾号…" value="">'+
+          '<span class="hit" id="cmHit">'+(n? '点任意一行，看这位顾客的订单流水' : '')+'</span></div>'+
+        state_txt + inner +
+        '<div class="cm-empty" id="cmNoHit" style="display:none"></div></div>'+
       '<div class="bean-hint">这里只看「谁来过」；手机号与昵称来自顾客端的轻登录，\n       顾客不填手机号时仍会以访客标识出现，只是跨设备认不出是同一人。</div>';
+
+    /* 搜索：只改显示，不重建 DOM —— 避免输入框被重绘打断光标 */
+    function applyFilter(){
+      var q=(state.cmQuery||"").trim().toLowerCase();
+      var items=body.querySelectorAll("[data-cmk]");
+      var shown=0;
+      Array.prototype.forEach.call(items,function(el){
+        var ok = !q || (el.getAttribute("data-q")||"").indexOf(q)>=0;
+        el.style.display = ok ? "" : "none";
+        if(ok) shown++;
+      });
+      var hit=document.getElementById("cmHit");
+      if(hit) hit.textContent = q ? ('筛出 '+shown+' / '+n+' 人') : (n? '点任意一行，看这位顾客的订单流水' : '');
+      var no=document.getElementById("cmNoHit");
+      if(no){
+        if(q && !shown){ no.style.display=""; no.textContent="没有匹配「"+(state.cmQuery||"").trim()+"」的顾客。"; }
+        else{ no.style.display="none"; no.textContent=""; }
+      }
+    }
+    var se=document.getElementById("cmSearch");
+    if(se){
+      se.value=state.cmQuery||"";
+      se.addEventListener("input",function(){ state.cmQuery=se.value; applyFilter(); });
+      se.addEventListener("keydown",function(e){ if(e.key==="Escape"){ se.value=""; state.cmQuery=""; applyFilter(); } });
+    }
+    applyFilter();
 
     var rf=document.getElementById("cmRefresh");
     if(rf) rf.addEventListener("click",function(){ loadAdminOrders().then(function(){ renderCustomers(); }); });
+    Array.prototype.forEach.call(body.querySelectorAll("[data-cmk]"),function(el){
+      el.addEventListener("click",function(){ openCust(el.getAttribute("data-cmk")); });
+    });
+  }
+
+  function openCust(key){
+    var g=null;
+    cmAgg().forEach(function(x){ if(x.key===key) g=x; });
+    if(!g) return;
+    var list=(adminOrders||[]).filter(function(o){ return cmKeyOf(o)===key; })
+      .sort(function(a,b){ return new Date(b.created_at||0)-new Date(a.created_at||0); });
+    var ordersHtml=list.map(function(o){
+      var st=o.status||"待制作";
+      var voided=(st==="作废"||st==="已取消");
+      var items=(o.items||[]).map(function(x){
+        var bits=[x.milk?milkName(x.milk):"",x.sugar||"",x.ice||""].filter(Boolean).join(" · ");
+        return '<div class="l"><b>'+esc(x.name)+' × '+(x.qty||1)+'</b>'+(bits?'　'+esc(bits):"")+'</div>';
+      }).join("");
+      return '<div class="cms-ord'+(voided?' void':'')+'">'+
+        '<div class="t"><b>'+esc(o.order_no||"—")+'</b><span>'+esc(cmWhen(o.created_at))+'</span>'+
+          '<span class="st '+stCls(st)+'">'+esc(st)+'</span></div>'+
+        items+
+        (o.note?'<div class="m">备注：'+esc(o.note)+'</div>':'')+
+        '<div class="m">¥'+r2(o.total)+(o.total_kcal?'　·　'+o.total_kcal+' 大卡':'')+(voided?'　·　不计入统计':'')+'</div>'+
+      '</div>';
+    }).join("");
+    var mask=document.createElement("div");
+    mask.className="cms-mask";
+    mask.innerHTML='<div class="cms-panel">'+
+      '<div class="cms-head"><div><b>'+esc(cmName(g))+'</b><i>'+esc(cmSub(g))+'</i></div>'+
+        '<button class="cms-x" id="cmsX" aria-label="关闭">×</button></div>'+
+      '<div class="cms-kpis">'+
+        '<div><span>到店</span><b>'+g.orders+' 次</b></div>'+
+        '<div><span>累计</span><b>¥'+r2(g.spent)+'</b></div>'+
+        '<div><span>客单价</span><b>¥'+r2(g.spent/g.orders)+'</b></div>'+
+        '<div><span>最近</span><b>'+cmDay(g.last)+'</b></div>'+
+      '</div>'+
+      '<div class="cms-list">'+(ordersHtml||'<div class="cm-empty">还没有订单</div>')+'</div>'+
+    '</div>';
+    document.body.appendChild(mask);
+    function bye(){
+      if(mask.parentNode) mask.parentNode.removeChild(mask);
+      document.removeEventListener("keydown",onKey);
+    }
+    function onKey(e){ if(e.key==="Escape") bye(); }
+    document.addEventListener("keydown",onKey);
+    mask.addEventListener("click",function(e){ if(e.target===mask) bye(); });
+    var x=document.getElementById("cmsX"); if(x) x.addEventListener("click",bye);
   }
 
   function renderIngs(){
