@@ -5722,8 +5722,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if(!sb) sb=supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
         sb.channel("catalog-"+adminTenant())
           .on("postgres_changes",
-              {event:"*", schema:"public", table:"catalog_ver", filter:"tenant_id=eq."+adminTenant()},
-              function(){ bwKick(350); })
+              {event:"*", schema:"public", table:"catalog_ver"},
+              function(payload){
+                /* 不按 tenant 过滤：UPDATE 事件带 filter 时，库端要求 REPLICA IDENTITY FULL 才发得出来。
+                   这里宁可收全量小事件（只含 ver 哈希 + 租户码），收到就重拉自己那份目录。 */
+                bwKick(350);
+              })
           .subscribe(function(st){ try{ window.__rtState=st; }catch(e){} });
       }
     }catch(e){ try{ window.__rtErr=String(e); }catch(_){} }
