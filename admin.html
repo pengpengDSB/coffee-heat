@@ -242,7 +242,7 @@
   .bcard-foot .btn{margin-left:auto}
   .bcard-per b,.bcard-cups b{color:var(--ink);font-weight:500}
   .bcard-wr{min-width:0}
-  @media(max-width:999px){
+  @media(max-width:1199px){
     .bean-kpis{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
     .bkpi{padding:11px 12px}
     .bkpi .v{font-size:19px}
@@ -256,7 +256,7 @@
     .bean-sort{flex:1;min-width:0;max-width:340px}
   }
   /* 平板这档：两列卡片，别把一袋豆拉成一整条（680 以上才有两列的余量） */
-  @media(min-width:680px) and (max-width:999px){
+  @media(min-width:680px) and (max-width:1209px){
     .bean-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   }
   /* ---- 辅料比价 ---- */
@@ -290,7 +290,7 @@
   .qshop-name{flex:0 0 200px;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .qshop-name i{font-style:normal;font-size:10px;color:var(--ink-faint);margin-left:6px}
   .qshop input{flex:1;font:inherit;font-size:11.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card-2);color:var(--ink-soft)}
-  @media(max-width:999px){
+  @media(max-width:1049px){
     .qp-sum{grid-template-columns:repeat(3,1fr);gap:8px}
     .qps{padding:10px}
     .qps.wide{grid-column:1/-1}
@@ -2751,11 +2751,13 @@
   function beanTypeOf(b){ return (b.ctype==="电商"||b.ctype==="线下") ? b.ctype : ""; }
 
   /* 窄窗口（手机 / 平板竖屏 / 电脑半屏）走卡片版，宽窗口走表格版 */
-  var BEAN_NARROW_W = 1000;
+  var BEAN_NARROW_W = 1210; /* 豆价表 min-width 1150 + 左右留白 48 + 竖向滚动条余量：低于 1210 走卡片，避免容器内横滚 */
+  var QUOTE_NARROW_W = 1050; /* 辅料表 min-width 1000 + 48 */
   var beanNarrowState=null, beanResizeT=null;
-  function beanIsNarrow(){
-    return (window.innerWidth||document.documentElement.clientWidth||0) < BEAN_NARROW_W;
-  }
+  /* 用 clientWidth（不含滚动条）判定，避免出现竖向滚动条时又刚好被挤成横滚 */
+  function viewW(){ return document.documentElement.clientWidth||window.innerWidth||0; }
+  function beanIsNarrow(){ return viewW() < BEAN_NARROW_W; }
+  function qIsNarrow(){ return viewW() < QUOTE_NARROW_W; }
   window.addEventListener("resize",function(){
     var tab=state.tab;
     if(!(state.view==="admin" && (tab==="beans"||tab==="quotes"))) return;
@@ -2814,7 +2816,7 @@
     }
     function kpiHtml(k){
       var v=function(x){ return x? '¥'+r2(x) : '—'; };
-      var m=function(b){ return b ? esc(b.shop||b.label||"未填货源") : "还没有有效报价"; };
+      var m=function(b){ if(!b) return "还没有有效报价"; return esc(b.label||"未命名豆")+(b.shop? ' · '+esc(b.shop) : ""); };
       if(!k){
         return '<div class="bkpi na"><div class="k">全表最低 · 每公斤价</div><div class="v">—</div><div class="m">先把每袋的克数和总价填上</div></div>'+
           '<div class="bkpi na"><div class="k">全表中位 · 每公斤价</div><div class="v">—</div><div class="m">—</div></div>'+
@@ -3315,7 +3317,7 @@
       }
     }
     var rows=state.quotes;
-    var narrow=beanIsNarrow(); beanNarrowState=narrow;
+    var narrow=qIsNarrow(); beanNarrowState=narrow;
     state.qShop = state.qShop || qShopNotes();
     if(!state.qAdding) state.qAdding=false;
 
