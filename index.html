@@ -11,7 +11,8 @@
   #csplash.hide{opacity:0;pointer-events:none}
   .cs-mark{display:flex;align-items:center;gap:14px}
   .cs-bar{width:3px;height:46px;background:var(--brown);transform-origin:center;animation:csBar .6s .05s both}
-  .cs-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:52px;line-height:1.2;letter-spacing:.1em;color:var(--dark);display:flex}
+  .cs-word{font-family:"Noto Serif SC",serif;font-weight:900;font-size:52px;line-height:1.2;letter-spacing:.1em;color:var(--dark);display:flex;flex-wrap:wrap;justify-content:center;max-width:82vw;min-height:1.2em}
+  .cs-word.flat i{animation:none!important}
   .cs-word i{font-style:normal;animation:csWord .7s cubic-bezier(.2,.7,.3,1) both}
   .cs-word i:nth-child(1){animation-delay:.25s}
   .cs-word i:nth-child(2){animation-delay:.45s}
@@ -410,17 +411,82 @@
 <div id="csplash" role="presentation" aria-label="杯记">
   <div class="cs-mark">
     <span class="cs-bar"></span>
-    <span class="cs-word"><i>杯</i><i>记</i></span>
+    <span class="cs-word" aria-live="polite"></span>
   </div>
   <div class="cs-sub">每一杯，都看得见</div>
   <div class="cs-line"><span></span></div>
   <div class="cs-skip">点击跳过</div>
 </div>
 <script>
+/* 开屏片头：字标先取店名，取不到就 300ms 后用系统名起播，店名迟到再整段交叉淡入
+   —— 逐字动画只在起播那一刻挂一次，之后换字不再重挂 <i>，避免"开屏播两遍"。 */
 (function(){
+  var CFG = { url:"https://pnucsuxkduvwpgklizmw.supabase.co",
+              anonKey:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudWNzdXhrZHV2d3Bna2xpem13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0ODI0MjEsImV4cCI6MjExMTA1ODQyMX0.8H2mNE3KEXZmHdXpV92pJ80OeN_gKAGvVZ69l0zwBGw" };
+  function tenant(){
+    try{ var q=new URLSearchParams(location.search).get("t");
+         if(q && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(q)) return q; }catch(e){}
+    try{ var v=localStorage.getItem("cafe_tenant_v1");
+         if(v && /^[a-z0-9][a-z0-9_-]{1,11}$/.test(v)) return v; }catch(e){}
+    return "bj01";
+  }
+  var T=tenant(), NAME_KEY="cafe_site_name_"+T, SYS="杯记";
   var sp=document.getElementById("csplash");
   if(!sp) return;
-  var done=false, timer=null, minOk=false, bootOk=false;
+  var word=sp.querySelector(".cs-word");
+  var done=false, started=false;
+
+  function readCache(){ try{ var v=localStorage.getItem(NAME_KEY); return v?String(v):""; }catch(e){ return ""; } }
+  function fitSize(n){
+    var base = (window.innerWidth<=520) ? 40 : 52;
+    var size = Math.min(base, Math.floor(base*5.2/Math.max(2,n)));
+    return Math.max(34, size);
+  }
+  function fill(n, animate){
+    if(!word) return;
+    var cs=Array.prototype.slice.call(String(n)), step=(cs.length<=4?0.18:Math.min(0.18,0.5/(cs.length-1))), html="";
+    for(var i=0;i<cs.length;i++){
+      var c=cs[i]; if(c===" "||c==="\u3000") c="\u00A0";
+      html += "<i"+(animate?' style="animation-delay:'+(0.15+i*step).toFixed(2)+'s"':'')+">"+
+              c.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</i>";
+    }
+    word.classList.remove("flat");
+    word.innerHTML=html;
+    word.style.fontSize=fitSize(cs.length)+"px";
+    word.style.opacity="1";
+    word.setAttribute("data-txt",String(n));
+    if(!animate) word.classList.add("flat");
+  }
+  function start(n){ if(started||done) return; started=true; fill(n,true); }
+  function swap(n){
+    n=String(n||"").trim(); if(!n||done) return;
+    if(!started){ start(n); return; }
+    if(word && word.getAttribute("data-txt")===n) return;
+    if(!word) return;
+    word.style.transition="opacity .19s ease";
+    word.style.opacity="0";
+    setTimeout(function(){
+      if(done) return;
+      fill(n,false);
+      requestAnimationFrame(function(){ word.style.transition="opacity .32s ease"; word.style.opacity="1"; });
+    },200);
+  }
+  window.__spWord=swap;
+  function fetchSite(){
+    if(window.__siteValPromise) return window.__siteValPromise;
+    window.__siteValPromise = fetch(CFG.url+"/rest/v1/rpc/t_site",{
+      method:"POST", cache:"no-store",
+      headers:{apikey:CFG.anonKey, Authorization:"Bearer "+CFG.anonKey, "Content-Type":"application/json"},
+      body:JSON.stringify({p_tenant:T})
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(v){
+        if(v && v.name){ try{ localStorage.setItem(NAME_KEY, v.name); }catch(e){} }
+        return v || null;
+      }).catch(function(){ return null; });
+    return window.__siteValPromise;
+  }
+
+  var timer=null, minOk=false, bootOk=false;
   function close(){
     if(done) return; done=true;
     if(timer) clearTimeout(timer);
@@ -431,14 +497,25 @@
     },500);
     document.removeEventListener("keydown",close);
   }
-  /* 数据没准备好就先留住片头：最短 2.1 秒，最长 6 秒，避免"片头 → 第二个字标"两次开屏 */
   function wantClose(){ if(minOk && bootOk) close(); }
   window.__cSplashDone=function(){ bootOk=true; wantClose(); };
   sp.addEventListener("click",close);
   document.addEventListener("keydown",close);
   if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches){ close(); return; }
-  timer=setTimeout(function(){ minOk=true; wantClose(); },2100); /* 片头约 2 秒 */
-  setTimeout(close,6000); /* 兜底：6 秒还没回话也收场 */
+  timer=setTimeout(function(){ minOk=true; wantClose(); },2100);
+  setTimeout(close,6000);
+
+  if(word) word.style.opacity="0";
+  var cached=readCache();
+  if(cached){ start(cached); }
+  else{
+    var decided=false, hold=setTimeout(function(){ decided=true; start(SYS); },300);
+    fetchSite().then(function(v){
+      if(!(v && v.name)){ return; }
+      if(!decided){ decided=true; clearTimeout(hold); start(v.name); }
+      else { swap(v.name); }
+    });
+  }
 })();
 </script>
 <div class="phone">
@@ -491,6 +568,7 @@
   function setSiteName(v){
     v=String(v||"").trim(); if(!v) return;
     SITE_NAME=v; try{ localStorage.setItem(SITE_NAME_KEY, v); }catch(e){}
+    try{ if(window.__spWord) window.__spWord(v); }catch(e){}  /* 店名后到：片头整段交叉换字，不重播逐字动画 */
     applySiteName();
   }
   applySiteName();
@@ -586,13 +664,17 @@
 
   async function loadLoginMode(){
     try{
-      var r=await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_site", {
-        method:"POST", cache:"no-store",
-        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
-        body: JSON.stringify({p_tenant:TENANT})
-      });
-      if(!r.ok) return;
-      var site=await r.json();
+      /* 片头已经提前发过 t_site，这里复用同一个 Promise，不重复请求 */
+      var site = window.__siteValPromise ? await window.__siteValPromise : null;
+      if(!site){
+        var r=await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_site", {
+          method:"POST", cache:"no-store",
+          headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+          body: JSON.stringify({p_tenant:TENANT})
+        });
+        if(!r.ok) return;
+        site=await r.json();
+      }
       if(site && site.name) setSiteName(site.name);     /* 店名随 t_site 一起回来 */
       if(site && site.hours) setSiteHours(site.hours);  /* 营业时间同源 */
       var lm=site && site.loginMode;
