@@ -238,6 +238,12 @@
 
   /* === 首页 v8：hero + 可拖刻度 + 三杯推荐 === */
   .hero{position:relative;height:306px;overflow:hidden;background:#1B1917}
+  /* ---------- 未在营业时间提示条 ---------- */
+  .bizbar{display:flex;align-items:baseline;gap:10px;background:#FAF2E4;border-bottom:1px solid #EBDCC1;
+    color:#6C4A21;font-size:10.5px;letter-spacing:.03em;padding:9px 22px;line-height:1.7}
+  .bizbar b{font-weight:500;color:#8C5A17;font-size:11px;letter-spacing:.08em;border-right:1px solid #E3D2B4;
+    padding-right:10px;white-space:nowrap}
+  .bizbar span{opacity:.86}
   .hbrand{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:22px;
     font-size:9px;letter-spacing:.24em;color:rgba(255,255,255,.8)}
   .hmedia{position:absolute;inset:0}
@@ -485,6 +491,45 @@
     applySiteName();
   }
   applySiteName();
+  /* ---------- 营业时间：与后台同一份（t_site.hours）；未营业时首页提示 + 挡下单 ---------- */
+  var SITE_HOURS_KEY="cafe_hours_"+TENANT;
+  var SITE_HOURS=readLS(SITE_HOURS_KEY,null);
+  function siteHours(){
+    if(SITE_HOURS && SITE_HOURS.days && SITE_HOURS.days.length===7)
+      return {mode:(SITE_HOURS.mode==="custom"?"custom":"always"), days:SITE_HOURS.days};
+    return {mode:"always", days:null};
+  }
+  function setSiteHours(v){
+    if(!(v && v.days && v.days.length===7)) return;
+    SITE_HOURS={mode:(v.mode==="custom"?"custom":"always"), days:v.days};
+    writeLS(SITE_HOURS_KEY, SITE_HOURS);
+  }
+  function bizWindow(wd){
+    var c=siteHours();
+    if(c.mode!=="custom") return ["00:00","24:00"];
+    var w=c.days[wd]; return (w && w[0] && w[1]) ? w : null;
+  }
+  function bizOpen(){
+    var d=new Date(), w=bizWindow(d.getDay());
+    if(!w) return false;
+    var hm=pad2(d.getHours())+":"+pad2(d.getMinutes());
+    if(w[1]==="24:00") return hm>=w[0];
+    if(w[0]<=w[1]) return (hm>=w[0] && hm<w[1]);
+    return (hm>=w[0] || hm<w[1]);
+  }
+  function bizWindowText(){
+    var w=bizWindow(new Date().getDay());
+    if(!w) return "今日休息";
+    if(w[1]==="24:00") return "24 小时";
+    return w[0]+"–"+w[1];
+  }
+  function bizBarHtml(){
+    if(bizOpen()) return "";
+    var w=bizWindow(new Date().getDay());
+    return '<div class="bizbar"><b>未在营业时间</b><span>'+
+      (w ? ("今天 "+bizWindowText()+" 营业，现在还没开门") : "今天休息，不开门")+
+      ' · 可先看菜单，开门后再下单</span></div>';
+  }
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
     sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[], closed:false };
 
@@ -546,6 +591,7 @@
       if(!r.ok) return;
       var site=await r.json();
       if(site && site.name) setSiteName(site.name);     /* 店名随 t_site 一起回来 */
+      if(site && site.hours) setSiteHours(site.hours);  /* 营业时间同源 */
       var lm=site && site.loginMode;
       if(lm==="off"||lm==="lazy"||lm==="strict"){ loginMode=lm; }
       else { var cache=readLS("cafe_login_mode_v1",null); if(cache) loginMode=cache; }
@@ -810,6 +856,7 @@
     var mx=scaleMax();
 
     app.innerHTML =
+      bizBarHtml() +
       heroFor(sel) +
       '<div class="stripwrap">'+
         '<div class="striphead"><span>它在店里的位置</span><span id="stripval">第 '+rankOf(sel.id)+' 轻 · 共 '+db.products.length+' 款</span></div>'+
@@ -1362,6 +1409,10 @@
 
   async function submitOrder(){
     if(!state.cart.length) return;
+    if(!bizOpen()){
+      toast("本店当前不在营业时间（"+bizWindowText()+"），暂不接单");
+      return;
+    }
     if(loginMode==="strict" && !buyer()){
       var got=await showLogin({required:true});
       if(!got){ return; }
