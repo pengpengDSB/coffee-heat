@@ -1114,6 +1114,28 @@
   body.bwmode{overflow:hidden;background:#131110}
   body.bwmode .bw-foot{opacity:0;transition:opacity .45s ease;pointer-events:none}
   body.bwmode .bw-foot.show{opacity:1;pointer-events:auto}
+  /* ===== 大屏遥控舱（后台右下角，双开时用） ===== */
+  .bwd{position:fixed;right:18px;bottom:18px;z-index:88;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .bwd-pill{display:flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--card);
+      color:var(--ink-soft);border-radius:999px;padding:7px 14px;font-size:12px;letter-spacing:.06em;cursor:pointer;
+      font-family:inherit;box-shadow:0 6px 18px rgba(20,20,16,.10)}
+  .bwd-pill i{width:7px;height:7px;border-radius:50%;background:#B9B4A6;flex:none;transition:background .3s}
+  .bwd.on .bwd-pill i{background:var(--low);box-shadow:0 0 0 3px rgba(63,107,82,.16)}
+  .bwd-pill em{font-style:normal;color:var(--ink-faint);font-size:11px;max-width:210px;overflow:hidden;
+      text-overflow:ellipsis;white-space:nowrap}
+  .bwd.on .bwd-pill span{color:var(--low)}
+  .bwd-panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;
+      box-shadow:0 10px 30px rgba(20,20,16,.14);width:224px}
+  .bwd.open .bwd-panel{display:block}
+  .bwd-row{display:flex;gap:6px;margin-bottom:6px}
+  .bwd-btn{flex:1;border:1px solid var(--line);background:var(--card-2);color:var(--ink);border-radius:4px;
+      padding:6px 0;font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:.04em}
+  .bwd-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .bwd-btn:disabled{opacity:.45;cursor:not-allowed}
+  .bwd-btn.wide{flex:none;width:100%;margin-bottom:2px}
+  .bwd-note{font-size:10px;color:var(--ink-faint);line-height:1.7;letter-spacing:.02em;margin-top:2px}
+  @media(max-width:720px){.bwd{right:12px;bottom:12px}.bwd-panel{width:196px}}
+
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -2037,6 +2059,78 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var w=null;
     try{ w=window.open(boardWindowUrl(),"_blank"); }catch(e){}
     if(!w) toast("浏览器拦了新窗口，允许弹窗后再点一次");
+  }
+
+  /* ---------- 后台右下角「大屏遥控舱」 ----------
+     双开时人的眼睛在电脑上、屏在墙上：这里看它在不在、放第几屏，并能直接切。
+     状态由大屏心跳（board_state）提供，指令经 t_board_ctl 写进 board_cmd，大屏订阅即时执行。 */
+  var BWDOCK_OPEN=false, BWDOCK_ON=false, BWDOCK_T=null;
+  function bwDockEl(){
+    var el=document.getElementById("bwDock");
+    if(el) return el;
+    el=document.createElement("div");
+    el.id="bwDock"; el.className="bwd";
+    el.innerHTML='<button class="bwd-pill" id="bwdPill"><i></i><span id="bwdTxt">大屏</span><em id="bwdMeta"></em></button>'+
+      '<div class="bwd-panel">'+
+        '<div class="bwd-row"><button class="bwd-btn" data-c="prev">上一屏</button>'+
+        '<button class="bwd-btn" data-c="next">下一屏</button></div>'+
+        '<div class="bwd-row"><button class="bwd-btn" data-c="pause">暂停</button>'+
+        '<button class="bwd-btn" data-c="play">继续</button></div>'+
+        '<div class="bwd-row"><button class="bwd-btn" data-c="slide">轮播</button>'+
+        '<button class="bwd-btn" data-c="all">全览</button></div>'+
+        '<div class="bwd-row"><button class="bwd-btn wide" data-c="refresh">让大屏重新取数</button></div>'+
+        '<div class="bwd-note">状态每 8 秒刷新。口令只取当前标签页里的登录态，不另存。</div>'+
+      '</div>';
+    document.body.appendChild(el);
+    el.querySelector("#bwdPill").addEventListener("click",function(){
+      BWDOCK_OPEN=!BWDOCK_OPEN; el.classList.toggle("open",BWDOCK_OPEN);
+    });
+    el.querySelectorAll("[data-c]").forEach(function(b){
+      b.addEventListener("click",function(){ bwCtl(b.dataset.c,b); });
+    });
+    return el;
+  }
+  function bwDockPoll(){
+    if(BOARD_MODE){ return; }
+    var el=document.getElementById("bwDock");
+    var show = isAuthed() && state.view!=="board" && state.view!=="login" && state.view!=="landing" && state.view!=="shop";
+    if(!show){ if(el) el.style.display="none"; return; }
+    if(!el) el=bwDockEl();
+    el.style.display="";
+    bwRpc("t_board_status",{p_tenant:adminTenant()}).then(function(s){
+      BWDOCK_ON=!!(s && s.online);
+      el.classList.toggle("on",BWDOCK_ON);
+      var t=el.querySelector("#bwdTxt"), mt=el.querySelector("#bwdMeta");
+      if(t) t.textContent = BWDOCK_ON?"大屏在线":"大屏离线";
+      if(mt){
+        if(BWDOCK_ON){
+          var bits=[];
+          if(s.paused) bits.push("已暂停");
+          if(s.title) bits.push(s.title+(s.total>1?(" · "+s.slide+"/"+s.total):""));
+          mt.textContent=bits.join(" · ");
+        }else{
+          var a=Number(s&&s.age);
+          mt.textContent = (a>0 && a<86400) ? ("上次 "+(a<60?Math.round(a)+" 秒前":Math.round(a/60)+" 分钟前")) : "还没开过大屏";
+        }
+      }
+      el.querySelectorAll("[data-c]").forEach(function(b){ if(!b.dataset.busy) b.disabled=!BWDOCK_ON; });
+    }).catch(function(e){
+      el.classList.remove("on");
+      var t=el.querySelector("#bwdTxt"); if(t) t.textContent="大屏状态读不到";
+      var mt=el.querySelector("#bwdMeta"); if(mt) mt.textContent=(e&&e.message||"") .slice(0,40);
+    });
+  }
+  function bwCtl(cmd,btn){
+    var p=adminPass();
+    if(!p){ toast("先在后台登录，再用遥控"); return; }
+    var NAME={prev:"上一屏",next:"下一屏",pause:"暂停",play:"继续",all:"全览",slide:"轮播",refresh:"刷新"};
+    if(btn){ btn.disabled=true; btn.dataset.busy="1"; }
+    bwRpc("t_board_ctl",{p_tenant:adminTenant(), p_pass:p, p_cmd:cmd}).then(function(r){
+      if(r && r.ok){ toast("已发给大屏："+(NAME[cmd]||cmd)); setTimeout(bwDockPoll,1200); }
+      else toast("没发出去："+((r&&r.reason)||"未知原因"));
+    }).catch(function(e){
+      toast("没发出去："+((e&&e.message)||e));
+    }).then(function(){ if(btn){ delete btn.dataset.busy; btn.disabled=!BWDOCK_ON; } });
   }
   function goView(v){
     if(v==="board"){ openBoardWindow(); return; }   /* 展示面板单独开窗口，后台这边的状态不动 */
@@ -4826,6 +4920,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
      右上角可切「全览」、也可跳去顾客端预览；ESC 退出。
      数据只读 db.products，不写任何东西。 */
   var boardIdx=0, boardMode="slide", boardTimer=null, boardKeyHooked=false;
+  var boardPaused=false;                 /* 后台遥控「暂停」时置真：停在当前屏，不自动翻页 */
+  var BW_POS=null;                       /* 当前展示位置 {mode,i,n,title}，心跳时回报给后台 */
+  var BW_CMDID=-1, BW_BEAT_AT=0;         /* 已执行到的指令号 / 上次心跳时间（本地节流用） */
   var BOARD_MS=12000;
 
   /* 面板大图预加载：先把产品图塞进浏览器缓存，避免切到「展示面板」时先黑一屏 */
@@ -4911,7 +5008,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function boardStop(){ if(boardTimer){ clearInterval(boardTimer); boardTimer=null; } }
   function boardStart(){
     boardStop();
-    if(boardMode!=="slide") return;
+    if(boardMode!=="slide" || boardPaused) return;   /* 全览 / 遥控暂停 时不翻页 */
     boardTimer=setInterval(function(){ boardIdx++; renderBoard(); }, BOARD_MS);
   }
   function removeBoard(){
@@ -5500,12 +5597,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       metaTxt=g.items.length+" 款 · 中杯 · 含热量"+(g.screens>1?" · "+(boardIdx%groups.length+1)+"/"+g.screens:"");
     }
 
+    BW_POS={ mode:boardMode,
+             i:(boardMode==="all"?1:(boardIdx%Math.max(1,groups.length))+1),
+             n:(boardMode==="all"?1:groups.length),
+             title:catTxt||"" };
+
     var foot='<div class="bw-foot">';
     if(boardMode==="slide" && groups.length>1){
       foot+='<div class="bw-dots">'+groups.map(function(_,i){ return '<span class="bw-dot'+(i===(boardIdx%groups.length)?" on":"")+'"></span>'; }).join("")+'</div>';
     }
     foot+='<div class="bw-prog"><i id="bwProg"></i></div>'+
-      '<div class="bw-hint">'+(boardMode==="all"?"全览 · 不自动翻页":("自动轮播 · "+Math.round(BOARD_MS/1000)+" 秒一屏"))+'</div>'+
+      '<div class="bw-hint">'+(boardMode==="all"?"全览 · 不自动翻页"
+        :(boardPaused?"已暂停 · 后台「继续」恢复":"自动轮播 · "+Math.round(BOARD_MS/1000)+" 秒一屏"))+'</div>'+
       '<button class="bw-btn" id="bwMode">'+(boardMode==="all"?"切回轮播":"全览")+'</button>'+
       (BOARD_MODE
         ? '<button class="bw-btn" id="bwFs">全屏</button>'
@@ -5538,10 +5641,75 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       });
     }
     var pr=document.getElementById("bwProg");
-    if(pr && boardMode==="slide" && groups.length>1){
+    if(pr && boardMode==="slide" && groups.length>1 && !boardPaused){
       requestAnimationFrame(function(){ pr.style.transition="width "+BOARD_MS+"ms linear"; pr.style.width="100%"; });
     }else if(pr){ pr.style.width="0"; }
     boardStart();
+    bwBeat(false);            /* 每次换屏顺手回报一次位置（本地 4 秒节流，服务端再 2 秒节流） */
+  }
+
+  /* ---------- 大屏 ⇄ 后台：心跳 / 接收遥控指令（仅大屏窗口模式） ---------- */
+  function bwRpc(fn, body){
+    return fetch(SUPA_CONFIG.url+"/rest/v1/rpc/"+fn,{
+        method:"POST", cache:"no-store",
+        headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
+        body:JSON.stringify(body||{})
+      }).then(function(r){
+        return r.text().then(function(t){
+          if(!r.ok){ var e=new Error((t||"").slice(0,120)||("HTTP "+r.status)); e.status=r.status; throw e; }
+          try{ return t?JSON.parse(t):null; }catch(_){ return null; }
+        });
+      });
+  }
+  function bwBeat(force){
+    if(!BOARD_MODE) return;
+    var now=Date.now();
+    if(!force && now-BW_BEAT_AT < 4000) return;
+    BW_BEAT_AT=now;
+    var p=BW_POS||{mode:"slide",i:1,n:1,title:""};
+    bwRpc("t_board_beat",{
+      p_tenant:adminTenant(), p_slide:p.i, p_total:p.n,
+      p_title:String(p.title||"").slice(0,40), p_mode:p.mode, p_paused:!!boardPaused
+    }).then(function(r){
+      if(r && r.ok && Number(r.cmd||0) > BW_CMDID){ bwPullCmds(BW_CMDID); }   /* 订阅掉线时靠心跳兜底补指令 */
+    }).catch(function(e){ try{ window.__beatErr=String((e&&e.message)||e); }catch(_){} });
+  }
+  function bwPullCmds(afterId){
+    fetch(SUPA_CONFIG.url+"/rest/v1/board_cmd?tenant_id=eq."+encodeURIComponent(adminTenant())
+        +"&id=gt."+encodeURIComponent(String(afterId))+"&select=id,cmd,arg,at&order=id.asc&limit=5",
+        {cache:"no-store", headers:supaHeaders()})
+      .then(function(r){ return r.ok?r.json():[]; })
+      .then(function(rows){
+        if(!rows || !rows.length) return;
+        rows.forEach(function(row){
+          var id=Number(row.id);
+          if(id>BW_CMDID){ BW_CMDID=id; bwApplyCmd(row); }
+        });
+      })
+      .catch(function(){});
+  }
+  function bwInitCmdId(){
+    if(BW_CMDID>=0) return;
+    fetch(SUPA_CONFIG.url+"/rest/v1/board_cmd?tenant_id=eq."+encodeURIComponent(adminTenant())
+        +"&select=id&order=id.desc&limit=1",{cache:"no-store", headers:supaHeaders()})
+      .then(function(r){ return r.ok?r.json():[]; })
+      .then(function(j){ BW_CMDID=(j&&j[0]&&j[0].id)?Number(j[0].id):0; })
+      .catch(function(){ BW_CMDID=0; });
+  }
+  function bwApplyCmd(row){
+    if(!row || !row.cmd) return;
+    var at = row.at ? Date.parse(row.at) : NaN;
+    if(!isNaN(at) && (Date.now()-at) > 120000) return;   /* 两分钟前的旧指令不重放，免得大屏莫名跳屏 */
+    var cmd=String(row.cmd);
+    if(cmd==="pause")       boardPaused=true;
+    else if(cmd==="play")   boardPaused=false;
+    else if(cmd==="all")    boardMode="all";
+    else if(cmd==="slide")  boardMode="slide";
+    else if(cmd==="next")   boardIdx++;
+    else if(cmd==="prev")   boardIdx = (boardIdx>0? boardIdx-1 : 0);
+    else if(cmd==="refresh"){ boardRedraw(); bwBeat(true); return; }
+    else return;
+    renderBoard();          /* 末尾会带一次心跳，把新位置回报给后台 */
   }
 
   function renderShop(){
@@ -5733,6 +5901,27 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           .subscribe(function(st){ try{ window.__rtState=st; }catch(e){} });
       }
     }catch(e){ try{ window.__rtErr=String(e); }catch(_){} }
+    /* 1b) 遥控指令：后台按一下，大屏订阅即时执行（board_cmd 只读、只含指令本身） */
+    try{
+      if(supaReady()){
+        if(!sb) sb=supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+        sb.channel("boardcmd-"+adminTenant())
+          .on("postgres_changes",
+              {event:"INSERT", schema:"public", table:"board_cmd",
+               filter:"tenant_id=eq."+adminTenant()},
+              function(payload){
+                var row=(payload&&payload.new)||{};
+                var id=row&&row.id!=null?Number(row.id):null;
+                if(id!=null && id<=BW_CMDID) return;      /* 心跳兜底已经执行过这条 */
+                if(id!=null) BW_CMDID=id;
+                bwApplyCmd(row);
+              })
+          .subscribe(function(st){ try{ window.__cmdState=st; }catch(e){} });
+      }
+    }catch(e){ try{ window.__cmdErr=String(e); }catch(_){} }
+    bwInitCmdId();
+    setInterval(function(){ bwBeat(false); }, 12000);   /* 存活心跳：全览/暂停时也要让后台知道屏还在 */
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden) bwBeat(true); });
     /* 2) 兜底：20 秒看一次版本号，变了才拉全量（版本表没建就退回 60 秒全量） */
     setInterval(function(){
       if(state.view!=="board") return;
@@ -5749,6 +5938,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
 
   app.innerHTML = BOARD_MODE ? '' : '<div class="boot-loader"><div class="bl-line"><span></span></div><div class="bl-sub">正在准备你的配方与成本</div></div>';
+  if(!BOARD_MODE){
+    BWDOCK_T=setInterval(bwDockPoll, 8000);      /* 大屏遥控舱：先跑一次再做 8 秒轮询 */
+    setTimeout(bwDockPoll, 300);
+  }
   boot().then(function(){ if(window.__bootDone) window.__bootDone(); render(); })
       .catch(function(){ if(window.__bootDone) window.__bootDone(); render(); });
 })();
