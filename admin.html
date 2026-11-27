@@ -321,66 +321,90 @@
   .cms-ord.void{opacity:.62}
   @media(max-width:640px){ .cms-kpis{grid-template-columns:1fr 1fr} .cms-mask{padding:0;align-items:flex-end} .cms-panel{max-width:none;max-height:88vh;border-radius:14px 14px 0 0} }
 
-  /* ===== 展示面板：店内大屏菜单 ===== */
-  .bw{position:fixed;inset:0;z-index:75;background:#F7F4EB;color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
-  .bw-top{display:flex;align-items:center;gap:16px;padding:26px 40px 0;flex-wrap:wrap}
-  .bw-brand{font-size:13px;letter-spacing:.34em;color:var(--ink-soft)}
-  .bw-title{font-size:clamp(22px,2.6vw,38px);font-weight:500;letter-spacing:-.01em}
-  .bw-cat{margin-left:8px;font-size:clamp(11px,1vw,15px);color:var(--ink-faint);letter-spacing:.06em}
-  .bw-sub{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-faint)}
-  .bw-btn{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer}
-  .bw-btn:hover{border-color:rgba(122,78,51,.4);color:var(--ink)}
-  .bw-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 40px 10px;min-height:0;overflow:hidden}
-  .bw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,1.5vw,26px)}
-  .bw-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:clamp(12px,1.1vw,20px);display:flex;gap:clamp(10px,1vw,18px);align-items:center;min-width:0}
-  .bw-img{width:clamp(80px,7.6vw,130px);height:clamp(80px,7.6vw,130px);border-radius:10px;object-fit:cover;flex:none;background:var(--card-2)}
-  .bw-ic{display:flex;align-items:center;justify-content:center;font-size:clamp(20px,2vw,30px);color:var(--ink-faint)}
-  .bw-body{min-width:0;flex:1}
-  .bw-name{font-size:clamp(16px,1.75vw,28px);font-weight:500;line-height:1.28;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .bw-note{display:block;font-size:clamp(10px,.85vw,13px);color:var(--ink-faint);margin-top:5px;letter-spacing:.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bw-price{font-size:clamp(14px,1.35vw,22px);margin-top:9px;font-variant-numeric:tabular-nums}
-  .bw-kcal{margin-left:auto;text-align:right;flex:none}
-  .bw-kcal b{font-size:clamp(22px,2.9vw,46px);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
-  .bw-kcal span{display:block;font-size:clamp(9px,.8vw,11px);color:var(--ink-faint);letter-spacing:.1em;margin-top:2px}
-  .bw-tag{display:inline-block;font-size:clamp(9px,.75vw,11px);padding:2px 7px;border-radius:4px;border:1px solid var(--line);margin-top:7px}
-  .bw-tag.low{color:#3F6B52;border-color:rgba(63,107,82,.45)}
-  .bw-tag.mid{color:#8A6A2F;border-color:rgba(138,106,47,.45)}
-  .bw-tag.high{color:#8C4A3C;border-color:rgba(140,74,60,.45)}
-  .bw-foot{display:flex;align-items:center;gap:14px;padding:0 40px 26px}
-  .bw-dots{display:flex;gap:7px}
-  .bw-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.14)}
-  .bw-dot.on{background:rgba(0,0,0,.5)}
-  .bw-prog{flex:1;height:2px;background:rgba(0,0,0,.1);border-radius:2px;overflow:hidden}
-  .bw-prog i{display:block;height:100%;width:0;background:rgba(122,78,51,.5)}
-  .bw-hint{font-size:11px;color:var(--ink-faint);letter-spacing:.04em}
-  .bw-all .bw-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .bw-all .bw-card{padding:clamp(10px,.9vw,16px);gap:clamp(9px,.8vw,14px)}
-  .bw-all .bw-img{width:clamp(64px,5.4vw,96px);height:clamp(64px,5.4vw,96px)}
-  .bw-all .bw-name{font-size:clamp(14px,1.4vw,22px)}
-  .bw-all .bw-note{display:none}
-  .bw-all .bw-kcal b{font-size:clamp(18px,2vw,32px)}
-  .bw-hero{display:grid;gap:clamp(14px,1.5vw,26px);height:100%;align-content:stretch;grid-auto-rows:minmax(0,1fr)}
-  .bw-hero.w1{grid-template-columns:minmax(0,1fr)}
-  .bw-hero.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .bw-hero.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .bw-hero.w1 .bw-hcard{flex-direction:row}
-  .bw-hero.w1 .bw-himg{flex:1.65}
-  .bw-hero.w1 .bw-hbody{flex-direction:column;justify-content:center;align-items:flex-start;width:min(40%,460px);padding:clamp(24px,3.4vw,64px)}
-  .bw-hero.w1 .bw-hright{margin:clamp(14px,1.6vw,26px) 0 0}
-  .bw-hero.w1 .bw-hname{font-size:clamp(26px,3vw,52px)}
-  .bw-hcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-  .bw-himg{flex:1;min-height:0;background:var(--card-2);display:flex;align-items:center;justify-content:center}
-  .bw-himg img{width:100%;height:100%;object-fit:cover;display:block}
-  .bw-himg .bw-ic{font-size:clamp(30px,4vw,58px)}
-  .bw-hbody{padding:clamp(14px,1.2vw,22px) clamp(14px,1.2vw,24px);display:flex;align-items:flex-start;gap:14px}
-  .bw-hname{font-size:clamp(19px,2vw,34px);font-weight:500;line-height:1.24}
-  .bw-hmeta{font-size:clamp(10px,.85vw,13px);color:var(--ink-faint);margin-top:7px;letter-spacing:.03em}
-  .bw-hright{margin-left:auto;text-align:right;flex:none}
-  .bw-hright b{font-size:clamp(26px,3.4vw,52px);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.05}
-  .bw-hright span{display:block;font-size:clamp(9px,.8vw,11px);color:var(--ink-faint);letter-spacing:.1em}
-  .bw-hprice{font-size:clamp(16px,1.6vw,26px);margin-top:clamp(6px,.7vw,12px);font-variant-numeric:tabular-nums}
-  @media(max-width:900px){ .bw .bw-grid,.bw-all .bw-grid{grid-template-columns:repeat(2,minmax(0,1fr))} .bw-top,.bw-main,.bw-foot{padding-left:20px;padding-right:20px} }
-  @media (orientation:portrait){ .bw .bw-grid,.bw-all .bw-grid{grid-template-columns:repeat(2,minmax(0,1fr))} .bw-hero.c3{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  /* ===== 展示面板：店内大屏菜单（暗场橱窗） ===== */
+  .bw{position:fixed;inset:0;z-index:75;background:#131110;color:#F2EADA;display:flex;flex-direction:column;
+      overflow:hidden;font-family:"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+  .bw-top{display:flex;align-items:flex-end;justify-content:space-between;gap:2vw;padding:2.4vh 3vw 1.6vh}
+  .bw-brand{font-family:"Songti SC","Noto Serif CJK SC","STSong",serif;font-size:clamp(15px,1.15vw,24px);
+      letter-spacing:.26em;white-space:nowrap;color:#F2EADA}
+  .bw-brand em{font-style:normal;font-size:clamp(8px,.55vw,11px);letter-spacing:.4em;color:#8B7E6C;margin-left:1em}
+  .bw-right{text-align:right;min-width:0}
+  .bw-title{font-family:"Songti SC","Noto Serif CJK SC","STSong",serif;font-size:clamp(19px,1.65vw,36px);
+      letter-spacing:.2em;color:#E8DCC6;line-height:1.1;white-space:nowrap}
+  .bw-meta{font-size:clamp(9px,.62vw,12px);letter-spacing:.28em;color:#8B7E6C;margin-top:.8em}
+  .bw-main{flex:1;min-height:0;padding:0 3vw;display:flex}
+  .bw-stage{flex:1;min-height:0;display:grid;gap:clamp(8px,.55vw,14px);
+      grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+  .bw-stage.n1{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  .bw-stage.n2{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+  .bw-stage.n3{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+  .bw-stage.n4{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+  .bw-tile{position:relative;overflow:hidden;background:#1D1916;border:1px solid rgba(242,234,218,.1);
+      display:block;min-height:0}
+  .bw-tile>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .bw-tile .bw-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-size:clamp(26px,3vw,60px);color:#5A5044}
+  .bw-scrim{position:absolute;inset:0;background:
+      linear-gradient(to bottom,rgba(10,8,7,.72) 0%,rgba(10,8,7,.20) 24%,rgba(10,8,7,0) 46%),
+      linear-gradient(to top,rgba(10,8,7,.94) 0%,rgba(10,8,7,.56) 36%,rgba(10,8,7,0) 66%)}
+  .bw-no{position:absolute;top:clamp(9px,1.3vh,20px);left:clamp(11px,1vw,20px);
+      font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:clamp(10px,.7vw,14px);
+      letter-spacing:.18em;color:rgba(242,234,218,.72)}
+  .bw-info{position:absolute;left:clamp(12px,1.3vw,26px);right:clamp(12px,1.3vw,26px);
+      bottom:clamp(10px,1.5vh,24px);display:flex;align-items:flex-end;justify-content:space-between;gap:1vw}
+  .bw-info .l{min-width:0;max-width:60%}
+  .bw-name{font-size:clamp(16px,1.5vw,34px);font-weight:500;letter-spacing:.08em;line-height:1.2;
+      color:#F2EADA;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+  .bw-name.long{font-size:clamp(13px,1.08vw,25px);letter-spacing:.02em}
+  .bw-line{display:flex;align-items:center;gap:.8vw;margin-top:clamp(5px,.75vh,12px);
+      font-size:clamp(9px,.62vw,12px);letter-spacing:.12em;color:#B3A48C}
+  .bw-line b{color:#DDB07A;font-size:clamp(12px,.9vw,19px);letter-spacing:.02em;font-weight:500;
+      font-variant-numeric:tabular-nums}
+  .bw-kc{text-align:right;flex:none;white-space:nowrap}
+  .bw-kc b{display:block;font-family:"Songti SC","Noto Serif CJK SC","STSong",serif;
+      font-size:clamp(24px,2.3vw,52px);line-height:.95;letter-spacing:.01em;font-weight:400;
+      font-variant-numeric:tabular-nums}
+  .bw-kc span{display:block;font-size:clamp(8px,.56vw,11px);letter-spacing:.2em;color:#B79A6D;margin-top:.6em}
+  .bw-kc.low span{color:#8FB29A}
+  .bw-kc.mid span{color:#D2A75B}
+  .bw-kc.high span{color:#CE8874}
+  .bw-stage.n1 .bw-name{font-size:clamp(24px,2.3vw,52px)}
+  .bw-stage.n1 .bw-kc b{font-size:clamp(34px,3.4vw,76px)}
+  .bw-all .bw-stage{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));
+      gap:clamp(6px,.4vw,10px)}
+  .bw-all .bw-info .l{max-width:none;flex:1;min-width:0}
+  .bw-all .bw-name{font-size:clamp(12px,.82vw,18px);letter-spacing:.04em;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bw-all .bw-name.long{font-size:clamp(11px,.72vw,16px);letter-spacing:0}
+  .bw-all .bw-line{display:none}
+  .bw-all .bw-no{display:none}
+  .bw-all .bw-info{flex-direction:column;align-items:flex-start;gap:.4em}
+  .bw-all .bw-kc{order:2;display:flex;align-items:baseline;gap:.5em;text-align:left}
+  .bw-all .bw-kc b{font-size:clamp(15px,1.1vw,22px)}
+  .bw-all .bw-kc span{font-size:clamp(7px,.5vw,9px);letter-spacing:.14em;margin-top:0}
+  .bw-foot{display:flex;align-items:center;gap:clamp(10px,1vw,18px);padding:1.4vh 3vw 2vh}
+  .bw-dots{display:flex;gap:7px;flex:none}
+  .bw-dot{width:6px;height:6px;border-radius:50%;background:rgba(242,234,218,.22);transition:background .3s}
+  .bw-dot.on{background:#B79A6D}
+  .bw-prog{flex:1;height:2px;background:rgba(242,234,218,.16);overflow:hidden}
+  .bw-prog i{display:block;height:100%;width:0;background:#B79A6D}
+  .bw-hint{font-size:clamp(9px,.62vw,11px);color:#7E7361;letter-spacing:.2em;white-space:nowrap}
+  .bw-btn{border:1px solid rgba(242,234,218,.18);background:transparent;border-radius:4px;
+      padding:.5em .85em;font-size:clamp(10px,.68vw,13px);color:#B3A48C;letter-spacing:.08em;
+      cursor:pointer;font-family:inherit;white-space:nowrap}
+  .bw-btn:hover{border-color:rgba(221,176,122,.62);color:#F2EADA}
+  .bw-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;
+      gap:.4em;color:#8B7E6C;font-size:13px;line-height:2.1;text-align:center}
+  @media(max-width:900px){
+    .bw-stage,.bw-all .bw-stage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+    .bw-stage.n1{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+    .bw-stage.n2{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+    .bw-top,.bw-main,.bw-foot{padding-left:4vw;padding-right:4vw}
+  }
+  @media (orientation:portrait){
+    .bw-stage,.bw-all .bw-stage{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}
+    .bw-stage.n1{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  }
 
   /* ---- 辅料比价 ---- */
   .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
@@ -4451,26 +4475,22 @@
     if(others.length) groups.push({cat:"其他", items:others.slice(0,6), part:""});
     return groups;
   }
-  function boardCard(p){
+  /* 一块「暗场橱窗」瓦片：满幅产品图 + 上下渐变遮罩 + 左下名字价格 + 右下热量 */
+  function boardTile(p,i,all){
     var c=productKcal(p,defaultMilk(p)); var t=tier(c.total);
-    var note=[p.big, p.size, (milkAvail(p)?"可换牛奶":"")].filter(Boolean).join(" · ");
-    return '<div class="bw-card">'+
-      (p.image?'<img class="bw-img" src="'+esc(p.image)+'" alt="">':'<div class="bw-img bw-ic">'+ic(catIcon(p.big))+'</div>')+
-      '<div class="bw-body"><div class="bw-name">'+esc(p.name)+'</div>'+
-        '<span class="bw-note">'+esc(note)+'</span>'+
-        ((p.price!=null&&p.price!=="")?'<div class="bw-price">¥'+esc(p.price)+'</div>':'')+
+    var meta=[p.size,(milkAvail(p)?"可换牛奶":"")].filter(Boolean).join(" · ");
+    var name=(p.name||"");
+    var long=(name.length>6?" long":"");
+    var price=(p.price!=null&&p.price!=="")?'<b>¥'+esc(p.price)+'</b>':"";
+    return '<div class="bw-tile">'+
+      (p.image?'<img src="'+esc(p.image)+'" alt="">':'<div class="bw-ic">'+ic(catIcon(p.big))+'</div>')+
+      '<div class="bw-scrim"></div>'+
+      (all?"":'<div class="bw-no">'+(i<9?"0":"")+(i+1)+'</div>')+
+      '<div class="bw-info"><div class="l">'+
+        '<div class="bw-name'+long+'">'+esc(name)+'</div>'+
+        '<div class="bw-line">'+price+(meta?'<span>'+esc(meta)+'</span>':"")+'</div>'+
       '</div>'+
-      '<div class="bw-kcal"><b>'+r1(c.total)+'</b><span>大卡</span><div class="bw-tag '+t.cls+'">'+t.label+'</div></div>'+
-    '</div>';
-  }
-  function boardHeroCard(p){
-    var c=productKcal(p,defaultMilk(p)); var t=tier(c.total);
-    var note=[p.big, p.size, (milkAvail(p)?"可换牛奶":"")].filter(Boolean).join(" · ");
-    return '<div class="bw-hcard">'+
-      '<div class="bw-himg">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'<span class="bw-ic">'+ic(catIcon(p.big))+'</span>')+'</div>'+
-      '<div class="bw-hbody"><div><div class="bw-hname">'+esc(p.name)+'</div><div class="bw-hmeta">'+esc(note)+'</div>'+
-          ((p.price!=null&&p.price!=="")?'<div class="bw-hprice">¥'+esc(p.price)+'</div>':'')+'</div>'+
-        '<div class="bw-hright"><b>'+r1(c.total)+'</b><span>大卡</span><div class="bw-tag '+t.cls+'">'+t.label+'</div></div>'+
+      '<div class="bw-kc '+t.cls+'"><b>'+r1(c.total)+'</b><span>KCAL · '+esc(t.label)+'</span></div>'+
       '</div></div>';
   }
   function boardStop(){ if(boardTimer){ clearInterval(boardTimer); boardTimer=null; } }
@@ -4488,25 +4508,23 @@
 
   function renderBoard(){
     removeBoard();
+    var tt=document.getElementById("miniToast"); if(tt) tt.classList.remove("on");
     var el=document.createElement("div");
     el.id="boardView"; el.className="bw"+(boardMode==="all"?" bw-all":"");
-    var head='<div class="bw-top"><div class="bw-brand">杯记</div><div class="bw-title">今日菜单</div>'+
-      '<div class="bw-cat" id="bwCat"></div>'+
-      '<div class="bw-sub">'+
-        '<button class="bw-btn" id="bwMode">'+(boardMode==="all"?"切回轮播":"全览")+'</button>'+
-        '<button class="bw-btn" id="bwShop">顾客端预览</button>'+
-        '<button class="bw-btn" id="bwExit">退出</button>'+
-      '</div></div>';
+
+    var head='<div class="bw-top"><div class="bw-brand">杯记<em>CUP NOTES</em></div>'+
+      '<div class="bw-right"><div class="bw-title" id="bwCat"></div><div class="bw-meta" id="bwMeta"></div></div></div>';
 
     if(!db || !db.products || !db.products.length){
-      el.innerHTML=head+'<div class="bw-main"><div style="text-align:center;color:var(--ink-faint);font-size:13px;line-height:2.1">还没有饮品数据。<br>先到后台「饮品管理」里添加饮品。</div></div>';
+      el.innerHTML=head+'<div class="bw-empty">还没有饮品数据<br>先到「饮品管理」里添加饮品</div>'+
+        '<div class="bw-foot"><div class="bw-prog"></div><button class="bw-btn" id="bwExit">退出</button></div>';
       document.body.appendChild(el);
       var x0=document.getElementById("bwExit"); if(x0) x0.addEventListener("click",exitBoard);
       return;
     }
 
     var groups=boardGroups();
-    var bodyHtml="", catTxt="";
+    var stageHtml="", catTxt="", metaTxt="", slideN=0;
     if(boardMode==="all"){
       boardIdx=0;
       var all=db.products.slice().sort(function(a,b){
@@ -4514,15 +4532,19 @@
         if(ca!==cb) return ca-cb;
         return productKcal(a,defaultMilk(a)).total - productKcal(b,defaultMilk(b)).total;
       });
-      bodyHtml='<div class="bw-grid">'+all.map(boardCard).join("")+'</div>';
-      catTxt="全 "+all.length+" 款";
+      var acols=Math.max(3, Math.ceil(all.length/2));   /* 全览铺两行，列数跟着款数走，避免右下留洞 */
+      stageHtml='<div class="bw-stage" style="grid-template-columns:repeat('+acols+',minmax(0,1fr));grid-template-rows:repeat('+Math.ceil(all.length/acols)+',minmax(0,1fr))">'+
+        all.map(function(p,i){ return boardTile(p,i,true); }).join("")+'</div>';
+      catTxt="全览";
+      metaTxt="全 "+all.length+" 款 · 含热量";
     }else{
-      if(!groups.length){ boardGroups(); }
+      if(!groups.length) groups=boardGroups();
       var g=groups[boardIdx % groups.length];
-      var n=g.items.length;
-      var cols = (n===1) ? "w1" : (n===2 ? "c2" : "c3");
-      bodyHtml='<div class="bw-hero '+cols+'">'+g.items.map(boardHeroCard).join("")+'</div>';
+      slideN=g.items.length;
+      var cls=(slideN<=4 && slideN>0)?" n"+slideN:"";
+      stageHtml='<div class="bw-stage'+cls+'">'+g.items.map(function(p,i){ return boardTile(p,i,false); }).join("")+'</div>';
       catTxt=g.cat+(g.part?" · 第"+g.part+"屏":"");
+      metaTxt=g.items.length+" 款 · 中杯 · 含热量";
     }
 
     var foot='<div class="bw-foot">';
@@ -4530,12 +4552,16 @@
       foot+='<div class="bw-dots">'+groups.map(function(_,i){ return '<span class="bw-dot'+(i===(boardIdx%groups.length)?" on":"")+'"></span>'; }).join("")+'</div>';
     }
     foot+='<div class="bw-prog"><i id="bwProg"></i></div>'+
-      '<div class="bw-hint">'+(boardMode==="all"?"全览模式 · 不自动翻页":("自动轮播 · "+Math.round(BOARD_MS/1000)+" 秒一屏"))+'</div></div>';
+      '<div class="bw-hint">'+(boardMode==="all"?"全览 · 不自动翻页":("自动轮播 · "+Math.round(BOARD_MS/1000)+" 秒一屏"))+'</div>'+
+      '<button class="bw-btn" id="bwMode">'+(boardMode==="all"?"切回轮播":"全览")+'</button>'+
+      '<button class="bw-btn" id="bwShop">顾客端预览</button>'+
+      '<button class="bw-btn" id="bwExit">退出</button></div>';
 
-    el.innerHTML=head+'<div class="bw-main">'+bodyHtml+'</div>'+foot;
+    el.innerHTML=head+'<div class="bw-main">'+stageHtml+'</div>'+foot;
     document.body.appendChild(el);
 
     var c=document.getElementById("bwCat"); if(c) c.textContent=catTxt;
+    var mt=document.getElementById("bwMeta"); if(mt) mt.textContent=metaTxt;
     var m=document.getElementById("bwMode");
     if(m) m.addEventListener("click",function(){
       boardMode = boardMode==="all" ? "slide" : "all";
