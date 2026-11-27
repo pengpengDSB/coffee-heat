@@ -1109,6 +1109,11 @@
   .pf .pfFoot{font-size:11.5px;color:var(--ink-soft);line-height:1.8;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
   .pf .pfGate{border:1px solid var(--line);border-radius:12px;background:#fff;padding:26px 24px;max-width:420px;margin:40px auto;text-align:center}
   .pf .pfGate p{font-size:12px;color:var(--ink-soft);line-height:1.9;margin:8px 0 18px}
+  /* ===== 大屏窗口（?board=1）：纯净满屏，底部控件自动隐藏 ===== */
+  body.bwmode .topbar{display:none}
+  body.bwmode{overflow:hidden;background:#131110}
+  body.bwmode .bw-foot{opacity:0;transition:opacity .45s ease;pointer-events:none}
+  body.bwmode .bw-foot.show{opacity:1;pointer-events:auto}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -1160,6 +1165,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   var T=tenant(), NAME_KEY="cafe_shop_name_"+T, SYS="杯记";
   var sp=document.getElementById("splash");
   if(!sp) return;
+  /* 大屏窗口（?board=1）不播片头：直接收掉，省掉店名请求与 2 秒等待 */
+  try{
+    if(new URLSearchParams(location.search).get("board")==="1"){
+      if(sp.parentNode) sp.parentNode.removeChild(sp);
+      document.body.classList.remove("splashing");
+      return;
+    }
+  }catch(e){}
   var word=sp.querySelector(".splash-word");
   var done=false, started=false;
 
@@ -1371,9 +1384,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   function setShopName(v,t){
     if(!v) return;
     t=t||adminTenant();
+    var prev=null; try{ prev=localStorage.getItem(shopNameKey(t)); }catch(e){}
     try{ localStorage.setItem(shopNameKey(t), v); }catch(e){}
     try{ if(window.__spWord) window.__spWord(v); }catch(e){}  /* 店名后到：片头整段交叉换字，不重播逐字动画 */
     paintBrand();
+    if(prev!==null && prev!==v) syncNotify("site");   /* 店名变了就通知大屏 */
   }
 
   function siteSnapshot(){
@@ -1702,6 +1717,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if(newProd.has(lid)) continue;
         await removeRow('products', lid, 'admin_delete_product');
       }
+      syncNotify("catalog");   /* 通知大屏窗口重拉数据 */
       return true;
     }catch(err){
       console.error('sync remote failed:', err);
@@ -1737,11 +1753,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         db = { ings:ings, products:prods };
       }else{
         db = defaultData();
-        await syncRemote();
+        if(!BOARD_MODE) await syncRemote();
       }
-      await loadIngCosts();   /* 已登录（口令还在 sessionStorage）就把采购价补回来 */
-      await loadBeansCloud(); /* 豆价表也从云端拉一次（表没建就静默跳过） */
-      save();
+      if(!BOARD_MODE){
+        await loadIngCosts();   /* 已登录（口令还在 sessionStorage）就把采购价补回来 */
+        await loadBeansCloud(); /* 豆价表也从云端拉一次（表没建就静默跳过） */
+        save();
+      }
       preloadBoardImgs();
     }catch(e){
       console.error('remote load failed, fallback to localStorage:', e);
@@ -1816,8 +1834,23 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   var db = null;
 
+  /* ---------- 大屏窗口模式：?board=1 直达展示面板（不播片头、不显示后台外壳、无需登录） ---------- */
+  var BOARD_MODE = (function(){
+    try{ return new URLSearchParams(location.search).get("board")==="1" || location.hash==="#board"; }catch(e){ return false; }
+  })();
+  if(BOARD_MODE){
+    try{ document.body.classList.remove("splashing"); document.body.classList.add("bwmode"); }catch(e){}
+    var _sp0=document.getElementById("splash"); if(_sp0 && _sp0.parentNode) _sp0.parentNode.removeChild(_sp0);
+  }
+  /* 两个窗口之间同步：后台改完立刻推给大屏，不用刷新 */
+  var SYNC_CH=null;
+  try{ if(typeof BroadcastChannel!=="undefined") SYNC_CH=new BroadcastChannel("cafe_sync_"+adminTenant()); }catch(e){ SYNC_CH=null; }
+  function syncNotify(kind){
+    try{ if(SYNC_CH) SYNC_CH.postMessage({type:kind, ts:Date.now()}); }catch(e){}
+  }
+
   var state = {
-    view:"landing", tab:"ings",
+    view:(BOARD_MODE?"board":"landing"), tab:"ings",
     catFilter:"全部", shopCat:"全部",
     selProduct:null, milkSel:{},
     ingQuery:"", prodQuery:"", heatFilter:"全部", shopQuery:"", cmQuery:"",
@@ -1997,7 +2030,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
 
   /* 进入某视图：后台需登录，未登录先询问是否去登录 */
+  function boardWindowUrl(){
+    return location.pathname+"?t="+encodeURIComponent(adminTenant())+"&board=1";
+  }
+  function openBoardWindow(){
+    var w=null;
+    try{ w=window.open(boardWindowUrl(),"_blank"); }catch(e){}
+    if(!w) toast("浏览器拦了新窗口，允许弹窗后再点一次");
+  }
   function goView(v){
+    if(v==="board"){ openBoardWindow(); return; }   /* 展示面板单独开窗口，后台这边的状态不动 */
     if(v==="admin" && !isAuthed()){
       askConfirm({
         title:"进入商家后台",
@@ -2513,7 +2555,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       applyHeroSwitch();
       return;
     }
-    if(state.view==="admin" && !isAuthed()) state.view="login";
+    if(state.view==="admin" && !isAuthed() && !BOARD_MODE) state.view="login";
     applyAuthUI();
     document.querySelectorAll("#viewSwitch button").forEach(function(b){
       b.classList.toggle("active", b.dataset.view===state.view || (state.view==="login" && b.dataset.view==="admin"));
@@ -4877,7 +4919,55 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var el=document.getElementById("boardView");
     if(el && el.parentNode) el.parentNode.removeChild(el);
   }
-  function exitBoard(){ state.view=(typeof isAuthed==="function" && isAuthed())?"admin":"landing"; render(); }
+  function exitBoard(){ if(BOARD_MODE) return; state.view=(typeof isAuthed==="function" && isAuthed())?"admin":"landing"; render(); }
+
+  /* ---------- 大屏窗口：全屏 / 控件闲置自动隐藏 ---------- */
+  function toggleFull(){
+    try{
+      if(!document.fullscreenElement && !document.webkitFullscreenElement){
+        var d=document.documentElement;
+        (d.requestFullscreen || d.webkitRequestFullscreen).call(d);
+      }else{
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      }
+    }catch(e){ toast("这个浏览器不允许脚本全屏，按 F11 也行"); }
+  }
+  var bwIdleHooked=false;
+  function hookBoardIdle(){
+    if(bwIdleHooked) return; bwIdleHooked=true;
+    var hideT=null;
+    function poke(){
+      var ft=document.querySelector(".bw-foot"); if(!ft) return;
+      ft.classList.add("show");
+      if(hideT) clearTimeout(hideT);
+      hideT=setTimeout(function(){ var f2=document.querySelector(".bw-foot"); if(f2) f2.classList.remove("show"); },5000);
+    }
+    document.addEventListener("mousemove",poke);
+    document.addEventListener("mousedown",poke);
+    document.addEventListener("touchstart",poke,{passive:true});
+    document.addEventListener("dblclick",function(e){ if(state.view==="board") toggleFull(); });
+    document.addEventListener("fullscreenchange",function(){
+      var ft=document.querySelector(".bw-foot"), fs=document.getElementById("bwFs");
+      if(fs) fs.textContent = (document.fullscreenElement ? "退出全屏" : "全屏");
+      if(ft){ ft.classList.add("show"); }
+    });
+    poke();
+  }
+  /* 大屏窗口：重新拉目录（后台有改动时用，不写本机缓存，避免覆盖后台未同步的编辑） */
+  async function refreshCatalog(){
+    if(!supaReady()) return false;
+    try{
+      if(!sb) sb=supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+      var cat=await sb.rpc("t_catalog",{p_tenant:adminTenant()});
+      if(cat.error) return false;
+      var pack=cat.data||{};
+      if(pack.status==="off") return false;
+      var ings=(pack.ingredients||[]).map(rowToIng), prods=(pack.products||[]).map(rowToProduct);
+      if(!ings.length && !prods.length) return false;
+      db={ings:ings,products:prods};
+      return true;
+    }catch(e){ return false; }
+  }
 
   /* ============ 顾客端二维码：一店一码 · 海报 ============
      画成一张 902×1280 的海报（品牌行 / 主张 / 白卡里的码 / 免责脚注），
@@ -5302,6 +5392,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           return;
         }
         setBizHours(payload, tenant);
+        syncNotify("site");   /* 通知大屏窗口刷店名/营业状态 */
         close();
         toast((always ? "已设为 24 小时营业" : "营业时间已更新") + (res.noAudit ? "（云端还没建留痕函数，这条不进记录）" : ""));
       }).catch(function(e){
@@ -5416,8 +5507,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     foot+='<div class="bw-prog"><i id="bwProg"></i></div>'+
       '<div class="bw-hint">'+(boardMode==="all"?"全览 · 不自动翻页":("自动轮播 · "+Math.round(BOARD_MS/1000)+" 秒一屏"))+'</div>'+
       '<button class="bw-btn" id="bwMode">'+(boardMode==="all"?"切回轮播":"全览")+'</button>'+
-      '<button class="bw-btn" id="bwShop">顾客端预览</button>'+
-      '<button class="bw-btn" id="bwExit">退出</button></div>';
+      (BOARD_MODE
+        ? '<button class="bw-btn" id="bwFs">全屏</button>'
+        : '<button class="bw-btn" id="bwShop">顾客端预览</button><button class="bw-btn" id="bwExit">退出</button>')+
+      '</div>';
 
     el.innerHTML=head+'<div class="bw-main">'+stageHtml+'</div>'+foot;
     document.body.appendChild(el);
@@ -5433,10 +5526,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(sp) sp.addEventListener("click",function(){ removeBoard(); state.view="shop"; render(); });
     var ex=document.getElementById("bwExit");
     if(ex) ex.addEventListener("click",exitBoard);
+    if(BOARD_MODE){
+      var fs=document.getElementById("bwFs");
+      if(fs) fs.addEventListener("click",toggleFull);
+      hookBoardIdle();
+    }
     if(!boardKeyHooked){
       boardKeyHooked=true;
       document.addEventListener("keydown",function(e){
-        if(e.key==="Escape" && state.view==="board") exitBoard();
+        if(e.key==="Escape" && state.view==="board" && !BOARD_MODE) exitBoard();
       });
     }
     var pr=document.getElementById("bwProg");
@@ -5593,7 +5691,26 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     }catch(e){}
   })();
 
-  app.innerHTML = '<div class="boot-loader"><div class="bl-line"><span></span></div><div class="bl-sub">正在准备你的配方与成本</div></div>';
+  /* 大屏窗口：后台一保存就收到通知，重拉目录后重绘，不停播 */
+  if(BOARD_MODE && SYNC_CH){
+    SYNC_CH.onmessage=function(ev){
+      var d=(ev&&ev.data)||{};
+      if(d.type==="catalog"){
+        refreshCatalog().then(function(ok){ if(ok && state.view==="board") renderBoard(); });
+      }else if(d.type==="site"){
+        loadSiteSetting().then(function(){ if(state.view==="board") renderBoard(); });
+      }
+    };
+  }
+  /* 兜底轮询：浏览器不支持 BroadcastChannel 或窗口是另开的进程时，60 秒对一次云端 */
+  if(BOARD_MODE){
+    setInterval(function(){
+      if(state.view!=="board") return;
+      refreshCatalog().then(function(ok){ if(ok) renderBoard(); });
+    },60000);
+  }
+
+  app.innerHTML = BOARD_MODE ? '' : '<div class="boot-loader"><div class="bl-line"><span></span></div><div class="bl-sub">正在准备你的配方与成本</div></div>';
   boot().then(function(){ if(window.__bootDone) window.__bootDone(); render(); })
       .catch(function(){ if(window.__bootDone) window.__bootDone(); render(); });
 })();
