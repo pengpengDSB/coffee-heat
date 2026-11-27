@@ -527,8 +527,8 @@
     if(bizOpen()) return "";
     var w=bizWindow(new Date().getDay());
     return '<div class="bizbar"><b>未在营业时间</b><span>'+
-      (w ? ("今天 "+bizWindowText()+" 营业，现在还没开门") : "今天休息，不开门")+
-      ' · 可先看菜单，开门后再下单</span></div>';
+      (w ? ("今天 "+bizWindowText()+" 营业，开门后可下单") : "今天休息，不开门")+
+      '</span></div>';
   }
   var state = { tab:"home", selProduct:null, milkSel:{}, cat:"全部", heat:"全部", q:"", mePage:null, selId:null,
     sugar:{}, ice:{}, qty:{}, cart:[], sheet:false, viewOrder:null, orders:[], closed:false };
