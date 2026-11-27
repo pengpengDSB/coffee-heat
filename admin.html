@@ -259,6 +259,42 @@
   @media(min-width:680px) and (max-width:1209px){
     .bean-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   }
+  /* ===== 顾客：从订单聚合的回头客 ===== */
+  .cm-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}
+  .cmk{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .cmk .k{font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:8px}
+  .cmk .v{font-size:24px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.15}
+  .cmk .v small{font-size:12px;color:var(--ink-soft);margin-left:3px}
+  .cmk .m{font-size:11px;color:var(--ink-soft);margin-top:6px}
+  .cm-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .cm-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--ink-soft)}
+  .cm-head b{font-size:13px;color:var(--ink);font-weight:600}
+  .cm-empty{padding:36px 16px;text-align:center;color:var(--ink-faint);font-size:12px;line-height:1.9}
+  .cm-tbl{width:100%;border-collapse:collapse;table-layout:fixed;min-width:720px}
+  .cm-tbl th{font-size:10.5px;letter-spacing:.06em;color:var(--ink-faint);font-weight:400;text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .cm-tbl td{padding:11px 10px;border-bottom:1px solid rgba(226,223,212,.55);font-size:12.5px;color:var(--ink);vertical-align:middle}
+  .cm-tbl tr:last-child td{border-bottom:0}
+  .cm-tbl th.num,.cm-tbl td.num{text-align:right}
+  .cm-who{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .cm-who b{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cm-who i{font-style:normal;font-size:10.5px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cm-tag{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--line);color:var(--ink-soft);margin-left:6px}
+  .cm-tag.back{color:var(--low,#3F6B52);border-color:rgba(63,107,82,.35)}
+  .cm-tag.live{color:var(--gold);border-color:rgba(122,78,51,.3)}
+  .cm-cards{display:grid;gap:10px}
+  .cm-c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 14px}
+  .cm-c .h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .cm-c .h b{font-size:13.5px;font-weight:500}
+  .cm-c .h i{font-style:normal;font-size:10.5px;color:var(--ink-faint)}
+  .cm-c .g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:9px}
+  .cm-c .g div{background:var(--card-2);border-radius:7px;padding:8px 9px}
+  .cm-c .g span{display:block;font-size:10px;color:var(--ink-faint);margin-bottom:3px}
+  .cm-c .g b{font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+  .cm-c .f{font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:10px}
+  .cm-cards{grid-template-columns:1fr}
+  @media(min-width:680px) and (max-width:1049px){ .cm-cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media(max-width:1049px){ .cm-kpis{grid-template-columns:1fr 1fr;gap:10px} .cmk{padding:12px} .cmk .v{font-size:20px} }
+
   /* ---- 辅料比价 ---- */
   .qp-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   .qp-lead{flex:1;min-width:240px;font-size:11.5px;line-height:1.8;color:var(--ink-soft)}
@@ -2151,6 +2187,7 @@
       '<button data-tab="ings" class="'+(state.tab==="ings"?"active":"")+'">配料库</button>' +
       '<button data-tab="products" class="'+(state.tab==="products"?"active":"")+'">饮品管理</button>' +
       '<button data-tab="orders" class="'+(state.tab==="orders"?"active":"")+'">订单看板</button>' +
+      '<button data-tab="customers" class="'+(state.tab==="customers"?"active":"")+'">顾客</button>' +
       '<button data-tab="beans" class="'+(state.tab==="beans"?"active":"")+'">豆价计算</button>' +
       '<button data-tab="quotes" class="'+(state.tab==="quotes"?"active":"")+'">辅料比价</button>' +
       '<button data-tab="settings" class="'+(state.tab==="settings"?"active":"")+'">前台设置</button>' +
@@ -2184,6 +2221,10 @@
     else if(state.tab==="beans") renderBeans();
     else if(state.tab==="quotes") renderQuotes();
     else if(state.tab==="settings") renderSettings();
+    else if(state.tab==="customers"){
+      renderCustomers();
+      if(!ordLoaded){ loadAdminOrders().then(function(){ if(state.tab==="customers") renderCustomers(); }); }
+    }
     else renderOrders();
   }
 
@@ -2448,6 +2489,121 @@
   /* ----- 配料库 ----- */
   function refsOfIng(id){
     return db.products.filter(function(p){ return p.items.some(function(it){return it.ingId===id;}); });
+  }
+
+  /* ================= 顾客：从订单聚合的回头客 =================
+     不额外建表：订单里已经带 visitor_id / 手机号 / 昵称 / 金额，
+     「谁来过几次、花了多少」直接按订单聚合就够；多一张表只多一处要同步的不一致。 */
+  function cmPhone(p){ return String(p||"").replace(/^(\d{3})\d{4}(\d{4})$/, "$1****$2"); }
+  function cmDay(d){
+    if(!d) return "—";
+    return String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function cmAgg(){
+    var map={}, list=[];
+    (adminOrders||[]).forEach(function(o){
+      var st=o.status||"";
+      if(st==="作废"||st==="已取消") return;
+      var phone=(o.buyer_phone||"").trim();
+      var vid=(o.visitor_id||"").trim();
+      var key= phone ? "p:"+phone : "v:"+(vid||"?");
+      var g=map[key];
+      if(!g){ g=map[key]={phone:phone,vid:vid,nick:(o.buyer_nick||"").trim(),orders:0,spent:0,first:null,last:null,items:{},live:0}; }
+      if(!g.nick && (o.buyer_nick||"").trim()) g.nick=o.buyer_nick.trim();
+      g.orders++; g.spent+=(+o.total||0);
+      if(st!=="已取餐") g.live++;
+      var ct=o.created_at?new Date(o.created_at):null;
+      if(ct && !isNaN(ct.getTime())){
+        if(!g.first || ct<g.first) g.first=ct;
+        if(!g.last  || ct>g.last)  g.last=ct;
+      }
+      (o.items||[]).forEach(function(it){
+        var nm=(it&&it.name)||"";
+        if(!nm) return;
+        g.items[nm]=(g.items[nm]||0)+(+it.qty||1);
+      });
+    });
+    Object.keys(map).forEach(function(k){ list.push(map[k]); });
+    list.sort(function(a,b){ return (b.last?b.last.getTime():0)-(a.last?a.last.getTime():0); });
+    return list;
+  }
+  function cmTop(g){
+    var best="", n=0;
+    Object.keys(g.items).forEach(function(k){ if(g.items[k]>n){ n=g.items[k]; best=k; } });
+    return best ? (best+(n>1?" ×"+n:"")) : "—";
+  }
+  function cmName(g){
+    if(g.nick) return g.nick;
+    if(g.phone) return cmPhone(g.phone);
+    return "游客 #"+(g.vid ? g.vid.slice(-5) : "未知");
+  }
+  function cmSub(g){
+    if(g.nick && g.phone) return cmPhone(g.phone);
+    if(g.phone) return "留了手机号";
+    return g.vid ? "无手机号 · 仅访客标识" : "无标识";
+  }
+  function renderCustomers(){
+    var body=document.getElementById("adminBody");
+    if(!body) return;
+    var narrow=qIsNarrow();
+    var list=cmAgg();
+    var n=list.length, back=list.filter(function(g){ return g.orders>=2; }).length;
+    var totalSpent=list.reduce(function(s,g){ return s+g.spent; },0);
+    var avg = n ? totalSpent/n : 0;
+    var rate= n ? Math.round(back/n*100) : 0;
+    var kpis='<div class="cm-kpis">'+
+      '<div class="cmk"><div class="k">顾客 · 去重人数</div><div class="v">'+n+'<small>位</small></div><div class="m">'+n+' 人共 '+(adminOrders||[]).length+' 单（不含作废）</div></div>'+
+      '<div class="cmk"><div class="k">回头客 · 来过 2 次以上</div><div class="v">'+back+'<small>位</small></div><div class="m">'+(back? '其中最多的一人来过 '+Math.max.apply(null,list.map(function(g){return g.orders;}))+' 次' : '还没有回头客')+'</div></div>'+
+      '<div class="cmk"><div class="k">回头率</div><div class="v">'+rate+'<small>%</small></div><div class="m">回头看客 / 全部顾客</div></div>'+
+      '<div class="cmk"><div class="k">人均消费</div><div class="v">¥'+r2(avg)+'</div><div class="m">累计 ¥'+r2(totalSpent)+'</div></div>'+
+      '</div>';
+
+    var state_txt = !supaReady() ? '<div class="cm-empty">本机模式：读不到云端订单，这里没有可聚合的顾客。<br>登录云端商户后台后自动出现。</div>'
+      : (ordErr ? '<div class="cm-empty">'+esc(ordErr)+'</div>'
+      : (!list.length ? '<div class="cm-empty">还没有有效订单。<br>顾客在顾客端下单后，这里会按「手机号 / 访客标识」自动去重汇总。</div>' : ''));
+
+    var inner="";
+    if(list.length){
+      if(narrow){
+        inner='<div class="cm-cards">'+list.map(function(g){
+          return '<div class="cm-c">'+
+            '<div class="h"><b>'+esc(cmName(g))+'</b><i>'+esc(cmSub(g))+'</i>'+
+              (g.orders>=2?'<span class="cm-tag back">回头客</span>':'')+
+              (g.live?'<span class="cm-tag live">'+g.live+' 单进行中</span>':'')+'</div>'+
+            '<div class="g">'+
+              '<div><span>到店</span><b>'+g.orders+' 次</b></div>'+
+              '<div><span>累计</span><b>¥'+r2(g.spent)+'</b></div>'+
+              '<div><span>客单价</span><b>¥'+r2(g.spent/g.orders)+'</b></div>'+
+            '</div>'+
+            '<div class="f"><span>常点 '+esc(cmTop(g))+'</span><span>最近 '+cmDay(g.last)+'</span></div>'+
+          '</div>';
+        }).join("")+'</div>';
+      }else{
+        var cols='<colgroup><col style="width:27%"><col style="width:9%"><col style="width:12%"><col style="width:12%"><col style="width:26%"><col style="width:14%"></colgroup>';
+        var rows=list.map(function(g){
+          return '<tr>'+
+            '<td><div class="cm-who"><b>'+esc(cmName(g))+'</b><i>'+esc(cmSub(g))+(g.orders>=2?'<span class="cm-tag back">回头客</span>':'')+(g.live?'<span class="cm-tag live">'+g.live+' 单待取</span>':'')+'</i></div></td>'+
+            '<td class="num">'+g.orders+' 次</td>'+
+            '<td class="num">¥'+r2(g.spent)+'</td>'+
+            '<td class="num">¥'+r2(g.spent/g.orders)+'</td>'+
+            '<td>'+esc(cmTop(g))+'</td>'+
+            '<td class="num">'+cmDay(g.last)+'</td>'+
+          '</tr>';
+        }).join("");
+        inner='<div style="overflow-x:auto"><table class="cm-tbl">'+cols+
+          '<thead><tr><th>顾客</th><th class="num">到店</th><th class="num">累计</th><th class="num">客单价</th><th>常点</th><th class="num">最近</th></tr></thead>'+
+          '<tbody>'+rows+'</tbody></table></div>';
+      }
+    }
+    body.innerHTML = kpis +
+      '<div class="cm-card"><div class="cm-head"><b>顾客</b>'+
+        '<span>按「手机号优先、否则访客标识」去重；作废单不计入</span>'+
+        '<span style="margin-left:auto;display:flex;align-items:center;gap:10px">'+(n?('最近一单 '+cmDay(list[0].last)+''):'')+'<button class="ghost-btn" id="cmRefresh" style="padding:4px 10px;font-size:11px">刷新</button></span>'+
+      '</div>'+ state_txt + inner +'</div>'+
+      '<div class="bean-hint">这里只看「谁来过」；手机号与昵称来自顾客端的轻登录，\n       顾客不填手机号时仍会以访客标识出现，只是跨设备认不出是同一人。</div>';
+
+    var rf=document.getElementById("cmRefresh");
+    if(rf) rf.addEventListener("click",function(){ loadAdminOrders().then(function(){ renderCustomers(); }); });
   }
 
   function renderIngs(){
