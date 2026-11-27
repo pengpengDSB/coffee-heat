@@ -1273,11 +1273,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var n=shopName();
     try{ document.title=n+" · 一杯的配方、热量与成本"; }catch(e){}
     var bn=document.querySelector(".topbar .brand .brand-name"); if(bn) bn.textContent=n;
-    var sp=document.querySelector("#splash"); if(sp){ sp.setAttribute("aria-label",n);
-      var w=sp.querySelector(".splash-word");
-      if(w) w.innerHTML=String(n).split("").slice(0,8).map(function(ch){ return "<i>"+ch+"</i>"; }).join("");
-    }
-    var bl=document.querySelector("#app .bl-word"); if(bl) bl.textContent=n;
+    /* 片头字标是产品品牌「杯记」，不跟着店名改写：
+       店名在 t_site 回来后才到，改写会重挂 <i> 触发逐字动画，看起来像开屏播了第二遍。
+       店名照旧显示在顶栏品牌位与页面里。 */
+    var sp=document.querySelector("#splash"); if(sp) sp.setAttribute("aria-label",n);
   }
   function shopFile(t){ return String(shopName(t)).replace(/[\\/:*?"<>|]/g,"-"); }
   function setShopName(v,t){

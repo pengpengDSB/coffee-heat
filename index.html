@@ -483,12 +483,10 @@
   function applySiteName(){
     SITE_NAME = SITE_NAME || "";
     try{ document.title = siteName(); }catch(e){}
+    /* 片头字标保持产品品牌「杯记」，不随店名改写：
+       改写会重挂 <i>，逐字动画重新跑一遍，看起来像开屏播两次。店名显示在页面里。 */
     var sp=document.getElementById("csplash");
-    if(sp){
-      sp.setAttribute("aria-label", siteName());
-      var w=sp.querySelector(".cs-word");
-      if(w) w.innerHTML=String(siteName()).split("").slice(0,8).map(function(ch){ return "<i>"+ch+"</i>"; }).join("");
-    }
+    if(sp) sp.setAttribute("aria-label", siteName());
   }
   function setSiteName(v){
     v=String(v||"").trim(); if(!v) return;
