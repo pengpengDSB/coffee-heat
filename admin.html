@@ -1509,6 +1509,7 @@
       await loadIngCosts();   /* 已登录（口令还在 sessionStorage）就把采购价补回来 */
       await loadBeansCloud(); /* 豆价表也从云端拉一次（表没建就静默跳过） */
       save();
+      preloadBoardImgs();
     }catch(e){
       console.error('remote load failed, fallback to localStorage:', e);
       db = load();
@@ -4463,6 +4464,15 @@
   var boardIdx=0, boardMode="slide", boardTimer=null, boardKeyHooked=false;
   var BOARD_MS=12000;
 
+  /* 面板大图预加载：先把产品图塞进浏览器缓存，避免切到「展示面板」时先黑一屏 */
+  var _boardPre={};
+  function preloadBoardImgs(){
+    if(!db || !db.products) return;
+    db.products.forEach(function(p){
+      if(!p.image || _boardPre[p.image]) return;
+      var im=new Image(); im.src=p.image; _boardPre[p.image]=im;
+    });
+  }
   function boardGroups(){
     var cats=(typeof BIG_CATS!=="undefined"?BIG_CATS:[]);
     var groups=[];
@@ -4509,6 +4519,7 @@
   function renderBoard(){
     removeBoard();
     var tt=document.getElementById("miniToast"); if(tt) tt.classList.remove("on");
+    preloadBoardImgs();
     var el=document.createElement("div");
     el.id="boardView"; el.className="bw"+(boardMode==="all"?" bw-all":"");
 
