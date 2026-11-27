@@ -188,6 +188,8 @@
   .bh-sw input{width:15px;height:15px;accent-color:var(--ink)}
   .bh-allhint{font-size:10.5px;color:var(--ink-faint);letter-spacing:.02em;text-align:right;line-height:1.6}
   .bh-list{border-top:1px solid var(--line)}
+  .bh-tip{font-size:10.5px;color:var(--ink-soft);letter-spacing:.02em;line-height:1.8;border-top:1px solid var(--line);
+    margin-top:2px;padding:10px 2px 2px}
   .bh-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:12px}
   .bh-day{width:42px;color:var(--ink);letter-spacing:.06em;flex:none}
   .bh-tog{border:1px solid var(--line-strong);background:none;color:var(--ink);font:inherit;font-size:10.5px;
@@ -5020,7 +5022,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       '<div class="ss-head"><div class="ss-title">营业时间</div>'+
         '<div class="ss-sub">没开门时顾客端会提示「未在营业时间」，并挡住下单</div></div>'+
       '<div class="bh-all"><label class="bh-sw"><input type="checkbox" id="bhAlways"'+(cfg.mode!=="custom"?" checked":"")+'><span>24 小时营业</span></label>'+
-        '<div class="bh-allhint">勾上就不分行日，随时可下单</div></div>'+
+        '<div class="bh-allhint">勾上就不分周几，随时可下单</div></div>'+
+      '<div class="bh-tip" id="bhTip">想按天设？把上面的勾去掉，就能逐天填时段；哪天不开门，把那天点成「休息」。</div>'+
       '<div class="bh-list" id="bhList">'+rows+'</div>'+
       '<div class="qr-ops" style="margin-top:16px">'+
         '<button class="ghost-btn" id="bhCancel">取消</button>'+
@@ -5034,6 +5037,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     function syncLock(){
       var on=!alwaysEl.checked;
       document.getElementById("bhList").style.display = on?"":"none";
+      var tip=document.getElementById("bhTip"); if(tip) tip.style.display = on?"none":"";
       Array.prototype.forEach.call(document.querySelectorAll("#bhList .bh-row"),function(r){
         Array.prototype.forEach.call(r.querySelectorAll("input,button"),function(x){
           if(x.getAttribute("data-tog")) return;
