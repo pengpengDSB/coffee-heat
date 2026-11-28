@@ -472,11 +472,10 @@
       cursor:pointer;font-family:inherit;white-space:nowrap}
   .bw-btn:hover{border-color:rgba(221,176,122,.62);color:#F2EADA}
   /* 大屏顶部变更提示：上新/改价事件一次，5 秒后自动淡出 */
-  #bwFlash{position:fixed;left:50%;top:clamp(10px,2.6vh,30px);transform:translate(-50%,-18px);
+  #bwFlash{position:fixed;left:50%;top:clamp(10px,2.6vh,30px);transform:translate(-50%,0);
       z-index:92;display:flex;align-items:center;gap:.9em;padding:.62em 1.15em;border-radius:6px;
       background:rgba(28,23,19,.93);border:1px solid rgba(221,176,122,.55);color:#F2EADA;
-      font-size:clamp(11px,.9vw,18px);letter-spacing:.1em;opacity:0;pointer-events:none;
-      transition:opacity .4s ease,transform .4s ease}
+      font-size:clamp(11px,.9vw,18px);letter-spacing:.1em;pointer-events:none}
   #bwFlash.on{opacity:1;transform:translate(-50%,0)}
   #bwFlash b{color:#DDB07A;font-weight:500;white-space:nowrap}
   #bwFlash span{font-size:.8em;color:#B3A48C;letter-spacing:.06em}
@@ -485,8 +484,7 @@
       min-width:clamp(180px,16vw,300px);padding:clamp(9px,1.2vh,16px) clamp(12px,1.1vw,22px);
       border-radius:8px;background:rgba(28,23,19,.95);border:1px solid rgba(221,176,122,.5);
       box-shadow:0 12px 30px rgba(0,0,0,.45);color:#F2EADA;
-      opacity:0;transform:translateX(24px);pointer-events:none;
-      transition:opacity .35s ease,transform .35s ease}
+      pointer-events:none}
   #bwOrder.on{opacity:1;transform:translateX(0)}
   #bwOrder .o-k{display:flex;align-items:baseline;gap:.7em}
   #bwOrder .o-k em{font-style:normal;font-size:clamp(8px,.55vw,11px);letter-spacing:.2em;color:#B79A6D}
@@ -5632,11 +5630,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var el=document.createElement("div"); el.id="bwFlash";
     el.innerHTML='<b>'+esc(bits.join(" · "))+'</b><span>'+esc(brief)+'</span>';
     document.body.appendChild(el);
-    requestAnimationFrame(function(){
-      el.style.opacity="1"; el.style.transform="translate(-50%,0)";   /* 直接写内联：不依赖 .on 类是否生效 */
-    });
-    setTimeout(function(){ el.style.opacity="0"; el.style.transform="translate(-50%,-18px)"; },5200);
-    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },6400);
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },5200);
   }
 
   /* ---------- 大屏叫号：新订单滑入，8 秒后自动收起 ---------- */
@@ -5652,11 +5646,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(b) b.textContent=String(row.order_no||"");
     var brief=String(row.brief||"");
     if(o) o.textContent=brief+(row.total!=null?" · ¥"+row.total:"");
-    el.classList.remove("on");
-    void el.offsetWidth;                     /* 强制回流，让连续两单也能重播动画 */
-    el.style.opacity="1"; el.style.transform="translateX(0)";   /* 直接写内联，避免类样式不生效 */
     if(BW_ORDT) clearTimeout(BW_ORDT);
-    BW_ORDT=setTimeout(function(){ el.style.opacity="0"; el.style.transform="translateX(24px)"; },8000);
+    BW_ORDT=setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },8000);
   }
 
   function renderBoard(){
