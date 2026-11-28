@@ -1124,6 +1124,8 @@
   .bwd-pill em{font-style:normal;color:var(--ink-faint);font-size:11px;max-width:210px;overflow:hidden;
       text-overflow:ellipsis;white-space:nowrap}
   .bwd.on .bwd-pill span{color:var(--low)}
+  .bwd.err .bwd-pill i{background:var(--mid);box-shadow:0 0 0 3px rgba(138,106,47,.14)}
+  .bwd.err .bwd-pill span{color:var(--mid)}
   .bwd-panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;
       box-shadow:0 10px 30px rgba(20,20,16,.14);width:224px}
   .bwd.open .bwd-panel{display:block}
@@ -2090,6 +2092,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     });
     return el;
   }
+  var BWDOCK_FAIL=0, BWDOCK_GOOD=0;
   function bwDockPoll(){
     if(BOARD_MODE){ return; }
     var el=document.getElementById("bwDock");
@@ -2098,8 +2101,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(!el) el=bwDockEl();
     el.style.display="";
     bwRpc("t_board_status",{p_tenant:adminTenant()}).then(function(s){
+      BWDOCK_FAIL=0; BWDOCK_GOOD=Date.now();
       BWDOCK_ON=!!(s && s.online);
       el.classList.toggle("on",BWDOCK_ON);
+      el.classList.remove("err");
       var t=el.querySelector("#bwdTxt"), mt=el.querySelector("#bwdMeta");
       if(t) t.textContent = BWDOCK_ON?"大屏在线":"大屏离线";
       if(mt){
@@ -2115,9 +2120,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       el.querySelectorAll("[data-c]").forEach(function(b){ if(!b.dataset.busy) b.disabled=!BWDOCK_ON; });
     }).catch(function(e){
-      el.classList.remove("on");
+      /* 云端偶发 503（upstream timeout）：单次失败不算数，连着失败才认「读不到」，
+         否则状态灯会跟着抖动，比没有还吵 */
+      BWDOCK_FAIL++;
+      var fresh = (Date.now()-BWDOCK_GOOD) < 70000;
+      if(BWDOCK_FAIL<2 && fresh) return;
+      el.classList.remove("on"); el.classList.add("err");
       var t=el.querySelector("#bwdTxt"); if(t) t.textContent="大屏状态读不到";
-      var mt=el.querySelector("#bwdMeta"); if(mt) mt.textContent=(e&&e.message||"") .slice(0,40);
+      var mt=el.querySelector("#bwdMeta"); if(mt) mt.textContent=String((e&&e.message)||e).slice(0,40);
     });
   }
   function bwCtl(cmd,btn){
@@ -2230,7 +2240,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if(!/^[a-z0-9][a-z0-9_-]{1,11}$/.test(u)){ err.textContent="商户编码格式不对（小写字母/数字，2–12 位）"; return; }
         btn.disabled=true; btn.textContent="正在验证…";
         (async function(){
-          var ok=false, msg="商户编码或口令不正确";
+          var ok=false, msg="商户编码或口令不正确", locked=false;
           if(supaReady()){
             try{
               var r=await fetch(SUPA_CONFIG.url + "/rest/v1/rpc/t_admin_login", {
@@ -2241,11 +2251,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               var j=await r.json();
               if(j && j.ok){ ok=true; setAdminTenant(u); if(j.name) setShopName(j.name,u); }
               else if(j && j.reason==="no_tenant"){ msg="没有这个商户编码"; }
+              else if(j && j.reason==="locked"){ locked=true; msg="口令连错次数过多，已临时锁定，还需等 "+(j.wait_min||15)+" 分钟再试"; }
               else if(j && j.reason==="status"){ msg="该商户已停用，请联系平台"; }
+              else if(j && j.reason==="bad_pass" && j.left!=null && j.left>0){ msg="口令不对，还可再试 "+j.left+" 次（连错 10 次会锁 15 分钟）"; }
             }catch(e){}
           }
           /* 云端不可达时的本机演示兜底：只允许 bj01 */
-          if(!ok && u==="bj01" && authToken(AUTH_USER,pw)===AUTH_HASH){ ok=true; setAdminTenant(u); msg=""; }
+          if(!ok && !locked && u==="bj01" && authToken(AUTH_USER,pw)===AUTH_HASH){ ok=true; setAdminTenant(u); msg=""; }
           if(!ok){
             err.textContent=msg; btn.disabled=false; btn.textContent="登录商家后台";
             var pi=document.getElementById("lgPass"); if(pi) pi.focus();
@@ -2934,7 +2946,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         headers:Object.assign({"Content-Type":"application/json"}, supaHeaders()),
         body: JSON.stringify({p_tenant:adminTenant(), p_pass:pw})
       }).then(function(r){ return r.json(); }).then(function(j){
-        if(!(j && j.ok)){ toast("口令不对"); return; }
+        if(!(j && j.ok)){
+          if(j && j.reason==="locked"){ toast("口令连错太多，还需等 "+(j.wait_min||15)+" 分钟"); }
+          else { toast("口令不对"); }
+          return;
+        }
         setAdminPass(pw); toast("口令已记住，可以切换了"); render();
       }).catch(function(){ toast("验证失败，检查网络"); });
     });
