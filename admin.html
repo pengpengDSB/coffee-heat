@@ -5767,8 +5767,27 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       p_tenant:adminTenant(), p_slide:p.i, p_total:p.n,
       p_title:String(p.title||"").slice(0,40), p_mode:p.mode, p_paused:!!boardPaused
     }).then(function(r){
-      if(r && r.ok && Number(r.cmd||0) > BW_CMDID){ bwPullCmds(BW_CMDID); }   /* 订阅掉线时靠心跳兜底补指令 */
+      if(!r || !r.ok) return;
+      if(Number(r.cmd||0) > BW_CMDID){ bwPullCmds(BW_CMDID); }   /* 订阅掉线时靠心跳兜底补指令 */
+      /* 服务端 paused 才是准的（现在只有后台遥控能改它）：本地跟它对齐，
+         否则一块没收到指令的屏会把自己的旧状态一直顶回去 */
+      if(typeof r.paused==="boolean" && r.paused!==boardPaused){
+        boardPaused=r.paused; renderBoard();
+      }
     }).catch(function(e){ try{ window.__beatErr=String((e&&e.message)||e); }catch(_){} });
+  }
+  /* 大屏开窗/刷新时先把后台的暂停态取回来：不然重开一次就从「已暂停」变回自动轮播 */
+  function bwRestoreState(){
+    if(!BOARD_MODE) return;
+    if(typeof bwRpc!=="function") return;
+    bwRpc("t_board_status",{p_tenant:adminTenant()}).then(function(s){
+      if(!s || !s.ok) return;
+      var dirty=false;
+      if(!!s.paused !== !!boardPaused){ boardPaused=!!s.paused; dirty=true; }
+      /* 全览分不清是「后台按的」还是「别的屏自己点的」，只在服务端说暂停时才认，免得新开的屏莫名变全览 */
+      if(s.paused && s.mode==="all" && boardMode!=="all"){ boardMode="all"; dirty=true; }
+      if(dirty) renderBoard();
+    }).catch(function(){});
   }
   function bwPullCmds(afterId){
     fetch(SUPA_CONFIG.url+"/rest/v1/board_cmd?tenant_id=eq."+encodeURIComponent(adminTenant())
@@ -6031,6 +6050,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
     }catch(e){ try{ window.__ordErr=String(e); }catch(_){} }
     bwInitCmdId();
+    bwRestoreState();      /* 启动即对齐后台的暂停/全览态，刷新不掉 */
     setInterval(function(){ bwBeat(false); }, 12000);   /* 存活心跳：全览/暂停时也要让后台知道屏还在 */
     document.addEventListener("visibilitychange",function(){ if(!document.hidden) bwBeat(true); });
     /* 2) 兜底：20 秒看一次版本号，变了才拉全量（版本表没建就退回 60 秒全量） */
