@@ -480,6 +480,19 @@
   #bwFlash.on{opacity:1;transform:translate(-50%,0)}
   #bwFlash b{color:#DDB07A;font-weight:500;white-space:nowrap}
   #bwFlash span{font-size:.8em;color:#B3A48C;letter-spacing:.06em}
+  /* 大屏叫号卡：右下角滑入，8 秒自动收起 */
+  #bwOrder{position:fixed;right:clamp(14px,2vw,36px);bottom:clamp(60px,9vh,110px);z-index:72;
+      min-width:clamp(180px,16vw,300px);padding:clamp(9px,1.2vh,16px) clamp(12px,1.1vw,22px);
+      border-radius:8px;background:rgba(28,23,19,.95);border:1px solid rgba(221,176,122,.5);
+      box-shadow:0 12px 30px rgba(0,0,0,.45);color:#F2EADA;
+      opacity:0;transform:translateX(24px);pointer-events:none;
+      transition:opacity .35s ease,transform .35s ease}
+  #bwOrder.on{opacity:1;transform:translateX(0)}
+  #bwOrder .o-k{display:flex;align-items:baseline;gap:.7em}
+  #bwOrder .o-k em{font-style:normal;font-size:clamp(8px,.55vw,11px);letter-spacing:.2em;color:#B79A6D}
+  #bwOrder .o-k b{font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:clamp(20px,1.9vw,40px);
+      font-weight:400;letter-spacing:.04em;line-height:1.1}
+  #bwOrder .o-b{margin-top:.35em;font-size:clamp(9px,.68vw,13px);color:#B3A48C;letter-spacing:.06em}
   .bw-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;
       gap:.4em;color:#8B7E6C;font-size:13px;line-height:2.1;text-align:center}
   @media(max-width:900px){
@@ -5624,6 +5637,26 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },6400);
   }
 
+  /* ---------- 大屏叫号：新订单滑入，8 秒后自动收起 ---------- */
+  var BW_ORDT=null;
+  function bwOrderPop(row){
+    var el=document.getElementById("bwOrder");
+    if(!el){
+      el=document.createElement("div"); el.id="bwOrder";
+      el.innerHTML='<div class="o-k"><em>取餐号</em><b></b></div><div class="o-b"></div>';
+      document.body.appendChild(el);
+    }
+    var b=el.querySelector("b"), o=el.querySelector(".o-b");
+    if(b) b.textContent=String(row.order_no||"");
+    var brief=String(row.brief||"");
+    if(o) o.textContent=brief+(row.total!=null?" · ¥"+row.total:"");
+    el.classList.remove("on");
+    void el.offsetWidth;                     /* 强制回流，让连续两单也能重播动画 */
+    el.classList.add("on");
+    if(BW_ORDT) clearTimeout(BW_ORDT);
+    BW_ORDT=setTimeout(function(){ el.classList.remove("on"); },8000);
+  }
+
   function renderBoard(){
     removeBoard();
     var tt=document.getElementById("miniToast"); if(tt) tt.classList.remove("on");
@@ -5989,6 +6022,21 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           .subscribe(function(st){ try{ window.__cmdState=st; }catch(e){} });
       }
     }catch(e){ try{ window.__cmdErr=String(e); }catch(_){} }
+    /* 1c) 新订单上屏：order_feed 只读、只含取餐号与摘要，不含顾客信息 */
+    try{
+      if(supaReady()){
+        if(!sb) sb=supabase.createClient(SUPA_CONFIG.url, SUPA_CONFIG.anonKey);
+        sb.channel("orderfeed-"+adminTenant())
+          .on("postgres_changes",
+              {event:"INSERT", schema:"public", table:"order_feed",
+               filter:"tenant_id=eq."+adminTenant()},
+              function(payload){
+                var row=(payload&&payload.new)||{};
+                if(row.order_no) bwOrderPop(row);
+              })
+          .subscribe(function(st){ try{ window.__ordState=st; }catch(e){} });
+      }
+    }catch(e){ try{ window.__ordErr=String(e); }catch(_){} }
     bwInitCmdId();
     setInterval(function(){ bwBeat(false); }, 12000);   /* 存活心跳：全览/暂停时也要让后台知道屏还在 */
     document.addEventListener("visibilitychange",function(){ if(!document.hidden) bwBeat(true); });
