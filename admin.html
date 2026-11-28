@@ -5632,8 +5632,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var el=document.createElement("div"); el.id="bwFlash";
     el.innerHTML='<b>'+esc(bits.join(" · "))+'</b><span>'+esc(brief)+'</span>';
     document.body.appendChild(el);
-    requestAnimationFrame(function(){ el.classList.add("on"); });
-    setTimeout(function(){ el.classList.remove("on"); },5200);
+    requestAnimationFrame(function(){
+      el.style.opacity="1"; el.style.transform="translate(-50%,0)";   /* 直接写内联：不依赖 .on 类是否生效 */
+    });
+    setTimeout(function(){ el.style.opacity="0"; el.style.transform="translate(-50%,-18px)"; },5200);
     setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },6400);
   }
 
@@ -5652,9 +5654,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if(o) o.textContent=brief+(row.total!=null?" · ¥"+row.total:"");
     el.classList.remove("on");
     void el.offsetWidth;                     /* 强制回流，让连续两单也能重播动画 */
-    el.classList.add("on");
+    el.style.opacity="1"; el.style.transform="translateX(0)";   /* 直接写内联，避免类样式不生效 */
     if(BW_ORDT) clearTimeout(BW_ORDT);
-    BW_ORDT=setTimeout(function(){ el.classList.remove("on"); },8000);
+    BW_ORDT=setTimeout(function(){ el.style.opacity="0"; el.style.transform="translateX(24px)"; },8000);
   }
 
   function renderBoard(){
