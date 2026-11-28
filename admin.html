@@ -423,6 +423,11 @@
   .bw-no{position:absolute;top:clamp(9px,1.3vh,20px);left:clamp(11px,1vw,20px);
       font-family:"Songti SC","Noto Serif CJK SC",serif;font-size:clamp(10px,.7vw,14px);
       letter-spacing:.18em;color:rgba(242,234,218,.72)}
+  /* 上新 / 改价角标：只在近 90 秒内改过的瓦片上出现 */
+  .bw-badge{position:absolute;top:clamp(9px,1.3vh,20px);right:clamp(11px,1vw,20px);z-index:3;
+      font-size:clamp(8px,.5vw,11px);letter-spacing:.16em;padding:.34em .62em;border-radius:3px;
+      background:rgba(221,176,122,.94);color:#241C14;font-weight:600;line-height:1}
+  .bw-badge.price{background:rgba(143,178,154,.94);color:#12211A}
   .bw-info{position:absolute;left:clamp(12px,1.3vw,26px);right:clamp(12px,1.3vw,26px);
       bottom:clamp(10px,1.5vh,24px);display:flex;align-items:flex-end;justify-content:space-between;gap:1vw}
   .bw-info .l{min-width:0;max-width:60%}
@@ -466,6 +471,15 @@
       padding:.5em .85em;font-size:clamp(10px,.68vw,13px);color:#B3A48C;letter-spacing:.08em;
       cursor:pointer;font-family:inherit;white-space:nowrap}
   .bw-btn:hover{border-color:rgba(221,176,122,.62);color:#F2EADA}
+  /* 大屏顶部变更提示：上新/改价事件一次，5 秒后自动淡出 */
+  #bwFlash{position:fixed;left:50%;top:clamp(10px,2.6vh,30px);transform:translate(-50%,-18px);
+      z-index:70;display:flex;align-items:center;gap:.9em;padding:.62em 1.15em;border-radius:6px;
+      background:rgba(28,23,19,.93);border:1px solid rgba(221,176,122,.55);color:#F2EADA;
+      font-size:clamp(11px,.9vw,18px);letter-spacing:.1em;opacity:0;pointer-events:none;
+      transition:opacity .4s ease,transform .4s ease}
+  #bwFlash.on{opacity:1;transform:translate(-50%,0)}
+  #bwFlash b{color:#DDB07A;font-weight:500;white-space:nowrap}
+  #bwFlash span{font-size:.8em;color:#B3A48C;letter-spacing:.06em}
   .bw-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;
       gap:.4em;color:#8B7E6C;font-size:13px;line-height:2.1;text-align:center}
   @media(max-width:900px){
@@ -4939,6 +4953,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   var boardPaused=false;                 /* 后台遥控「暂停」时置真：停在当前屏，不自动翻页 */
   var BW_POS=null;                       /* 当前展示位置 {mode,i,n,title}，心跳时回报给后台 */
   var BW_CMDID=-1, BW_BEAT_AT=0;         /* 已执行到的指令号 / 上次心跳时间（本地节流用） */
+  var BW_SNAP=null, BW_MARK={}, BW_MARK_TTL=90000;  /* 上一版目录快照 / 变更标记 {id:{kind,at}} / 标记存活 90 秒 */
   var BOARD_MS=12000;
 
   /* 面板大图预加载：先把产品图塞进浏览器缓存，避免切到「展示面板」时先黑一屏 */
@@ -5010,9 +5025,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     var name=(p.name||"");
     var long=(name.length>6?" long":"");
     var price=(p.price!=null&&p.price!=="")?'<b>¥'+esc(p.price)+'</b>':"";
+    var badge="";
+    var mk=BW_MARK[String(p.id)];
+    if(mk && (Date.now()-mk.at)<BW_MARK_TTL){
+      badge='<div class="bw-badge'+(mk.kind==="price"?" price":"")+'">'+(mk.kind==="price"?"改价":"上新")+'</div>';
+    }
     return '<div class="bw-tile">'+
       (p.image?'<img src="'+esc(p.image)+'" alt="">':'<div class="bw-ic">'+ic(catIcon(p.big))+'</div>')+
       '<div class="bw-scrim"></div>'+
+      badge+
       (all?"":'<div class="bw-no">'+(i<9?"0":"")+(i+1)+'</div>')+
       '<div class="bw-info"><div class="l">'+
         '<div class="bw-name'+long+'">'+esc(name)+'</div>'+
@@ -5571,10 +5592,43 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       });
     }
   }
+  /* ---------- 大屏：目录变更极简 diff（纯前端，不碰数据库） ---------- */
+  function bwDiffSnap(){
+    if(!db || !db.products || !db.products.length) return;
+    var now=Date.now(), prev=BW_SNAP, cur={}, fresh=[], repriced=[];
+    db.products.forEach(function(p){
+      var k=String(p.id);
+      cur[k]={ n:p.name||"", pr:(p.price==null?"":String(p.price)) };
+      if(!prev) return;
+      var o=prev[k];
+      if(!o){ fresh.push(p.name||""); BW_MARK[k]={kind:"new",at:now}; }
+      else if(o.pr!==cur[k].pr){ repriced.push(p.name||""); BW_MARK[k]={kind:"price",at:now}; }
+    });
+    for(var k2 in BW_MARK){ if(now-BW_MARK[k2].at>=BW_MARK_TTL) delete BW_MARK[k2]; }
+    BW_SNAP=cur;
+    if(fresh.length || repriced.length) bwFlash(fresh,repriced);
+  }
+  function bwFlash(fresh,repriced){
+    var old=document.getElementById("bwFlash"); if(old && old.parentNode) old.parentNode.removeChild(old);
+    var bits=[];
+    if(fresh.length) bits.push("上新 "+fresh.length+" 款");
+    if(repriced.length) bits.push("改价 "+repriced.length+" 款");
+    if(!bits.length) return;
+    var names=fresh.concat(repriced);
+    var brief=names.slice(0,3).join("、")+(names.length>3?" 等":"");
+    var el=document.createElement("div"); el.id="bwFlash";
+    el.innerHTML='<b>'+esc(bits.join(" · "))+'</b><span>'+esc(brief)+'</span>';
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add("on"); });
+    setTimeout(function(){ el.classList.remove("on"); },5200);
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },6400);
+  }
+
   function renderBoard(){
     removeBoard();
     var tt=document.getElementById("miniToast"); if(tt) tt.classList.remove("on");
     preloadBoardImgs();
+    bwDiffSnap();
     var el=document.createElement("div");
     el.id="boardView"; el.className="bw"+(boardMode==="all"?" bw-all":"");
 
